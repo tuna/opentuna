@@ -1,6 +1,7 @@
 {
   "name": "opentuna",
-  "version": "0.1.0",
+  "description": "It's an app to deploy open tuna on AWS.",
+  "version": "1.0.0",
   "bin": {
     "opentuna": "bin/opentuna.js"
   },
@@ -8,7 +9,8 @@
     "build": "tsc",
     "watch": "tsc -w",
     "test": "jest",
-    "cdk": "cdk"
+    "cdk": "cdk",
+    "init": "npx cdk bootstrap && npm i"
   },
   "devDependencies": {
     "@aws-cdk/assert": "1.49.1",
@@ -21,6 +23,7 @@
     "typescript": "~3.7.2"
   },
   "dependencies": {
+    "@aws-cdk/aws-ec2": "^1.49.1",
     "@aws-cdk/core": "1.49.1",
     "source-map-support": "^0.5.16"
   }

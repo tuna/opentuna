@@ -1,14 +1,29 @@
-# Welcome to your CDK TypeScript project!
+# Open Tuna project!
 
-This is a blank project for TypeScript development with CDK.
+This is the infrasture project of Open Tuna on AWS. It consits of below stacks,
 
-The `cdk.json` file tells the CDK Toolkit how to execute your app.
+- Network stack(optional)
+  - Create a dedicated VPC with public and private subnets across three AZs with NAT gateways
+  - Create S3 Endpoint
 
-## Useful commands
+## Prerequisites
+TBA
 
- * `npm run build`   compile typescript to js
- * `npm run watch`   watch for changes and compile
- * `npm run test`    perform the jest unit tests
- * `cdk deploy`      deploy this stack to your default AWS account/region
- * `cdk diff`        compare deployed stack with current state
- * `cdk synth`       emits the synthesized CloudFormation template
+## How to deploy it
+### Prerequisites
+- An AWS account
+- Configure [credential of aws cli][configure-aws-cli]
+- Install node.js LTS version, such as 12.x
+- Install Docker Engine
+   
+### Install project dependencies
+```shell
+npm run init
+```
+
+### How to deploy network stack(optional)
+```shell
+npx cdk deploy OpenTunaNetworkStack
+```
+
+[configure-aws-cli]: https://docs.aws.amazon.com/zh_cn/cli/latest/userguide/cli-chap-configure.html
