@@ -2,7 +2,7 @@
 import 'source-map-support/register';
 import * as cdk from '@aws-cdk/core';
 import ec2 = require("@aws-cdk/aws-ec2");
-import { StorageStack } from '../lib/storage-stack';
+import { NetworkStack } from '../lib/network-stack';
 
 const app = new cdk.App();
 
@@ -14,13 +14,8 @@ const env = {
 
 const suffix = app.node.tryGetContext('stackSuffix') || '';
 
-const vpcId = app.node.tryGetContext('vpcId');
-if (!vpcId) {
-    throw new Error('"vpcId" must be specified via context, for example "-c vpcId=vpc-123".');
-}
-const storageStack = new StorageStack(app, `${appPrefix}StorageStack${suffix}`, {
+new NetworkStack(app, `${appPrefix}NetworkStack${suffix}`, {
     env,
-    vpcId,
 });
 
 cdk.Tag.add(app, 'app', `${appPrefix}${suffix}`);
