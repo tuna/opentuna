@@ -10,7 +10,8 @@
     "watch": "tsc -w",
     "test": "jest",
     "cdk": "cdk",
-    "init": "npx cdk bootstrap && npm i"
+    "init": "npx cdk bootstrap && npm i",
+    "deploy-network": "npx cdk deploy OpenTunaNetworkStack --app 'npx ts-node bin/opentuna-network.ts'"
   },
   "devDependencies": {
     "@aws-cdk/assert": "1.49.1",
@@ -24,6 +25,7 @@
   },
   "dependencies": {
     "@aws-cdk/aws-ec2": "^1.49.1",
+    "@aws-cdk/aws-efs": "^1.49.1",
     "@aws-cdk/core": "1.49.1",
     "source-map-support": "^0.5.16"
   }
