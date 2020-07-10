@@ -30,7 +30,7 @@ export class NetworkStack extends cdk.Stack {
       service: ec2.GatewayVpcEndpointAwsService.S3,
     });
 
-    cdk.Tag.add(this, 'usage', 'network');
+    cdk.Tag.add(this, 'component', 'network');
 
     new cdk.CfnOutput(this, 'VPCId', {
       value: `${vpc.vpcId}`,
