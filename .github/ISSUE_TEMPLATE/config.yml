@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Tunasync questions
+    url:  https://github.com/tuna/tunasync/issues
+    about: Please ask and answer tunasync questions here.
