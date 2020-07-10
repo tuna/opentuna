@@ -21,7 +21,7 @@ export class StorageStack extends cdk.Stack {
     this.fileSystem = new efs.FileSystem(this, 'OpenTunaEfsFileSystem', {
       vpc: vpc,
       encrypted: false,
-      lifecyclePolicy: efs.LifecyclePolicy.AFTER_14_DAYS,
+      lifecyclePolicy: efs.LifecyclePolicy.AFTER_90_DAYS,
       performanceMode: efs.PerformanceMode.GENERAL_PURPOSE,
       throughputMode: efs.ThroughputMode.BURSTING,
       removalPolicy: cdk.RemovalPolicy.RETAIN,
@@ -30,7 +30,7 @@ export class StorageStack extends cdk.Stack {
     this.fileSystem.connections.allowDefaultPortFrom(ec2.Peer.ipv4(vpc.vpcCidrBlock),
       'allow connect from vpc');
 
-    cdk.Tag.add(this, 'usage', 'storage');
+    cdk.Tag.add(this, 'component', 'storage');
 
     new cdk.CfnOutput(this, 'FileSystemId', {
       value: `${this.fileSystem.fileSystemId}`,

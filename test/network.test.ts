@@ -1,4 +1,3 @@
-import { expect as expectCDK, haveResource } from '@aws-cdk/assert';
 import * as cdk from '@aws-cdk/core';
 import * as network from '../lib/network-stack';
 import '@aws-cdk/assert/jest';
@@ -29,12 +28,12 @@ describe('Network stack', () => {
           "Value": "OpenTuna"
         },
         {
-          "Key": "Name",
-          "Value": "OpenTunaNetworkStack/OpenTunaVPC"
+          "Key": "component",
+          "Value": "network"
         },
         {
-          "Key": "usage",
-          "Value": "network"
+          "Key": "Name",
+          "Value": "OpenTunaNetworkStack/OpenTunaVPC"
         }
       ]
     });

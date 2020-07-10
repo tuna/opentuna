@@ -1,0 +1,56 @@
+Content-Type: multipart/mixed; boundary="//"
+MIME-Version: 1.0
+
+--//
+Content-Type: text/cloud-config; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment; filename="cloud-config.txt"
+
+#cloud-config
+repo_update: true
+repo_upgrade: all
+packages:
+ - nfs-utils
+ - amazon-efs-utils
+
+# run commands
+runcmd:
+ - file_system_id_1={{&fileSystemId}}
+ - efs_mount_point_1=/mnt/efs/opentuna
+ - mkdir -p "${efs_mount_point_1}"
+ - test -f "/sbin/mount.efs" && echo "${file_system_id_1}:/ ${efs_mount_point_1} efs tls,_netdev" >> /etc/fstab || echo "${file_system_id_1}.{{&regionEndpoint}}:/ ${efs_mount_point_1} nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport,_netdev 0 0" >> /etc/fstab
+ - test -f "/sbin/mount.efs" && echo -e "\n[client-info]\nsource=liw" >> /etc/amazon/efs/efs-utils.conf
+ - mount -a -t efs,nfs4 defaults
+ - tunaversion=v0.6.6
+ - tunafile="${efs_mount_point_1}/tunasync/install/tunasync-linux-bin-${tunaversion}.tar.bz2"
+ - (test -f ${tunafile} && tar -xf ${tunafile} -C /usr/local/bin/) || (wget -c https://github.com/tuna/tunasync/releases/download/${tunaversion}/tunasync-linux-bin.tar.bz2 -O - | tar xjf - -C /usr/local/bin/)
+
+cloud_final_modules:
+- [scripts-user, always]
+--//
+Content-Type: text/x-shellscript; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment; filename="userdata.txt"
+
+#!/bin/bash -xe
+mkdir -p /etc/tunasync/
+cat > /etc/tunasync/manager.conf << EOF
+debug = false
+
+[server]
+addr = "0.0.0.0"
+port = {{&port}}
+ssl_cert = ""
+ssl_key = ""
+
+[files]
+db_type = "bolt"
+db_file = "/mnt/efs/opentuna/tunasync/manager.db"
+ca_cert = ""
+
+EOF
+mkdir -p /mnt/efs/opentuna/tunasync/
+tunasync manager -config /etc/tunasync/manager.conf &
+--//

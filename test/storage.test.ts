@@ -1,10 +1,9 @@
-import { expect as expectCDK, haveResource } from '@aws-cdk/assert';
 import * as cxschema from '@aws-cdk/cloud-assembly-schema';
 import * as cxapi from '@aws-cdk/cx-api';
 import * as cdk from '@aws-cdk/core';
 import * as storage from '../lib/storage-stack';
-import ec2 = require("@aws-cdk/aws-ec2");
 import '@aws-cdk/assert/jest';
+import * as mock from './vpc-mock';
 
 describe('Storage stack', () => {
   let app: cdk.App;
@@ -31,17 +30,17 @@ describe('Storage stack', () => {
           "Value": "OpenTuna"
         },
         {
-          "Key": "Name",
-          "Value": "OpenTunaStorageStack/OpenTunaEfsFileSystem"
+          "Key": "component",
+          "Value": "storage"
         },
         {
-          "Key": "usage",
-          "Value": "storage"
+          "Key": "Name",
+          "Value": "OpenTunaStorageStack/OpenTunaEfsFileSystem"
         }
       ],
       "LifecyclePolicies": [
         {
-          "TransitionToIA": "AFTER_14_DAYS"
+          "TransitionToIA": "AFTER_90_DAYS"
         }
       ],
       "PerformanceMode": "generalPurpose",
@@ -50,7 +49,7 @@ describe('Storage stack', () => {
   });
 
   test('Security group for EFS filesystem', () => {
-    const previous = mockVpcContextProviderWith({
+    const previous = mock.mockVpcContextProviderWith({
       vpcId: 'vpc-id',
       vpcCidrBlock: "10.58.0.0/16",
       "subnetGroups": [
@@ -133,7 +132,7 @@ describe('Storage stack', () => {
         "VpcId": "vpc-id"
       });
     } finally {
-      restoreContextProvider(previous);
+      mock.restoreContextProvider(previous);
     }
   });
 
@@ -144,44 +143,3 @@ describe('Storage stack', () => {
     });
   });
 });
-
-interface MockVcpContextResponse {
-  readonly vpcId: string;
-  readonly vpcCidrBlock: string;
-  readonly subnetGroups: cxapi.VpcSubnetGroup[];
-}
-
-function mockVpcContextProviderWith(
-  response: MockVcpContextResponse,
-  paramValidator?: (options: cxschema.VpcContextQuery) => void) {
-  const previous = cdk.ContextProvider.getValue;
-  cdk.ContextProvider.getValue = (_scope: cdk.Construct, options: cdk.GetContextValueOptions) => {
-    // do some basic sanity checks
-    expect(options.provider).toEqual(cxschema.ContextProvider.VPC_PROVIDER);
-
-    if (paramValidator) {
-      paramValidator(options.props as any);
-    }
-
-    return {
-      value: {
-        availabilityZones: [],
-        isolatedSubnetIds: undefined,
-        isolatedSubnetNames: undefined,
-        isolatedSubnetRouteTableIds: undefined,
-        privateSubnetIds: undefined,
-        privateSubnetNames: undefined,
-        privateSubnetRouteTableIds: undefined,
-        publicSubnetIds: undefined,
-        publicSubnetNames: undefined,
-        publicSubnetRouteTableIds: undefined,
-        ...response,
-      } as cxapi.VpcContextResponse,
-    };
-  };
-  return previous;
-}
-
-function restoreContextProvider(previous: (scope: cdk.Construct, options: cdk.GetContextValueOptions) => cdk.GetContextValueResult): void {
-  cdk.ContextProvider.getValue = previous;
-}
