@@ -77,8 +77,20 @@ export class TunaManagerStack extends cdk.NestedStack {
             healthCheck: {
                 path: '/ping',
             },
+            priority: 10,
+            conditions: [
+                elbv2.ListenerCondition.pathPatterns(['/static/*']),
+            ],
             slowStart: cdk.Duration.seconds(60),
             deregistrationDelay: cdk.Duration.seconds(10),
+        });
+
+        // TODO: forward to portal 404 by default
+        listener.addAction('404', {
+            action: elbv2.ListenerAction.fixedResponse(404, {
+                contentType: elbv2.ContentType.TEXT_PLAIN,
+                messageBody: '404 Not Found',
+            })
         });
 
         cdk.Tag.add(this, 'component', usage);

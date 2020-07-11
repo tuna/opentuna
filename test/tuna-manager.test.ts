@@ -241,10 +241,12 @@ describe('Tuna Manager stack', () => {
     expect(stack).toHaveResource('AWS::ElasticLoadBalancingV2::Listener', {
       "DefaultActions": [
         {
-          "TargetGroupArn": {
-            "Ref": "TunaManagerALBListener80TunaManagerTargetGroupGroup43623F73"
+          "FixedResponseConfig": {
+            "ContentType": "text/plain",
+            "MessageBody": "404 Not Found",
+            "StatusCode": "404"
           },
-          "Type": "forward"
+          "Type": "fixed-response"
         }
       ],
       "LoadBalancerArn": {
