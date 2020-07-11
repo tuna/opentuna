@@ -255,6 +255,32 @@ describe('Tuna Manager stack', () => {
       "Port": 80,
       "Protocol": "HTTP"
     });
+
+    expect(stack).toHaveResource('AWS::ElasticLoadBalancingV2::ListenerRule', {
+      "Actions": [
+        {
+          "TargetGroupArn": {
+            "Ref": "TunaManagerALBListener80TunaManagerTargetGroupGroup43623F73"
+          },
+          "Type": "forward"
+        }
+      ],
+      "Conditions": [
+        {
+          "Field": "path-pattern",
+          "PathPatternConfig": {
+            "Values": [
+              "/static/*"
+            ]
+          }
+        }
+      ],
+      "ListenerArn": {
+        "Ref": "TunaManagerALBListener80973A1C2E"
+      },
+      "Priority": 10
+    });
+
     expect(stack).toHaveResource('AWS::ElasticLoadBalancingV2::LoadBalancer', {
       "LoadBalancerAttributes": [
         {
