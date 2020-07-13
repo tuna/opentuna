@@ -90,6 +90,7 @@ export class TunaWorkerStack extends cdk.NestedStack {
                 {
                     name: 'debian',
                     interval: 720,
+                    retry: 100,
                     provider: 'rsync',
                     upstream: 'rsync://mirrors.bfsu.edu.cn/debian/'
                 },
@@ -195,6 +196,7 @@ export class TunaWorkerStack extends cdk.NestedStack {
                     name: 'elrepo',
                     interval: 720,
                     provider: 'rsync',
+                    retry: 10,
                     upstream: 'rsync://ftp.yz.yamagata-u.ac.jp/pub/linux/RPMS/elrepo/'
                 },
                 {
