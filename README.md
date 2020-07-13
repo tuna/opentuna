@@ -10,12 +10,13 @@ This is the infrasture project of Open Tuna on AWS orchestrated by [AWS CDK][aws
 - Common stack
   - SNS notification topic
 - Open Tuna stack
-  - Tuna Manager stack
-    - auto scaling group for tuna manager
+  - Tunasync Manager stack
+    - auto scaling group for [tunasync][tunasync] manager
     - intranet application load balancer for manager's API
 
 ## Prerequisites
 - VPC with both public and private subnets crossing two AZs at least and NAT gateway. You can [deploy the network stack](#deploy-network-stackoptional) if you don't have a VPC sastfied the requirements.
+- EFS file system associated with above VPC. You can deploy stack with provisioning a EFS file system without specifying the existing filesystem id of EFS.
 
 ## How to deploy it
 ### Prerequisites
@@ -59,3 +60,4 @@ npm run test
 [aws-cdk]: https://aws.amazon.com/cdk/
 [cfn-stack]: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/stacks.html
 [configure-aws-cli]: https://docs.aws.amazon.com/zh_cn/cli/latest/userguide/cli-chap-configure.html
+[tunasync]: https://github.com/tuna/tunasync
