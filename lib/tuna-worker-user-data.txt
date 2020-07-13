@@ -1,0 +1,198 @@
+Content-Type: multipart/mixed; boundary="//"
+MIME-Version: 1.0
+
+--//
+Content-Type: text/cloud-config; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment; filename="cloud-config.txt"
+
+#cloud-config
+repo_update: true
+repo_upgrade: all
+packages:
+ - nfs-utils
+ - amazon-efs-utils
+ - python3-pip
+ - git
+
+# run commands
+runcmd:
+ - file_system_id_1={{&fileSystemId}}
+ - efs_mount_point_1={{&repoRoot}}
+ - mkdir -p "${efs_mount_point_1}"
+ - test -f "/sbin/mount.efs" && echo "${file_system_id_1}:/ ${efs_mount_point_1} efs tls,_netdev" >> /etc/fstab || echo "${file_system_id_1}.{{&regionEndpoint}}:/ ${efs_mount_point_1} nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport,_netdev 0 0" >> /etc/fstab
+ - test -f "/sbin/mount.efs" && echo -e "\n[client-info]\nsource=liw" >> /etc/amazon/efs/efs-utils.conf
+ - mount -a -t efs,nfs4 defaults
+ - tunaversion=v0.6.6
+ - tunafile="${efs_mount_point_1}/tunasync/install/tunasync-linux-bin-${tunaversion}.tar.bz2"
+ - (test -f ${tunafile} && tar -xf ${tunafile} -C /usr/local/bin/) || (wget -c https://github.com/tuna/tunasync/releases/download/${tunaversion}/tunasync-linux-bin.tar.bz2 -O - | tar xjf -  -C /usr/local/bin/)
+ - export PIP_DEFAULT_TIMEOUT=20; pip3 install -i https://pypi.tuna.tsinghua.edu.cn/simple 'bandersnatch<4.0' || pip3 install -i https://pypi.douban.com/simple 'bandersnatch<4.0'
+ - tunascript_bin="${efs_mount_point_1}/tunasync/install/tunasync-scripts.tar.gz"
+ - tunascriptpath=/tunasync-scripts
+ - mkdir -p ${tunascriptpath}
+ - (test -f ${tunascript_bin} && tar -xf ${tunascript_bin} -C ${tunascriptpath}) || (git clone https://github.com/tuna/tunasync-scripts.git ${tunascriptpath})
+ - rpm -i https://{{&s3RegionEndpoint}}/amazoncloudwatch-agent-{{&region}}/amazon_linux/amd64/latest/amazon-cloudwatch-agent.rpm
+
+cloud_final_modules:
+- [scripts-user, always]
+--//
+Content-Type: text/x-shellscript; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment; filename="userdata.txt"
+
+#!/bin/bash -xe
+HOSTNAME=`hostname`
+REPO_ROOT={{&repoRoot}}
+TUNASCRIPT_PATH=/tunasync-scripts
+mkdir -p /etc/tunasync/
+
+# create tunasync work config
+cat > /etc/tunasync/worker.conf << EOF
+[global]
+name = "tunasync-worker"
+{{=<% %>=}}
+log_dir = "${REPO_ROOT}/log/{{.Name}}"
+<%={{ }}=%>
+mirror_dir = "${REPO_ROOT}/data/"
+concurrent = 10
+interval = 1
+retry = 5
+
+[manager]
+api_base = "{{&managerUrl}}"
+token = ""
+ca_cert = ""
+
+[cgroup]
+enable = false
+
+[server]
+hostname = "$HOSTNAME"
+listen_addr = "0.0.0.0"
+listen_port = {{port}}
+ssl_cert = ""
+ssl_key = ""
+
+{{#mirrors}}
+[[mirrors]]
+name = "{{&name}}"
+{{#interval}}
+interval = {{interval}}
+{{/interval}}
+provider = "{{&provider}}"
+upstream = "{{&upstream}}"
+{{#stage1_profile}}
+stage1_profile = "{{&stage1_profile}}"
+{{/stage1_profile}}
+{{#command}}
+command = "{{&command}}"
+{{/command}}
+{{#envs.length}}
+        [mirrors.env]
+        {{#envs}}
+        {{&.}}
+        {{/envs}}
+{{/envs.length}}
+{{#rsync_options.length}}
+rsync_options = [ {{&rsync_options}} ]
+{{/rsync_options.length}}
+{{/mirrors}}
+EOF
+
+# create tunasync service
+cat > /usr/lib/systemd/system/tunasync.service << EOF
+[Unit]
+Description=Tunasync Worker daemon
+
+[Service]
+ExecStart=/usr/local/bin/tunasync worker -config /etc/tunasync/worker.conf
+ExecReload=/bin/kill -HUP \$MAINPID
+Type=simple
+KillMode=control-group
+Restart=on-failure
+RestartSec=20s
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=tunasync
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+cat > /etc/rsyslog.d/tunasync.conf << EOF
+if \$programname == 'tunasync' then /var/log/tunasync.log
+& stop
+EOF
+
+# start tunasync service
+systemctl daemon-reload
+systemctl restart rsyslog
+systemctl enable tunasync.service
+systemctl start tunasync.service
+
+# configure conf json of CloudWatch agent
+mkdir -p /opt/aws/amazon-cloudwatch-agent/etc/
+cat > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json << EOF
+{
+"metrics": {
+        "namespace": "{{&namespace}}",
+        "append_dimensions": {
+        "ImageId": "\${aws:ImageId}",
+        "InstanceId": "\${aws:InstanceId}",
+        "InstanceType": "\${aws:InstanceType}",
+        "{{&dimensionName}}": "\${aws:AutoScalingGroupName}"
+        },
+        "aggregation_dimensions" : [["{{&dimensionName}}"]],
+        "metrics_collected": {
+        "procstat": [
+                {
+                "exe": "tunasync",
+                "measurement": [
+                        "pid_count"
+                ]
+                }
+        ]
+        }
+},
+"logs": {
+        "logs_collected": {
+        "files": {
+                "collect_list": [
+                {
+                        "file_path": "/var/log/tunasync.log",
+                        "log_group_name": "{{&logPrefix}}/worker",
+                        "log_stream_name": "{instance_id}_{hostname}",
+                        "timestamp_format": "%H: %M: %S%y%b%-d",
+                        "timezone": "UTC"
+                }
+                {{#mirrors}}
+                ,
+                {
+                        "file_path": "{{&repoRoot}}/log/{{&name}}/{{&name}}_**",
+                        "log_group_name": "{{&logPrefix}}/mirrors/{{&name}}",
+                        "log_stream_name": "{instance_id}_{hostname}",
+                        {{#timeFormat}}
+                        "timestamp_format": "{{&timeFormat}}",
+                        {{/timeFormat}}
+                        {{^timeFormat}}
+                        "timestamp_format": "%H: %M: %S%y%b%-d",
+                        {{/timeFormat}}
+                        {{#logStartPattern}}
+                        "multi_line_start_pattern": "{{&logStartPattern}}",
+                        {{/logStartPattern}}
+                        "timezone": "UTC"
+                }
+                {{/mirrors}}
+                ]
+        }
+        },
+        "log_stream_name": "open-mirror-default-stream-name"
+}
+}
+EOF
+
+# start cloudwatch agent
+/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json -s &
+--//
