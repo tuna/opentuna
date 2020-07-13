@@ -2,6 +2,7 @@ import * as cdk from '@aws-cdk/core';
 import ec2 = require('@aws-cdk/aws-ec2');
 import sns = require('@aws-cdk/aws-sns');
 import { TunaManagerStack } from './tuna-manager';
+import { TunaWorkerStack } from './tuna-worker';
 
 export interface OpenTunaStackProps extends cdk.StackProps {
   readonly vpcId: string;
@@ -28,8 +29,13 @@ export class OpentunaStack extends cdk.Stack {
       description: "SG of ALB of Tuna Manager",
       allowAllOutbound: false,
     });
+    const tunaWorkerSG = new ec2.SecurityGroup(this, "TunaWorkerSG", {
+      vpc,
+      description: "SG of Tuna Worker",
+      allowAllOutbound: true,
+    });
 
-    // Tuna Manager stack
+    // Tunasync Manager stack
     const tunaManagerStack = new TunaManagerStack(this, 'TunaManagerStack', {
       vpc,
       fileSystemId: props.fileSystemId,
@@ -38,5 +44,17 @@ export class OpentunaStack extends cdk.Stack {
       tunaManagerALBSG,
       timeout: cdk.Duration.minutes(10),
     });
+    // Tunasync Worker stack
+    const tunaWorkerStack = new TunaWorkerStack(this, 'TunaWorkerStack', {
+      vpc,
+      fileSystemId: props.fileSystemId,
+      notifyTopic: props.notifyTopic,
+      managerUrl: `http://${tunaManagerStack.managerALB.loadBalancerDnsName}:${tunaManagerStack.managerPort}`,
+      timeout: cdk.Duration.minutes(10),
+      tunaWorkerSG,
+    });
+
+    tunaManagerALBSG.connections.allowFrom(tunaWorkerSG, ec2.Port.tcp(tunaManagerStack.managerPort), 'Access from tuna worker');
+    tunaWorkerSG.connections.allowFrom(tunaManagerSG, ec2.Port.tcp(tunaWorkerStack.workerPort), 'Access from tuna manager');
   }
 }

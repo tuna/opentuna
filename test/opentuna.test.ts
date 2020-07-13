@@ -90,7 +90,7 @@ describe('Tuna Manager stack', () => {
     });
   });
 
-  test('Nested Tuna Manager stack created', () => {
+  test('Nested Tunasync Manager stack created', () => {
     expect(stack).toHaveResourceLike('AWS::CloudFormation::Stack', {
       "Parameters": {
         "referencetoOpenTunaStackTunaManagerALBSG3A9F434BGroupId": {
@@ -107,6 +107,63 @@ describe('Tuna Manager stack', () => {
         }
       },
       "TimeoutInMinutes": 10,
+    });
+  });
+
+  test('Nested Tunasync Worker stack created', () => {
+    expect(stack).toHaveResourceLike('AWS::CloudFormation::Stack', {
+      "Parameters": {
+        "referencetoOpenTunaStackTunaWorkerSGDC640D13GroupId": {
+          "Fn::GetAtt": [
+            "TunaWorkerSG1B6F268B",
+            "GroupId"
+          ]
+        },
+        "referencetoOpenTunaStackTunaManagerStackNestedStackTunaManagerStackNestedStackResource1B954434OutputsOpenTunaStackTunaManagerStackTunaManagerALB7C30A3CCDNSName": {
+          "Fn::GetAtt": [
+            "TunaManagerStackNestedStackTunaManagerStackNestedStackResourceA0EA7C16",
+            "Outputs.OpenTunaStackTunaManagerStackTunaManagerALB7C30A3CCDNSName"
+          ]
+        }
+      },
+      "TimeoutInMinutes": 10,
+    });
+  });
+
+  test('Security groups between worker and manager with least privillege', () => {
+    expect(stack).toHaveResourceLike('AWS::EC2::SecurityGroupIngress', {
+      "IpProtocol": "tcp",
+      "FromPort": 80,
+      "GroupId": {
+        "Fn::GetAtt": [
+          "TunaManagerALBSGD1FA31EB",
+          "GroupId"
+        ]
+      },
+      "SourceSecurityGroupId": {
+        "Fn::GetAtt": [
+          "TunaWorkerSG1B6F268B",
+          "GroupId"
+        ]
+      },
+      "ToPort": 80
+    });
+    expect(stack).toHaveResourceLike('AWS::EC2::SecurityGroupIngress', {
+      "IpProtocol": "tcp",
+      "FromPort": 80,
+      "GroupId": {
+        "Fn::GetAtt": [
+          "TunaWorkerSG1B6F268B",
+          "GroupId"
+        ]
+      },
+      "SourceSecurityGroupId": {
+        "Fn::GetAtt": [
+          "TunaManagerSGEC810641",
+          "GroupId"
+        ]
+      },
+      "ToPort": 80
     });
   });
 
