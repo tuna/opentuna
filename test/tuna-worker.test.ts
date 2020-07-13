@@ -226,4 +226,36 @@ describe('Tunasync worker stack', () => {
     });
   });
 
+  test('Tunasync worker process running alarm', () => {
+    expect(stack).toHaveResourceLike('AWS::CloudWatch::Alarm', {
+      "ComparisonOperator": "LessThanThreshold",
+        "EvaluationPeriods": 3,
+        "ActionsEnabled": true,
+        "AlarmActions": [
+          {
+            "Ref": "referencetoParentStackTestTopicCEBA4F88Ref"
+          }
+        ],
+        "Dimensions": [
+          {
+            "Name": "AutoScalingGroupName",
+            "Value": {
+              "Ref": "TunaWorkerASG0CF9EDEF"
+            }
+          }
+        ],
+        "MetricName": "procstat_lookup_pid_count",
+        "Namespace": "OpenTuna",
+        "OKActions": [
+          {
+            "Ref": "referencetoParentStackTestTopicCEBA4F88Ref"
+          }
+        ],
+        "Period": 60,
+        "Statistic": "Sum",
+        "Threshold": 1,
+        "TreatMissingData": "breaching"
+    });
+  });
+
 });
