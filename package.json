@@ -28,6 +28,8 @@
     "@aws-cdk/aws-autoscaling": "^1.49.1",
     "@aws-cdk/aws-cloudwatch-actions": "^1.49.1",
     "@aws-cdk/aws-ec2": "^1.49.1",
+    "@aws-cdk/aws-ecs": "^1.49.1",
+    "@aws-cdk/aws-ecs-patterns": "^1.49.1",
     "@aws-cdk/aws-efs": "^1.49.1",
     "@aws-cdk/core": "1.49.1",
     "mustache": "^4.0.1",
