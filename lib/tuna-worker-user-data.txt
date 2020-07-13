@@ -81,6 +81,9 @@ name = "{{&name}}"
 {{#interval}}
 interval = {{interval}}
 {{/interval}}
+{{#retry}}
+retry = {{retry}}
+{{/retry}}
 provider = "{{&provider}}"
 upstream = "{{&upstream}}"
 {{#stage1_profile}}
