@@ -24,7 +24,9 @@ export class ContentServerStack extends cdk.NestedStack {
             vpc: props.vpc,
         });
 
-        const imageRepo = new ecr.Repository(this, `${usage}Repository`);
+        const imageRepo = new ecr.Repository(this, `${usage}Repository`, {
+            repositoryName: "content-server",
+        });
 
         const httpPort = 80;
         const service = new ecs_patterns.ApplicationLoadBalancedFargateService(this, `${usage}Fargate`, {
@@ -32,7 +34,7 @@ export class ContentServerStack extends cdk.NestedStack {
             assignPublicIp: true,
             desiredCount: 2,
             taskImageOptions: {
-                image: ecs.ContainerImage.fromEcrRepository(imageRepo, "nginx"),
+                image: ecs.ContainerImage.fromEcrRepository(imageRepo, "latest"),
                 logDriver: new ecs.AwsLogDriver({
                     streamPrefix: usage,
                     logGroup: new logs.LogGroup(this, `${usage}LogGroup`, {
