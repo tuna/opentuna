@@ -5,12 +5,14 @@ import logs = require('@aws-cdk/aws-logs');
 import ecs_patterns = require('@aws-cdk/aws-ecs-patterns');
 import custom_resources = require('@aws-cdk/custom-resources');
 import ecr = require('@aws-cdk/aws-ecr');
+import elbv2 = require('@aws-cdk/aws-elasticloadbalancingv2');
 import { ITopic } from '@aws-cdk/aws-sns';
 
 export interface ContentServerProps extends cdk.NestedStackProps {
     readonly vpc: ec2.IVpc;
     readonly fileSystemId: string;
     readonly notifyTopic: ITopic;
+    readonly externalALB: elbv2.ApplicationLoadBalancer;
 }
 
 export class ContentServerStack extends cdk.NestedStack {
@@ -31,7 +33,7 @@ export class ContentServerStack extends cdk.NestedStack {
         const httpPort = 80;
         const service = new ecs_patterns.ApplicationLoadBalancedFargateService(this, `${usage}Fargate`, {
             cluster: cluster,
-            assignPublicIp: true,
+            loadBalancer: props.externalALB,
             desiredCount: 2,
             taskImageOptions: {
                 image: ecs.ContainerImage.fromEcrRepository(imageRepo, "latest"),
@@ -42,7 +44,6 @@ export class ContentServerStack extends cdk.NestedStack {
                     })
                 }),
             },
-            publicLoadBalancer: true,
             // need 1.4.0 to mount EFS
             platformVersion: ecs.FargatePlatformVersion.VERSION1_4,
         });

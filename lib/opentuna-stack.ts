@@ -1,6 +1,7 @@
 import * as cdk from '@aws-cdk/core';
 import ec2 = require('@aws-cdk/aws-ec2');
 import sns = require('@aws-cdk/aws-sns');
+import elbv2 = require('@aws-cdk/aws-elasticloadbalancingv2');
 import { TunaManagerStack } from './tuna-manager';
 import { TunaWorkerStack } from './tuna-worker';
 import { ContentServerStack } from './content-server';
@@ -35,6 +36,16 @@ export class OpentunaStack extends cdk.Stack {
       description: "SG of Tuna Worker",
       allowAllOutbound: true,
     });
+    const externalALBSG = new ec2.SecurityGroup(this, "ExternalALBSG", {
+      vpc,
+      description: "SG of External ALB",
+      allowAllOutbound: false,
+    });
+    const externalALB = new elbv2.ApplicationLoadBalancer(this, "ExternalALB", {
+      vpc,
+      securityGroup: externalALBSG,
+      internetFacing: true,
+    });
 
     // Tunasync Manager stack
     const tunaManagerStack = new TunaManagerStack(this, 'TunaManagerStack', {
@@ -64,6 +75,7 @@ export class OpentunaStack extends cdk.Stack {
       vpc,
       fileSystemId: props.fileSystemId,
       notifyTopic: props.notifyTopic,
+      externalALB,
     });
   }
 }
