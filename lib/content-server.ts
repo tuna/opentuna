@@ -52,12 +52,13 @@ export class ContentServerStack extends cdk.NestedStack {
             containerDefinitions: [
                 {
                     essential: true,
-                    image: "nginx",
+                    image: imageRepo.repositoryUriForTag('latest'),
                     logConfiguration: {
                         logDriver: service.taskDefinition.defaultContainer?.logDriverConfig?.logDriver,
                         options: service.taskDefinition.defaultContainer?.logDriverConfig?.options,
                     },
                     memory: 512,
+                    user: "root",
                     mountPoints: [{
                         containerPath: "/mnt/efs",
                         sourceVolume: "efs-volume",
@@ -86,6 +87,7 @@ export class ContentServerStack extends cdk.NestedStack {
                 name: "efs-volume",
                 efsVolumeConfiguration: {
                     fileSystemId: props.fileSystemId,
+                    rootDirectory: "/data",
                 },
             }],
         };
