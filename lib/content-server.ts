@@ -4,7 +4,7 @@ import ecs = require('@aws-cdk/aws-ecs');
 import logs = require('@aws-cdk/aws-logs');
 import ecs_patterns = require('@aws-cdk/aws-ecs-patterns');
 import custom_resources = require('@aws-cdk/custom-resources');
-import iam = require('@aws-cdk/aws-iam');
+import ecr = require('@aws-cdk/aws-ecr');
 import { ITopic } from '@aws-cdk/aws-sns';
 
 export interface ContentServerProps extends cdk.NestedStackProps {
@@ -24,13 +24,15 @@ export class ContentServerStack extends cdk.NestedStack {
             vpc: props.vpc,
         });
 
+        const imageRepo = new ecr.Repository(this, `${usage}Repository`);
+
         const httpPort = 80;
         const service = new ecs_patterns.ApplicationLoadBalancedFargateService(this, `${usage}Fargate`, {
             cluster: cluster,
             assignPublicIp: true,
             desiredCount: 2,
             taskImageOptions: {
-                image: ecs.ContainerImage.fromRegistry("nginx"),
+                image: ecs.ContainerImage.fromEcrRepository(imageRepo, "nginx"),
                 logDriver: new ecs.AwsLogDriver({
                     streamPrefix: usage,
                     logGroup: new logs.LogGroup(this, `${usage}LogGroup`, {
