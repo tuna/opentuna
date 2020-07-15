@@ -6,7 +6,10 @@ import ecs_patterns = require('@aws-cdk/aws-ecs-patterns');
 import custom_resources = require('@aws-cdk/custom-resources');
 import ecr = require('@aws-cdk/aws-ecr');
 import elbv2 = require('@aws-cdk/aws-elasticloadbalancingv2');
+import ecr_assets = require('@aws-cdk/aws-ecr-assets');
+import path = require('path');
 import { ITopic } from '@aws-cdk/aws-sns';
+import { pathToFileURL } from 'url';
 
 export interface ContentServerProps extends cdk.NestedStackProps {
     readonly vpc: ec2.IVpc;
@@ -26,8 +29,8 @@ export class ContentServerStack extends cdk.NestedStack {
             vpc: props.vpc,
         });
 
-        const imageRepo = new ecr.Repository(this, `${usage}Repository`, {
-            repositoryName: "content-server",
+        const imageAsset = new ecr_assets.DockerImageAsset(this, `${usage}DockerImage`, {
+            directory: path.join(__dirname, '../content-server')
         });
 
         const httpPort = 80;
@@ -36,7 +39,7 @@ export class ContentServerStack extends cdk.NestedStack {
             loadBalancer: props.externalALB,
             desiredCount: 2,
             taskImageOptions: {
-                image: ecs.ContainerImage.fromEcrRepository(imageRepo, "1.18-alpine"),
+                image: ecs.ContainerImage.fromDockerImageAsset(imageAsset),
                 logDriver: new ecs.AwsLogDriver({
                     streamPrefix: usage,
                     logGroup: new logs.LogGroup(this, `${usage}LogGroup`, {
@@ -53,7 +56,7 @@ export class ContentServerStack extends cdk.NestedStack {
             containerDefinitions: [
                 {
                     essential: true,
-                    image: imageRepo.repositoryUriForTag('1.18-alpine'),
+                    image: imageAsset.imageUri,
                     logConfiguration: {
                         logDriver: service.taskDefinition.defaultContainer?.logDriverConfig?.logDriver,
                         options: service.taskDefinition.defaultContainer?.logDriverConfig?.options,
