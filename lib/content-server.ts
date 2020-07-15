@@ -36,7 +36,7 @@ export class ContentServerStack extends cdk.NestedStack {
             loadBalancer: props.externalALB,
             desiredCount: 2,
             taskImageOptions: {
-                image: ecs.ContainerImage.fromEcrRepository(imageRepo, "latest"),
+                image: ecs.ContainerImage.fromEcrRepository(imageRepo, "1.18-alpine"),
                 logDriver: new ecs.AwsLogDriver({
                     streamPrefix: usage,
                     logGroup: new logs.LogGroup(this, `${usage}LogGroup`, {
@@ -53,7 +53,7 @@ export class ContentServerStack extends cdk.NestedStack {
             containerDefinitions: [
                 {
                     essential: true,
-                    image: imageRepo.repositoryUriForTag('latest'),
+                    image: imageRepo.repositoryUriForTag('1.18-alpine'),
                     logConfiguration: {
                         logDriver: service.taskDefinition.defaultContainer?.logDriverConfig?.logDriver,
                         options: service.taskDefinition.defaultContainer?.logDriverConfig?.options,
