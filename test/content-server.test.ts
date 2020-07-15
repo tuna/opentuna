@@ -121,18 +121,6 @@ describe('Content Server stack', () => {
     });
   });
 
-  test('ECR repository created', () => {
-    expect(stack).toHaveResourceLike('AWS::ECR::Repository', {
-      "RepositoryName": "content-server",
-      "Tags": [
-        {
-          "Key": "component",
-          "Value": "ContentServer"
-        },
-      ],
-    });
-  });
-
   test('Content server running with IAM task role', () => {
     expect(stack).toHaveResource('AWS::IAM::Role', {
       "AssumeRolePolicyDocument": {
