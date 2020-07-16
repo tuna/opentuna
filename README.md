@@ -13,6 +13,11 @@ This is the infrasture project of Open Tuna on AWS orchestrated by [AWS CDK][aws
   - Tunasync Manager stack
     - auto scaling group for [tunasync][tunasync] manager
     - intranet application load balancer for manager's API
+  - Tunasync Worker stack
+    - auto scaling group for [tunasync][tunasync] worker
+    - install necessary third party tools for mirroring tasks
+    - use systemctl as daemon to start tunasync worker
+    - send custom CloudWatch metrics of tunasync process info
 
 ## Prerequisites
 - VPC with both public and private subnets crossing two AZs at least and NAT gateway. You can [deploy the network stack](#deploy-network-stackoptional) if you don't have a VPC sastfied the requirements.
@@ -55,7 +60,7 @@ npm run test
 ```
 
 ## Post deployment
-- Add email addresses or other subscriptions to notification topic created in common stack. The alarm notification of tuna manager will be sent to those subscriptions.
+- Add email addresses or other subscriptions to notification topic created in common stack. The alarm notifications related to Open Tuna will be sent to those subscriptions.
 
 [aws-cdk]: https://aws.amazon.com/cdk/
 [cfn-stack]: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/stacks.html
