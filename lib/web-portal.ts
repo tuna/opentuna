@@ -50,17 +50,34 @@ export class WebPortalStack extends cdk.NestedStack {
             taskDefinition,
         });
 
-        props.externalALBListener.addTargets(`${usage}TargetGroup`, {
+        // one target can have at most 5 path patterns, so split them
+        const commonSettings = {
             port: httpPort,
             protocol: elbv2.ApplicationProtocol.HTTP,
             targets: [service],
-            healthCheck: {
-                path: '/',
-            },
-            priority: 10,
-            conditions: [elbv2.ListenerCondition.pathPatterns(["/index.html"])],
             slowStart: cdk.Duration.seconds(60),
             deregistrationDelay: cdk.Duration.seconds(10),
+        };
+        props.externalALBListener.addTargets(`${usage}TargetGroup`, {
+            ...commonSettings,
+            priority: 10,
+            conditions: [elbv2.ListenerCondition.pathPatterns([
+                "/",
+                "/404.html",
+                "/index.html",
+                "/robots.txt",
+                "/sitemap.xml",
+            ])],
+        })
+        props.externalALBListener.addTargets(`${usage}TargetGroup2`, {
+            ...commonSettings,
+            priority: 11,
+            conditions: [elbv2.ListenerCondition.pathPatterns([
+                "/help/*",
+                "/news/*",
+                "/static/*",
+                "/status/*",
+            ])],
         })
 
         cdk.Tag.add(this, 'component', usage);
