@@ -4,30 +4,27 @@ import ecs = require('@aws-cdk/aws-ecs');
 import logs = require('@aws-cdk/aws-logs');
 import ecs_patterns = require('@aws-cdk/aws-ecs-patterns');
 import custom_resources = require('@aws-cdk/custom-resources');
-import ecr = require('@aws-cdk/aws-ecr');
 import elbv2 = require('@aws-cdk/aws-elasticloadbalancingv2');
 import ecr_assets = require('@aws-cdk/aws-ecr-assets');
 import path = require('path');
 import { ITopic } from '@aws-cdk/aws-sns';
-import { pathToFileURL } from 'url';
 
 export interface ContentServerProps extends cdk.NestedStackProps {
     readonly vpc: ec2.IVpc;
     readonly fileSystemId: string;
     readonly notifyTopic: ITopic;
     readonly externalALB: elbv2.ApplicationLoadBalancer;
+    readonly ecsCluster: ecs.Cluster;
 }
 
 export class ContentServerStack extends cdk.NestedStack {
+    readonly externalALBListener: elbv2.ApplicationListener;
+
     constructor(scope: cdk.Construct, id: string, props: ContentServerProps) {
         super(scope, id, props);
 
         const stack = cdk.Stack.of(this);
         const usage = 'ContentServer';
-
-        const cluster = new ecs.Cluster(this, `${usage}ECSCluster`, {
-            vpc: props.vpc,
-        });
 
         const imageAsset = new ecr_assets.DockerImageAsset(this, `${usage}DockerImage`, {
             directory: path.join(__dirname, '../content-server'),
@@ -36,7 +33,7 @@ export class ContentServerStack extends cdk.NestedStack {
 
         const httpPort = 80;
         const service = new ecs_patterns.ApplicationLoadBalancedFargateService(this, `${usage}Fargate`, {
-            cluster: cluster,
+            cluster: props.ecsCluster,
             loadBalancer: props.externalALB,
             desiredCount: 2,
             taskImageOptions: {
@@ -53,6 +50,8 @@ export class ContentServerStack extends cdk.NestedStack {
             // need 1.4.0 to mount EFS
             platformVersion: ecs.FargatePlatformVersion.VERSION1_4,
         });
+
+        this.externalALBListener = service.listener;
 
         // learned from https://github.com/aws-samples/amazon-efs-integrations/blob/master/lib/amazon-efs-integrations/ecs-service.ts
         const customTaskDefinitionJson = {

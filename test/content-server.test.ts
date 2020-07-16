@@ -3,6 +3,7 @@ import * as cxapi from '@aws-cdk/cx-api';
 import * as Tuna from '../lib/content-server';
 import * as mock from './vpc-mock';
 import ec2 = require('@aws-cdk/aws-ec2');
+import ecs = require('@aws-cdk/aws-ecs');
 import sns = require('@aws-cdk/aws-sns');
 import elbv2 = require('@aws-cdk/aws-elasticloadbalancingv2');
 import '@aws-cdk/assert/jest';
@@ -101,23 +102,17 @@ describe('Content Server stack', () => {
       securityGroup: externalALBSG,
       internetFacing: true,
     });
+    const ecsCluster = new ecs.Cluster(parentStack, `ECSCluster`, {
+        vpc,
+    });
+
 
     stack = new Tuna.ContentServerStack(parentStack, 'ContentServerStack', {
       vpc,
       fileSystemId: 'fs-012345',
       notifyTopic: topic,
       externalALB,
-    });
-  });
-
-  test('ECS cluster created', () => {
-    expect(stack).toHaveResourceLike('AWS::ECS::Cluster', {
-      "Tags": [
-        {
-          "Key": "component",
-          "Value": "ContentServer"
-        },
-      ],
+      ecsCluster
     });
   });
 
@@ -155,7 +150,7 @@ describe('Content Server stack', () => {
   test('Content server service created', () => {
     expect(stack).toHaveResourceLike('AWS::ECS::Service', {
       "Cluster": {
-        "Ref": "ContentServerECSClusterE53F445C"
+        "Ref": "referencetoParentStackECSCluster91DDD157Ref"
       },
       "LaunchType": "FARGATE",
       "LoadBalancers": [
