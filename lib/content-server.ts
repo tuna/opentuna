@@ -30,7 +30,8 @@ export class ContentServerStack extends cdk.NestedStack {
         });
 
         const imageAsset = new ecr_assets.DockerImageAsset(this, `${usage}DockerImage`, {
-            directory: path.join(__dirname, '../content-server')
+            directory: path.join(__dirname, '../content-server'),
+            repositoryName: "opentuna/content-server"
         });
 
         const httpPort = 80;
@@ -42,6 +43,8 @@ export class ContentServerStack extends cdk.NestedStack {
                 image: ecs.ContainerImage.fromDockerImageAsset(imageAsset),
                 logDriver: new ecs.AwsLogDriver({
                     streamPrefix: usage,
+                    // like [16/Jul/2020:02:24:46 +0000]
+                    datetimeFormat: "\\[%d/%b/%Y:%H:%M:%S %z\\]",
                     logGroup: new logs.LogGroup(this, `${usage}LogGroup`, {
                         logGroupName: `/opentuna/contentserver`
                     })
