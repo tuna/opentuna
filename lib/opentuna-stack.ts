@@ -85,5 +85,12 @@ export class OpentunaStack extends cdk.Stack {
       ecsCluster
     });
 
+    const webPortalStack = new WebPortalStack(this, 'WebPortalStack', {
+      vpc,
+      fileSystemId: props.fileSystemId,
+      notifyTopic: props.notifyTopic,
+      externalALBListener: contentServerStack.externalALBListener,
+      ecsCluster
+    });
   }
 }
