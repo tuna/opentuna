@@ -4,6 +4,7 @@ import ecs = require('@aws-cdk/aws-ecs');
 import logs = require('@aws-cdk/aws-logs');
 import elbv2 = require('@aws-cdk/aws-elasticloadbalancingv2');
 import ecr_assets = require('@aws-cdk/aws-ecr-assets');
+import autoscaling = require('@aws-cdk/aws-autoscaling');
 import path = require('path');
 import { ITopic } from '@aws-cdk/aws-sns';
 
@@ -13,6 +14,8 @@ export interface WebPortalProps extends cdk.NestedStackProps {
     readonly notifyTopic: ITopic;
     readonly externalALBListener: elbv2.ApplicationListener;
     readonly ecsCluster: ecs.Cluster;
+    readonly tunaManagerASG: autoscaling.AutoScalingGroup;
+    readonly tunaManagerALBTargetGroup: elbv2.ApplicationTargetGroup;
 }
 
 export class WebPortalStack extends cdk.NestedStack {
@@ -30,7 +33,8 @@ export class WebPortalStack extends cdk.NestedStack {
         const httpPort = 80;
         const taskDefinition = new ecs.FargateTaskDefinition(this, `${usage}TaskDefiniton`, {});
         const logGroup = new logs.LogGroup(this, `${usage}LogGroup`, {
-            logGroupName: `/opentuna/webportal`
+            logGroupName: `/opentuna/webportal`,
+            removalPolicy: cdk.RemovalPolicy.DESTROY
         });
         const container = taskDefinition.addContainer("web", {
             image: ecs.ContainerImage.fromDockerImageAsset(imageAsset),
@@ -51,6 +55,7 @@ export class WebPortalStack extends cdk.NestedStack {
         });
 
         // one target can have at most 5 path patterns, so split them
+        // route web files to this service
         const commonSettings = {
             port: httpPort,
             protocol: elbv2.ApplicationProtocol.HTTP,
@@ -77,6 +82,38 @@ export class WebPortalStack extends cdk.NestedStack {
                 "/news/*",
                 "/static/*",
                 "/status/*",
+            ])],
+        })
+
+        // redirect /static/tunasync.json to /jobs
+        props.externalALBListener.addAction(`${usage}RedirectAction`, {
+            action: elbv2.ListenerAction.redirect({
+                path: "/jobs",
+            }),
+            priority: 9,
+            conditions: [elbv2.ListenerCondition.pathPatterns([
+                "/static/tunasync.json",
+            ])],
+        })
+
+        // route /jobs to tuna manager
+        // there is no easy way to do this yet
+        // see https://github.com/aws/aws-cdk/issues/5667
+        let targetGroup = new elbv2.ApplicationTargetGroup(this, `${usage}ManagerTargetGroup`, {
+            port: httpPort,
+            targetType: elbv2.TargetType.INSTANCE,
+            vpc: props.vpc,
+            healthCheck: {
+                path: '/ping',
+            }
+        });
+        const cfnAsg = props.tunaManagerASG.node.defaultChild as autoscaling.CfnAutoScalingGroup;
+        cfnAsg.targetGroupArns = [props.tunaManagerALBTargetGroup.targetGroupArn, targetGroup.targetGroupArn];
+        props.externalALBListener.addAction(`${usage}ManagerTarget`, {
+            action: elbv2.ListenerAction.forward([targetGroup]),
+            priority: 12,
+            conditions: [elbv2.ListenerCondition.pathPatterns([
+                "/jobs",
             ])],
         })
 

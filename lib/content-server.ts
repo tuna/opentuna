@@ -43,7 +43,8 @@ export class ContentServerStack extends cdk.NestedStack {
                     // like [16/Jul/2020:02:24:46 +0000]
                     datetimeFormat: "\\[%d/%b/%Y:%H:%M:%S %z\\]",
                     logGroup: new logs.LogGroup(this, `${usage}LogGroup`, {
-                        logGroupName: `/opentuna/contentserver`
+                        logGroupName: `/opentuna/contentserver`,
+                        removalPolicy: cdk.RemovalPolicy.DESTROY
                     })
                 }),
             },
