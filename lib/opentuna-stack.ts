@@ -95,6 +95,6 @@ export class OpentunaStack extends cdk.Stack {
       tunaManagerASG: tunaManagerStack.managerASG,
       tunaManagerALBTargetGroup: tunaManagerStack.managerALBTargetGroup,
     });
-    tunaManagerSG.connections.allowFrom(externalALBSG, ec2.Port.tcp(80), 'Allow external ALB t access tuna manager');
+    tunaManagerSG.connections.allowFrom(externalALBSG, ec2.Port.tcp(80), 'Allow external ALB to access tuna manager');
   }
 }
