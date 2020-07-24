@@ -88,7 +88,6 @@ export class OpentunaStack extends cdk.Stack {
     // Web Portal stack
     const webPortalStack = new WebPortalStack(this, 'WebPortalStack', {
       vpc,
-      notifyTopic: props.notifyTopic,
       externalALBListener: contentServerStack.externalALBListener,
       ecsCluster,
       tunaManagerASG: tunaManagerStack.managerASG,
