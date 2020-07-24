@@ -75,7 +75,7 @@ export class WebPortalStack extends cdk.NestedStack {
         })
         props.externalALBListener.addTargets(`${usage}TargetGroup2`, {
             ...commonSettings,
-            priority: 11,
+            priority: 15,
             conditions: [elbv2.ListenerCondition.pathPatterns([
                 "/help/*",
                 "/news/*",
@@ -89,7 +89,7 @@ export class WebPortalStack extends cdk.NestedStack {
             action: elbv2.ListenerAction.redirect({
                 path: "/jobs",
             }),
-            priority: 9,
+            priority: 5,
             conditions: [elbv2.ListenerCondition.pathPatterns([
                 "/static/tunasync.json",
             ])],
@@ -110,7 +110,7 @@ export class WebPortalStack extends cdk.NestedStack {
         cfnAsg.targetGroupArns = [props.tunaManagerALBTargetGroup.targetGroupArn, targetGroup.targetGroupArn];
         props.externalALBListener.addAction(`${usage}ManagerTarget`, {
             action: elbv2.ListenerAction.forward([targetGroup]),
-            priority: 12,
+            priority: 20,
             conditions: [elbv2.ListenerCondition.pathPatterns([
                 "/jobs",
             ])],
