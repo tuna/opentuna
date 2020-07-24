@@ -122,7 +122,6 @@ describe('Content Server stack', () => {
 
     stack = new Tuna.WebPortalStack(parentStack, 'WebPortalStack', {
       vpc,
-      fileSystemId: 'fs-012345',
       notifyTopic: topic,
       externalALBListener,
       ecsCluster,

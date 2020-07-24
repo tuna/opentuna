@@ -10,7 +10,6 @@ import { ITopic } from '@aws-cdk/aws-sns';
 
 export interface WebPortalProps extends cdk.NestedStackProps {
     readonly vpc: ec2.IVpc;
-    readonly fileSystemId: string;
     readonly notifyTopic: ITopic;
     readonly externalALBListener: elbv2.ApplicationListener;
     readonly ecsCluster: ecs.Cluster;
