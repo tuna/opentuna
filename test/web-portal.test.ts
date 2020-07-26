@@ -1,12 +1,14 @@
 import * as cdk from '@aws-cdk/core';
 import * as cxapi from '@aws-cdk/cx-api';
-import * as Tuna from '../lib/content-server';
+import * as Tuna from '../lib/web-portal';
 import * as mock from './vpc-mock';
 import ec2 = require('@aws-cdk/aws-ec2');
 import ecs = require('@aws-cdk/aws-ecs');
 import sns = require('@aws-cdk/aws-sns');
 import elbv2 = require('@aws-cdk/aws-elasticloadbalancingv2');
 import '@aws-cdk/assert/jest';
+import { AutoScalingGroup } from '@aws-cdk/aws-autoscaling';
+import { MachineImage } from '@aws-cdk/aws-ec2';
 
 describe('Content Server stack', () => {
   let app: cdk.App;
@@ -103,20 +105,31 @@ describe('Content Server stack', () => {
       internetFacing: true,
     });
     const ecsCluster = new ecs.Cluster(parentStack, `ECSCluster`, {
-        vpc,
+      vpc,
+    });
+    const externalALBListener = externalALB.addListener(`ExternalALBListener`, {
+      port: 80,
+    });
+    const tunaManagerASG = new AutoScalingGroup(parentStack, `TunaManagerASG`, {
+      vpc,
+      instanceType: ec2.InstanceType.of(ec2.InstanceClass.C5, ec2.InstanceSize.LARGE),
+      machineImage: ec2.MachineImage.latestAmazonLinux({
+        generation: ec2.AmazonLinuxGeneration.AMAZON_LINUX_2,
+      }),
+    });
+    const tunaManagerALBTargetGroup = externalALBListener.addTargets(`TunaManagerTargetGroup`, {
     });
 
-
-    stack = new Tuna.ContentServerStack(parentStack, 'ContentServerStack', {
+    stack = new Tuna.WebPortalStack(parentStack, 'WebPortalStack', {
       vpc,
-      fileSystemId: 'fs-012345',
-      notifyTopic: topic,
-      externalALB,
-      ecsCluster
+      externalALBListener,
+      ecsCluster,
+      tunaManagerASG,
+      tunaManagerALBTargetGroup,
     });
   });
 
-  test('Content server running with IAM task role', () => {
+  test('Web portal running with IAM task role', () => {
     expect(stack).toHaveResource('AWS::IAM::Role', {
       "AssumeRolePolicyDocument": {
         "Statement": [
@@ -133,24 +146,24 @@ describe('Content Server stack', () => {
       "Tags": [
         {
           "Key": "component",
-          "Value": "ContentServer"
+          "Value": "WebPortal"
         }
       ]
     });
     expect(stack).toHaveResourceLike('AWS::ECS::TaskDefinition', {
       "TaskRoleArn": {
         "Fn::GetAtt": [
-          "ContentServerFargateTaskDefTaskRole2679A0EE",
+          "WebPortalTaskDefinitonTaskRole79275C7D",
           "Arn"
         ]
-      },
+      }
     });
   });
 
-  test('Content server service created', () => {
+  test('Web portal service created', () => {
     expect(stack).toHaveResourceLike('AWS::ECS::Service', {
       "Cluster": {
-        "Ref": "referencetoParentStackECSCluster91DDD157Ref"
+        "Ref": "referencetoParentStackECSCluster91DDD157Ref",
       },
       "LaunchType": "FARGATE",
       "LoadBalancers": [
@@ -159,91 +172,15 @@ describe('Content Server stack', () => {
           "ContainerPort": 80,
         }
       ],
-      "PlatformVersion": "1.4.0",
       "Tags": [
         {
           "Key": "component",
-          "Value": "ContentServer"
+          "Value": "WebPortal"
         }
       ],
       "TaskDefinition": {
-        "Fn::GetAtt": [
-          "ContentServerFargateContentServerCustomTaskDefinition8B703CE7",
-          "taskDefinition.taskDefinitionArn"
-        ]
+        "Ref": "WebPortalTaskDefiniton3F36337B"
       }
-    });
-  });
-
-  test('Content server custom task definition created', () => {
-    expect(stack).toHaveResourceLike('Custom::AWS', {
-      "Create": {
-        "parameters": {
-          "containerDefinitions": [
-            {
-              "essential": "TRUE:BOOLEAN",
-              "logConfiguration": {
-                "logDriver": "awslogs",
-                "options": {
-                  "awslogs-group": {
-                    "Ref": "ContentServerLogGroup11BFCDBD"
-                  },
-                  "awslogs-stream-prefix": "ContentServer",
-                  "awslogs-region": "cn-north-1"
-                }
-              },
-              "memory": 512,
-              "user": "root",
-              "mountPoints": [
-                {
-                  "containerPath": "/mnt/efs",
-                  "sourceVolume": "efs-volume",
-                  "readOnly": "TRUE:BOOLEAN"
-                }
-              ],
-              "name": "web",
-              "portMappings": [
-                {
-                  "containerPort": 80,
-                  "hostPort": 80,
-                  "protocol": "tcp"
-                }
-              ]
-            }
-          ],
-          "cpu": "256",
-          "executionRoleArn": {
-            "Fn::GetAtt": [
-              "ContentServerFargateTaskDefExecutionRoleB5100984",
-              "Arn"
-            ]
-          },
-          "memory": "1024",
-          "networkMode": "awsvpc",
-          "requiresCompatibilities": [
-            "FARGATE"
-          ],
-          "taskRoleArn": {
-            "Fn::GetAtt": [
-              "ContentServerFargateTaskDefTaskRole2679A0EE",
-              "Arn"
-            ]
-          },
-          "volumes": [
-            {
-              "name": "efs-volume",
-              "efsVolumeConfiguration": {
-                "fileSystemId": "fs-012345",
-                "rootDirectory": "/data"
-              }
-            }
-          ]
-        },
-        "physicalResourceId": {
-          "responsePath": "taskDefinition.taskDefinitionArn"
-        },
-        "service": "ECS"
-      },
     });
   });
 

@@ -20,6 +20,8 @@ export class TunaManagerStack extends cdk.NestedStack {
 
     readonly managerPort = 80;
     readonly managerALB: elbv2.IApplicationLoadBalancer;
+    readonly managerASG: autoscaling.AutoScalingGroup;
+    readonly managerALBTargetGroup: elbv2.ApplicationTargetGroup;
 
     constructor(scope: cdk.Construct, id: string, props: TunaManagerProps) {
         super(scope, id, props);
@@ -58,6 +60,7 @@ export class TunaManagerStack extends cdk.NestedStack {
             updateType: autoscaling.UpdateType.ROLLING_UPDATE,
             cooldown: cdk.Duration.seconds(30),
         });
+        this.managerASG = tunaManagerASG;
         tunaManagerASG.addSecurityGroup(props.tunaManagerSG);
 
         this.managerALB = new elbv2.ApplicationLoadBalancer(this, `${usage}ALB`, {
@@ -70,7 +73,7 @@ export class TunaManagerStack extends cdk.NestedStack {
             port: this.managerPort,
             open: false,
         });
-        listener.addTargets(`${usage}TargetGroup`, {
+        this.managerALBTargetGroup = listener.addTargets(`${usage}TargetGroup`, {
             port: this.managerPort,
             protocol: elbv2.ApplicationProtocol.HTTP,
             targets: [tunaManagerASG],

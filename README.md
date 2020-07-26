@@ -18,6 +18,13 @@ This is the infrasture project of Open Tuna on AWS orchestrated by [AWS CDK][aws
     - install necessary third party tools for mirroring tasks
     - use systemctl as daemon to start tunasync worker
     - send custom CloudWatch metrics of tunasync process info
+  - Content Server stack
+    - build custom nginx container
+    - use Fargate service to serve mirror contents
+    - internet facing appplication load balancer
+  - Web Portal stack
+    - use tuna/mirror-web
+    - route tunasync.json to tunasync worker
 
 ## Prerequisites
 - VPC with both public and private subnets crossing two AZs at least and NAT gateway. You can [deploy the network stack](#deploy-network-stackoptional) if you don't have a VPC sastfied the requirements.
