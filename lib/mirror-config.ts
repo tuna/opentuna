@@ -51,6 +51,12 @@ export function getMirrorConfig(stage: string) {
                 upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/docker-ce/'
             },
             {
+                name: 'fedora',
+                interval: 1440,
+                provider: 'rsync',
+                upstream: 'rsync://mirrors.bfsu.edu.cn/fedora/'
+            },
+            {
                 name: 'gitlab-ce',
                 interval: 1440,
                 provider: 'rsync',
@@ -111,6 +117,12 @@ export function getMirrorConfig(stage: string) {
                 upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/nodesource/'
             },
             {
+                name: 'opensuse',
+                interval: 1440,
+                provider: 'rsync',
+                upstream: 'rsync://mirrors.bfsu.edu.cn/opensuse/'
+            },
+            {
                 name: 'pypi',
                 /**
                  * For unified cloudwatch agent to ingest multiple line logs,
@@ -132,6 +144,18 @@ export function getMirrorConfig(stage: string) {
                 stage1_profile: 'debian',
                 upstream: 'rsync://archive.ubuntu.com/ubuntu/',
                 rsync_options: ['"--delete-excluded"',]
+            },
+            {
+                name: 'ubuntu-cdimage',
+                interval: 1440,
+                provider: 'rsync',
+                upstream: 'rsync://mirrors.bfsu.edu.cn/ubuntu-cdimage/'
+            },
+            {
+                name: 'ubuntu-releases',
+                interval: 1440,
+                provider: 'rsync',
+                upstream: 'rsync://mirrors.bfsu.edu.cn/ubuntu-releases/'
             },
         ];
     } else {
