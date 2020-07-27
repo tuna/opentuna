@@ -1,6 +1,6 @@
-# Open Tuna project!
+# Open TUNA project!
 
-This is the infrasture project of Open Tuna on AWS orchestrated by [AWS CDK][aws-cdk]. It consits of below independent [stacks][cfn-stack],
+This is the infrasture project of Open TUNA on AWS orchestrated by [AWS CDK][aws-cdk]. It consits of below independent [stacks][cfn-stack],
 
 - Network stack(optional)
   - Create a dedicated VPC with public and private subnets across three AZs with NAT gateways
@@ -9,7 +9,7 @@ This is the infrasture project of Open Tuna on AWS orchestrated by [AWS CDK][aws
   - EFS file system
 - Common stack
   - SNS notification topic
-- Open Tuna stack
+- Open TUNA stack
   - Tunasync Manager stack
     - auto scaling group for [tunasync][tunasync] manager
     - intranet application load balancer for manager's API
@@ -81,7 +81,7 @@ npm run test
 ```
 
 ## Post deployment
-- Add email addresses or other subscriptions to notification topic created in common stack. The alarm notifications related to Open Tuna will be sent to those subscriptions.
+- Add email addresses or other subscriptions to notification topic created in common stack. The alarm notifications related to Open TUNA will be sent to those subscriptions.
 
 [aws-cdk]: https://aws.amazon.com/cdk/
 [cfn-stack]: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/stacks.html
