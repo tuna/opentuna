@@ -1,4 +1,5 @@
 import * as cdk from '@aws-cdk/core';
+import * as cloudfront from '@aws-cdk/aws-cloudfront';
 import ec2 = require('@aws-cdk/aws-ec2');
 import sns = require('@aws-cdk/aws-sns');
 import elbv2 = require('@aws-cdk/aws-elasticloadbalancingv2');
@@ -100,5 +101,14 @@ export class OpentunaStack extends cdk.Stack {
       tunaManagerALBTargetGroup: tunaManagerStack.managerALBTargetGroup,
     });
     tunaManagerSG.connections.allowFrom(externalALBSG, ec2.Port.tcp(80), 'Allow external ALB to access tuna manager');
+
+    // CloudFront as cdn
+    const distribution = new cloudfront.Distribution(this, 'CloudFrontDist', {
+      defaultBehavior: {
+        origin: cloudfront.Origin.fromHttpServer({
+          domainName: externalALB.loadBalancerDnsName
+        })
+      },
+    });
   }
 }
