@@ -49,6 +49,7 @@ export class WebPortalStack extends cdk.NestedStack {
         const service = new ecs.FargateService(this, `${usage}Fargate`, {
             cluster: props.ecsCluster,
             taskDefinition,
+            platformVersion: ecs.FargatePlatformVersion.VERSION1_4,
         });
 
         // one target can have at most 5 path patterns, so split them
