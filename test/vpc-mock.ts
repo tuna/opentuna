@@ -42,7 +42,11 @@ export function mockVpcContextProviderWith(
                 },
             };
         } else {
+            // unreachable
             expect(false);
+            return {
+                value: {},
+            };
         }
     };
     return previous;
