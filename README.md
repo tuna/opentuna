@@ -11,6 +11,10 @@ This is the infrasture project of Open TUNA on AWS orchestrated by [AWS CDK][aws
   - SNS notification topic
 - Open TUNA stack
   - S3 asset bucket
+  - application load balancer
+  - ECS cluster for content server and web portal
+  - issue SSL certificate from ACM(only for using Route53 as DNS resolver)
+  - create DNS record in R53 for ALB(only for using Route53 as DNS resolver)
   - Tunasync Manager stack
     - auto scaling group for [tunasync][tunasync] manager
     - intranet application load balancer for manager's API
@@ -67,6 +71,9 @@ npx cdk deploy OpenTunaStack -c vpcId=<existing vpc Id>
 
 # or deploy with existing EFS filesystem
 npx cdk deploy OpenTunaStack -c vpcId=<existing vpc Id> -c fileSystemId=<existing filesystem id>
+
+# deploy with domain name and use Route53 as DNS resolver
+npx cdk deploy OpenTunaStack -c vpcId=<existing vpc Id> -c domainName=<domain name of site> -c domainZone=<public hosted zone of your domain in Route53>
 ```
 
 Docker image for content server is automatically built and published. You can build and publish to ecr manually:
