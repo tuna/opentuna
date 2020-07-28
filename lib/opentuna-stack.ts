@@ -34,7 +34,7 @@ export class OpentunaStack extends cdk.Stack {
         });
         cert = new acm.Certificate(this, 'Certificate', {
           domainName: domainName,
-          subjectAlternativeNames: [domainName, `${stack.region}.${domainName}`],
+          subjectAlternativeNames: [`${stack.region}.${domainName}`],
           validation: acm.CertificateValidation.fromDns(domainZone),
         });
       }
