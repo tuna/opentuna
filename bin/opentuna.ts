@@ -30,11 +30,6 @@ if (!fileSystemId) {
     fileSystemId = storageStack.fileSystem.fileSystemId;
 }
 
-const domainName = app.node.tryGetContext('domainName');
-if (!domainName) {
-    throw new Error('"domainName" must be specified via context, for example "-c domainName=example.com".');
-}
-
 const commonStack = new CommonStack(app, `${appPrefix}CommonStack${suffix}`, {
     env,
 });
@@ -42,7 +37,6 @@ new OpentunaStack(app, `${appPrefix}Stack${suffix}`, {
     env,
     vpcId,
     fileSystemId,
-    domainName,
     notifyTopic: commonStack.notifyTopic,
 });
 

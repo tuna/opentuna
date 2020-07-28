@@ -9,7 +9,7 @@ export interface MockVcpContextResponse {
     readonly subnetGroups: cxapi.VpcSubnetGroup[];
 }
 
-export function mockVpcContextProviderWith(
+export function mockContextProviderWith(
     response: MockVcpContextResponse,
     paramValidator?: (options: cxschema.VpcContextQuery) => void) {
     const previous = cdk.ContextProvider.getValue;

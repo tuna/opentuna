@@ -3,11 +3,13 @@ import * as cloudfront from '@aws-cdk/aws-cloudfront';
 import * as route53 from '@aws-cdk/aws-route53';
 import * as route53targets from '@aws-cdk/aws-route53-targets';
 import * as acm from '@aws-cdk/aws-certificatemanager';
+import alias = require('@aws-cdk/aws-route53-targets');
 import ec2 = require('@aws-cdk/aws-ec2');
 import sns = require('@aws-cdk/aws-sns');
 import elbv2 = require('@aws-cdk/aws-elasticloadbalancingv2');
 import ecs = require('@aws-cdk/aws-ecs');
 import s3 = require('@aws-cdk/aws-s3');
+import r53 = require('@aws-cdk/aws-route53');
 import { TunaManagerStack } from './tuna-manager';
 import { TunaWorkerStack } from './tuna-worker';
 import { ContentServerStack } from './content-server';
@@ -16,7 +18,6 @@ import { WebPortalStack } from './web-portal';
 export interface OpenTunaStackProps extends cdk.StackProps {
   readonly vpcId: string;
   readonly fileSystemId: string;
-  readonly domainName: string;
   readonly notifyTopic: sns.ITopic;
 }
 export class OpentunaStack extends cdk.Stack {
@@ -24,6 +25,23 @@ export class OpentunaStack extends cdk.Stack {
     super(scope, id, props);
 
     const stack = cdk.Stack.of(this);
+
+    const domainName = this.node.tryGetContext('domainName');
+    let domainZone: r53.IHostedZone | undefined;
+    let cert: acm.Certificate | undefined;
+    if (domainName) {
+      const domainZoneName = this.node.tryGetContext('domainZone');
+      if (domainZoneName) {
+        domainZone = r53.HostedZone.fromLookup(this, 'HostedZone', {
+          domainName: domainZoneName,
+        });
+        cert = new acm.Certificate(this, 'Certificate', {
+          domainName: domainName,
+          subjectAlternativeNames: [`${stack.region}.${domainName}`],
+          validation: acm.CertificateValidation.fromDns(domainZone),
+        });
+      }
+    }
 
     const vpc = ec2.Vpc.fromLookup(this, `VPC-${props.vpcId}`, {
       vpcId: props.vpcId,
@@ -57,7 +75,34 @@ export class OpentunaStack extends cdk.Stack {
       vpc,
       securityGroup: externalALBSG,
       internetFacing: true,
+      http2Enabled: cert ? true : false,
     });
+    const defaultALBPort: number = cert ? 443 : 80;
+    const defaultALBListener = externalALB.addListener(`DefaultPort-${defaultALBPort}`, {
+      protocol: defaultALBPort === 443 ? elbv2.ApplicationProtocol.HTTPS : elbv2.ApplicationProtocol.HTTP,
+      port: defaultALBPort,
+      open: true,
+      certificates: cert ? [cert] : undefined,
+      sslPolicy: cert ? elbv2.SslPolicy.RECOMMENDED : undefined,
+    });
+    if (cert) {
+      externalALB.addListener(`DefaultPort-80`, {
+        protocol: elbv2.ApplicationProtocol.HTTP,
+        port: 80,
+        open: true,
+        defaultAction: elbv2.ListenerAction.redirect({
+          port: '443',
+          protocol: elbv2.ApplicationProtocol.HTTPS,
+          permanent: true,
+        }),
+      });
+      new r53.ARecord(this, 'ALBCustomDomain', {
+        zone: domainZone!,
+        recordName: `${stack.region}.${domainName}`,
+        ttl: cdk.Duration.minutes(5),
+        target: r53.RecordTarget.fromAlias(new alias.LoadBalancerTarget(externalALB)),
+      });
+    }
 
     // Tunasync Manager stack
     const tunaManagerStack = new TunaManagerStack(this, 'TunaManagerStack', {
@@ -92,39 +137,22 @@ export class OpentunaStack extends cdk.Stack {
       vpc,
       fileSystemId: props.fileSystemId,
       notifyTopic: props.notifyTopic,
-      externalALB,
-      ecsCluster
+      ecsCluster,
+      listener: defaultALBListener,
     });
 
     // Web Portal stack
     const webPortalStack = new WebPortalStack(this, 'WebPortalStack', {
       vpc,
-      externalALBListener: contentServerStack.externalALBListener,
+      externalALBListener: defaultALBListener,
       ecsCluster,
       tunaManagerASG: tunaManagerStack.managerASG,
       tunaManagerALBTargetGroup: tunaManagerStack.managerALBTargetGroup,
     });
     tunaManagerSG.connections.allowFrom(externalALBSG, ec2.Port.tcp(80), 'Allow external ALB to access tuna manager');
 
-    // dns zone
-    const zone = route53.PublicHostedZone.fromLookup(this, 'PublicHostedZone', {
-      domainName: props.domainName,
-    });
-
-    // https certificate
-    const certificate = new acm.DnsValidatedCertificate(this, 'Cert', {
-      domainName: props.domainName,
-      hostedZone: zone,
-      // cloudfront requirement
-      region: 'us-east-1',
-    });
-
     // CloudFront as cdn
-    const distribution = new cloudfront.CloudFrontWebDistribution(this, 'CloudFrontDist', {
-      aliasConfiguration: {
-        acmCertRef: certificate.certificateArn,
-        names: [props.domainName],
-      },
+    let cloudfrontProps = {
       originConfigs: [{
         customOriginSource: {
           domainName: externalALB.loadBalancerDnsName,
@@ -142,11 +170,24 @@ export class OpentunaStack extends cdk.Stack {
           },
         }],
       }],
-    });
+    } as cloudfront.CloudFrontWebDistributionProps;
+    if (cert) {
+      cloudfrontProps = {
+        aliasConfiguration: {
+          acmCertRef: cert.certificateArn,
+          names: [domainName],
+        },
+        ...cloudfrontProps
+      };
+    }
+    const distribution = new cloudfront.CloudFrontWebDistribution(this, 'CloudFrontDist', cloudfrontProps);
 
-    const dnsRecord = new route53.ARecord(this, 'ARecord', {
-      target: route53.RecordTarget.fromAlias(new route53targets.CloudFrontTarget(distribution)),
-      zone,
-    });
+    if (domainZone) {
+      const dnsRecord = new route53.ARecord(this, 'ARecord', {
+        zone: domainZone!,
+        target: route53.RecordTarget.fromAlias(new route53targets.CloudFrontTarget(distribution)),
+        ttl: cdk.Duration.minutes(5),
+      });
+    }
   }
 }

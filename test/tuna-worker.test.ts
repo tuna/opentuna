@@ -1,7 +1,7 @@
 import * as cdk from '@aws-cdk/core';
 import * as cxapi from '@aws-cdk/cx-api';
 import * as Tuna from '../lib/tuna-worker';
-import * as mock from './vpc-mock';
+import * as mock from './context-provider-mock';
 import ec2 = require('@aws-cdk/aws-ec2');
 import fs = require('fs');
 import path = require('path');
@@ -9,7 +9,6 @@ import s3 = require('@aws-cdk/aws-s3');
 import sns = require('@aws-cdk/aws-sns');
 import '@aws-cdk/assert/jest';
 import { ResourcePart } from '@aws-cdk/assert/lib/assertions/have-resource';
-import { assert } from 'console';
 
 describe('Tunasync worker stack', () => {
   let app: cdk.App;
@@ -18,7 +17,7 @@ describe('Tunasync worker stack', () => {
   let previous: (scope: cdk.Construct, options: cdk.GetContextValueOptions) => cdk.GetContextValueResult;
 
   beforeAll(() => {
-    previous = mock.mockVpcContextProviderWith({
+    previous = mock.mockContextProviderWith({
       vpcId,
       vpcCidrBlock: "10.58.0.0/16",
       "subnetGroups": [

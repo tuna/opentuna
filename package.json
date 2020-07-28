@@ -34,6 +34,8 @@
     "@aws-cdk/aws-ecs": "^1.54.0",
     "@aws-cdk/aws-ecs-patterns": "^1.54.0",
     "@aws-cdk/aws-efs": "^1.54.0",
+    "@aws-cdk/aws-route53": "^1.54.0",
+    "@aws-cdk/aws-route53-targets": "^1.54.0",
     "@aws-cdk/aws-s3-deployment": "^1.54.0",
     "@aws-cdk/aws-route53": "^1.54.0",
     "@aws-cdk/aws-route53-targets": "^1.54.0",

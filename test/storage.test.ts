@@ -1,9 +1,8 @@
-import * as cxschema from '@aws-cdk/cloud-assembly-schema';
 import * as cxapi from '@aws-cdk/cx-api';
 import * as cdk from '@aws-cdk/core';
 import * as storage from '../lib/storage-stack';
 import '@aws-cdk/assert/jest';
-import * as mock from './vpc-mock';
+import * as mock from './context-provider-mock';
 
 describe('Storage stack', () => {
   let app: cdk.App;
@@ -49,7 +48,7 @@ describe('Storage stack', () => {
   });
 
   test('Security group for EFS filesystem', () => {
-    const previous = mock.mockVpcContextProviderWith({
+    const previous = mock.mockContextProviderWith({
       vpcId: 'vpc-id',
       vpcCidrBlock: "10.58.0.0/16",
       "subnetGroups": [

@@ -1,14 +1,13 @@
 import * as cdk from '@aws-cdk/core';
 import * as cxapi from '@aws-cdk/cx-api';
 import * as Tuna from '../lib/web-portal';
-import * as mock from './vpc-mock';
+import * as mock from './context-provider-mock';
 import ec2 = require('@aws-cdk/aws-ec2');
 import ecs = require('@aws-cdk/aws-ecs');
 import sns = require('@aws-cdk/aws-sns');
 import elbv2 = require('@aws-cdk/aws-elasticloadbalancingv2');
 import '@aws-cdk/assert/jest';
 import { AutoScalingGroup } from '@aws-cdk/aws-autoscaling';
-import { MachineImage } from '@aws-cdk/aws-ec2';
 
 describe('Content Server stack', () => {
   let app: cdk.App;
@@ -17,7 +16,7 @@ describe('Content Server stack', () => {
   let previous: (scope: cdk.Construct, options: cdk.GetContextValueOptions) => cdk.GetContextValueResult;
 
   beforeAll(() => {
-    previous = mock.mockVpcContextProviderWith({
+    previous = mock.mockContextProviderWith({
       vpcId,
       vpcCidrBlock: "10.58.0.0/16",
       "subnetGroups": [
