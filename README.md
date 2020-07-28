@@ -10,6 +10,7 @@ This is the infrasture project of Open TUNA on AWS orchestrated by [AWS CDK][aws
 - Common stack
   - SNS notification topic
 - Open TUNA stack
+  - S3 asset bucket
   - Tunasync Manager stack
     - auto scaling group for [tunasync][tunasync] manager
     - intranet application load balancer for manager's API
@@ -18,13 +19,14 @@ This is the infrasture project of Open TUNA on AWS orchestrated by [AWS CDK][aws
     - install necessary third party tools for mirroring tasks
     - use systemctl as daemon to start tunasync worker
     - send custom CloudWatch metrics of tunasync process info
+    - publish large configuration files to s3 asset bucket
   - Content Server stack
     - build custom nginx container
     - use Fargate service to serve mirror contents
     - internet facing appplication load balancer
   - Web Portal stack
     - use tuna/mirror-web
-    - route tunasync.json to tunasync worker
+    - route tunasync.json to tunasync manager
 
 ## Prerequisites
 - VPC with both public and private subnets crossing two AZs at least and NAT gateway. You can [deploy the network stack](#deploy-network-stackoptional) if you don't have a VPC sastfied the requirements.

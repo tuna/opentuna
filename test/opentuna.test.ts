@@ -5,6 +5,7 @@ import * as mock from './vpc-mock';
 import ec2 = require('@aws-cdk/aws-ec2');
 import sns = require('@aws-cdk/aws-sns');
 import '@aws-cdk/assert/jest';
+import { ResourcePart } from '@aws-cdk/assert/lib/assertions/have-resource';
 
 describe('Tuna Manager stack', () => {
   let app: cdk.App;
@@ -167,4 +168,19 @@ describe('Tuna Manager stack', () => {
     });
   });
 
+  test('Asset bucket created', () => {
+    cdk.Tag.add(app, 'app', `OpenTuna`);
+    expect(stack).toHaveResourceLike('AWS::S3::Bucket', {
+      "Properties": {
+        "Tags": [
+          {
+            "Key": "app",
+            "Value": "OpenTuna"
+          }
+        ]
+      },
+      "UpdateReplacePolicy": "Delete",
+      "DeletionPolicy": "Delete",
+    }, ResourcePart.CompleteDefinition);
+  });
 });
