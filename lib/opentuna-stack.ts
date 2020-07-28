@@ -103,13 +103,24 @@ export class OpentunaStack extends cdk.Stack {
     tunaManagerSG.connections.allowFrom(externalALBSG, ec2.Port.tcp(80), 'Allow external ALB to access tuna manager');
 
     // CloudFront as cdn
-    const distribution = new cloudfront.Distribution(this, 'CloudFrontDist', {
-      defaultBehavior: {
-        origin: cloudfront.Origin.fromHttpServer({
+    const distribution = new cloudfront.CloudFrontWebDistribution(this, 'CloudFrontDist', {
+      originConfigs: [{
+        customOriginSource: {
           domainName: externalALB.loadBalancerDnsName,
-          protocolPolicy: cloudfront.OriginProtocolPolicy.HTTP_ONLY,
-        })
-      },
+          originProtocolPolicy: cloudfront.OriginProtocolPolicy.HTTP_ONLY,
+        },
+        behaviors: [{
+          isDefaultBehavior: true,
+        }, {
+          // special handling for /static/tunasync.json
+          // because of redirection
+          pathPattern: '/static/tunasync.json',
+          forwardedValues: {
+            headers: ['Host', 'CloudFront-Forwarded-Proto'],
+            queryString: true,
+          },
+        }],
+      }],
     });
   }
 }
