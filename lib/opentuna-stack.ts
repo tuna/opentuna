@@ -1,5 +1,7 @@
 import * as cdk from '@aws-cdk/core';
 import * as cloudfront from '@aws-cdk/aws-cloudfront';
+import * as route53 from '@aws-cdk/aws-route53';
+import * as route53targets from '@aws-cdk/aws-route53-targets';
 import ec2 = require('@aws-cdk/aws-ec2');
 import sns = require('@aws-cdk/aws-sns');
 import elbv2 = require('@aws-cdk/aws-elasticloadbalancingv2');
@@ -13,6 +15,7 @@ import { WebPortalStack } from './web-portal';
 export interface OpenTunaStackProps extends cdk.StackProps {
   readonly vpcId: string;
   readonly fileSystemId: string;
+  readonly domainName: string;
   readonly notifyTopic: sns.ITopic;
 }
 export class OpentunaStack extends cdk.Stack {
@@ -102,6 +105,11 @@ export class OpentunaStack extends cdk.Stack {
     });
     tunaManagerSG.connections.allowFrom(externalALBSG, ec2.Port.tcp(80), 'Allow external ALB to access tuna manager');
 
+    // dns zone
+    const zone = route53.PublicHostedZone.fromLookup(this, 'PublicHostedZone', {
+      domainName: props.domainName,
+    });
+
     // CloudFront as cdn
     const distribution = new cloudfront.CloudFrontWebDistribution(this, 'CloudFrontDist', {
       originConfigs: [{
@@ -121,6 +129,11 @@ export class OpentunaStack extends cdk.Stack {
           },
         }],
       }],
+    });
+
+    const dnsRecord = new route53.ARecord(this, 'ARecord', {
+      target: route53.RecordTarget.fromAlias(new route53targets.CloudFrontTarget(distribution)),
+      zone,
     });
   }
 }
