@@ -3,6 +3,7 @@ import ec2 = require('@aws-cdk/aws-ec2');
 import sns = require('@aws-cdk/aws-sns');
 import elbv2 = require('@aws-cdk/aws-elasticloadbalancingv2');
 import ecs = require('@aws-cdk/aws-ecs');
+import s3 = require('@aws-cdk/aws-s3');
 import { TunaManagerStack } from './tuna-manager';
 import { TunaWorkerStack } from './tuna-worker';
 import { ContentServerStack } from './content-server';
@@ -21,6 +22,10 @@ export class OpentunaStack extends cdk.Stack {
 
     const vpc = ec2.Vpc.fromLookup(this, `VPC-${props.vpcId}`, {
       vpcId: props.vpcId,
+    });
+
+    const assetBucket = new s3.Bucket(this, `OpenTunaAssets`, {
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
     const tunaManagerSG = new ec2.SecurityGroup(this, "TunaManagerSG", {
@@ -67,6 +72,7 @@ export class OpentunaStack extends cdk.Stack {
       managerUrl: `http://${tunaManagerStack.managerALB.loadBalancerDnsName}:${tunaManagerStack.managerPort}`,
       timeout: cdk.Duration.minutes(10),
       tunaWorkerSG,
+      assetBucket,
     });
 
     tunaManagerALBSG.connections.allowFrom(tunaWorkerSG, ec2.Port.tcp(tunaManagerStack.managerPort), 'Access from tuna worker');

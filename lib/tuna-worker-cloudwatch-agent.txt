@@ -1,0 +1,56 @@
+{
+"metrics": {
+        "namespace": "{{&namespace}}",
+        "append_dimensions": {
+        "ImageId": "${aws:ImageId}",
+        "InstanceId": "${aws:InstanceId}",
+        "InstanceType": "${aws:InstanceType}",
+        "{{&dimensionName}}": "${aws:AutoScalingGroupName}"
+        },
+        "aggregation_dimensions" : [["{{&dimensionName}}"]],
+        "metrics_collected": {
+        "procstat": [
+                {
+                "exe": "tunasync",
+                "measurement": [
+                        "pid_count"
+                ]
+                }
+        ]
+        }
+},
+"logs": {
+        "logs_collected": {
+        "files": {
+                "collect_list": [
+                {
+                        "file_path": "/var/log/tunasync.log",
+                        "log_group_name": "{{&logPrefix}}/worker",
+                        "log_stream_name": "{instance_id}_{hostname}",
+                        "timestamp_format": "%H: %M: %S%y%b%-d",
+                        "timezone": "UTC"
+                }
+                {{#mirrors}}
+                ,
+                {
+                        "file_path": "{{&repoRoot}}/log/{{&name}}/{{&name}}_**",
+                        "log_group_name": "{{&logPrefix}}/mirrors/{{&name}}",
+                        "log_stream_name": "{instance_id}_{hostname}",
+                        {{#timeFormat}}
+                        "timestamp_format": "{{&timeFormat}}",
+                        {{/timeFormat}}
+                        {{^timeFormat}}
+                        "timestamp_format": "%H: %M: %S%y%b%-d",
+                        {{/timeFormat}}
+                        {{#logStartPattern}}
+                        "multi_line_start_pattern": "{{&logStartPattern}}",
+                        {{/logStartPattern}}
+                        "timezone": "UTC"
+                }
+                {{/mirrors}}
+                ]
+        }
+        },
+        "log_stream_name": "open-mirror-default-stream-name"
+}
+}
