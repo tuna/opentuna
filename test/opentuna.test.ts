@@ -1,7 +1,7 @@
 import * as cdk from '@aws-cdk/core';
 import * as cxapi from '@aws-cdk/cx-api';
 import * as Tuna from '../lib/opentuna-stack';
-import * as mock from './vpc-mock';
+import * as mock from './context-provider-mock';
 import ec2 = require('@aws-cdk/aws-ec2');
 import sns = require('@aws-cdk/aws-sns');
 import '@aws-cdk/assert/jest';
@@ -14,7 +14,7 @@ describe('Tuna Manager stack', () => {
   let previous: (scope: cdk.Construct, options: cdk.GetContextValueOptions) => cdk.GetContextValueResult;
 
   beforeAll(() => {
-    previous = mock.mockVpcContextProviderWith({
+    previous = mock.mockContextProviderWith({
       vpcId,
       vpcCidrBlock: "10.58.0.0/16",
       "subnetGroups": [
@@ -183,4 +183,283 @@ describe('Tuna Manager stack', () => {
       "DeletionPolicy": "Delete",
     }, ResourcePart.CompleteDefinition);
   });
+
+  test('default listener 80 created without custom domain', () => {
+    expect(stack).toHaveResourceLike('AWS::ElasticLoadBalancingV2::Listener', {
+      "DefaultActions": [
+        {
+          "TargetGroupArn": {
+            "Ref": "ExternalALBDefaultPort80ContentServerGroup4C4C350F"
+          },
+          "Type": "forward"
+        }
+      ],
+      "LoadBalancerArn": {
+        "Ref": "ExternalALB7DC65DEC"
+      },
+      "Port": 80,
+      "Protocol": "HTTP"
+    });
+
+    expect(stack).toHaveResource('AWS::ElasticLoadBalancingV2::TargetGroup', {
+      "HealthCheckEnabled": true,
+      "HealthCheckTimeoutSeconds": 15,
+      "Port": 80,
+      "Protocol": "HTTP",
+      "TargetType": "ip",
+      "VpcId": vpcId,
+    });
+
+    expect(stack).toHaveResource('AWS::ElasticLoadBalancingV2::TargetGroup', {
+      "Port": 80,
+      "Protocol": "HTTP",
+      "TargetGroupAttributes": [
+        {
+          "Key": "deregistration_delay.timeout_seconds",
+          "Value": "10"
+        },
+        {
+          "Key": "slow_start.duration_seconds",
+          "Value": "60"
+        }
+      ],
+      "TargetType": "ip",
+      "VpcId": vpcId,
+    });
+
+    expect(stack).toHaveResource('AWS::ElasticLoadBalancingV2::ListenerRule', {
+      "Actions": [
+        {
+          "TargetGroupArn": {
+            "Ref": "WebPortalWebTargetGroupB563B993"
+          },
+          "Type": "forward"
+        }
+      ],
+      "Conditions": [
+        {
+          "Field": "path-pattern",
+          "PathPatternConfig": {
+            "Values": [
+              "/",
+              "/404.html",
+              "/index.html",
+              "/robots.txt",
+              "/sitemap.xml"
+            ]
+          }
+        }
+      ],
+      "ListenerArn": {
+        "Ref": "ExternalALBDefaultPort806952D605"
+      },
+      "Priority": 10
+    });
+
+    expect(stack).toHaveResource('AWS::ElasticLoadBalancingV2::ListenerRule', {
+      "Actions": [
+        {
+          "TargetGroupArn": {
+            "Ref": "WebPortalWebTargetGroupB563B993"
+          },
+          "Type": "forward"
+        }
+      ],
+      "Conditions": [
+        {
+          "Field": "path-pattern",
+          "PathPatternConfig": {
+            "Values": [
+              "/help/*",
+              "/news/*",
+              "/static/*",
+              "/status/*"
+            ]
+          }
+        }
+      ],
+      "ListenerArn": {
+        "Ref": "ExternalALBDefaultPort806952D605"
+      },
+      "Priority": 15
+    });
+
+    expect(stack).toHaveResource('AWS::ElasticLoadBalancingV2::ListenerRule', {
+      "Actions": [
+        {
+          "RedirectConfig": {
+            "Path": "/jobs",
+            "StatusCode": "HTTP_302"
+          },
+          "Type": "redirect"
+        }
+      ],
+      "Conditions": [
+        {
+          "Field": "path-pattern",
+          "PathPatternConfig": {
+            "Values": [
+              "/static/tunasync.json"
+            ]
+          }
+        }
+      ],
+      "ListenerArn": {
+        "Ref": "ExternalALBDefaultPort806952D605"
+      },
+      "Priority": 5
+    });
+
+    expect(stack).toHaveResource('AWS::ElasticLoadBalancingV2::ListenerRule', {
+      "Actions": [
+        {
+          "TargetGroupArn": {
+            "Fn::GetAtt": [
+              "WebPortalStackNestedStackWebPortalStackNestedStackResourceFBF35EF3",
+              "Outputs.OpenTunaStackWebPortalStackWebPortalManagerTargetGroup51E2D9E3Ref"
+            ]
+          },
+          "Type": "forward"
+        }
+      ],
+      "Conditions": [
+        {
+          "Field": "path-pattern",
+          "PathPatternConfig": {
+            "Values": [
+              "/jobs"
+            ]
+          }
+        }
+      ],
+      "ListenerArn": {
+        "Ref": "ExternalALBDefaultPort806952D605"
+      },
+      "Priority": 20
+    });
+  });
+
+  test('alb listeners created with custom domain and domain zone', () => {
+    ({ app, stack } = overrideTunaStackWithContextDomainName(app, stack, vpcId));
+
+    expect(stack).toHaveResourceLike('AWS::ElasticLoadBalancingV2::Listener', {
+      "DefaultActions": [
+        {
+          "RedirectConfig": {
+            "Port": "443",
+            "Protocol": "HTTPS",
+            "StatusCode": "HTTP_301"
+          },
+          "Type": "redirect"
+        }
+      ],
+      "LoadBalancerArn": {
+        "Ref": "ExternalALB7DC65DEC"
+      },
+      "Port": 80,
+      "Protocol": "HTTP"
+    });
+
+    expect(stack).toHaveResourceLike('AWS::ElasticLoadBalancingV2::Listener', {
+      "DefaultActions": [
+        {
+          "TargetGroupArn": {
+            "Ref": "ExternalALBDefaultPort443ContentServerGroup775F404E"
+          },
+          "Type": "forward"
+        }
+      ],
+      "LoadBalancerArn": {
+        "Ref": "ExternalALB7DC65DEC"
+      },
+      "Port": 443,
+      "Protocol": "HTTPS",
+      "Certificates": [
+        {
+          "CertificateArn": {
+            "Ref": "Certificate4E7ABB08"
+          }
+        }
+      ],
+      "SslPolicy": "ELBSecurityPolicy-2016-08"
+    });
+  });
+
+  test('certificate and r53 record of alb', () => {
+    ({ app, stack } = overrideTunaStackWithContextDomainName(app, stack, vpcId));
+
+    expect(stack).toHaveResourceLike('AWS::CertificateManager::Certificate', {
+      "DomainName": "example.com",
+      "DomainValidationOptions": [
+        {
+          "DomainName": "example.com",
+          "HostedZoneId": "12345678"
+        },
+        {
+          "DomainName": "cn-north-1.example.com",
+          "HostedZoneId": "12345678"
+        }
+      ],
+      "SubjectAlternativeNames": [
+        "cn-north-1.example.com"
+      ],
+      "ValidationMethod": "DNS"
+    });
+
+    expect(stack).toHaveResourceLike('AWS::Route53::RecordSet', {
+      "Name": "cn-north-1.example.com.",
+      "Type": "A",
+      "AliasTarget": {
+        "DNSName": {
+          "Fn::Join": [
+            "",
+            [
+              "dualstack.",
+              {
+                "Fn::GetAtt": [
+                  "ExternalALB7DC65DEC",
+                  "DNSName"
+                ]
+              }
+            ]
+          ]
+        },
+        "HostedZoneId": {
+          "Fn::GetAtt": [
+            "ExternalALB7DC65DEC",
+            "CanonicalHostedZoneID"
+          ]
+        }
+      },
+      "HostedZoneId": "12345678"
+    });
+  });
 });
+function overrideTunaStackWithContextDomainName(app: cdk.App, stack: cdk.Stack, vpcId: string) {
+  app = new cdk.App({
+    context: {
+      domainName: 'example.com',
+      domainZone: 'example.com',
+    }
+  });
+
+  const commonStack = new cdk.Stack(app, 'CommonStack', {
+    env: {
+      region: 'cn-north-1',
+      account: '1234567890xx',
+    }
+  });
+  const topic = new sns.Topic(commonStack, 'Test Topic');
+
+  stack = new Tuna.OpentunaStack(app, 'OpenTunaStack', {
+    vpcId,
+    fileSystemId: 'fs-012345',
+    notifyTopic: topic,
+    env: {
+      region: 'cn-north-1',
+      account: '1234567890xx',
+    }
+  });
+  return { app, stack };
+}
+

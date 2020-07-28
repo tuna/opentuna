@@ -1,7 +1,7 @@
 import * as cdk from '@aws-cdk/core';
 import * as cxapi from '@aws-cdk/cx-api';
 import * as Tuna from '../lib/content-server';
-import * as mock from './vpc-mock';
+import * as mock from './context-provider-mock';
 import ec2 = require('@aws-cdk/aws-ec2');
 import ecs = require('@aws-cdk/aws-ecs');
 import sns = require('@aws-cdk/aws-sns');
@@ -15,7 +15,7 @@ describe('Content Server stack', () => {
   let previous: (scope: cdk.Construct, options: cdk.GetContextValueOptions) => cdk.GetContextValueResult;
 
   beforeAll(() => {
-    previous = mock.mockVpcContextProviderWith({
+    previous = mock.mockContextProviderWith({
       vpcId,
       vpcCidrBlock: "10.58.0.0/16",
       "subnetGroups": [
@@ -102,16 +102,19 @@ describe('Content Server stack', () => {
       securityGroup: externalALBSG,
       internetFacing: true,
     });
+    const defaultALBListener = externalALB.addListener(`DefaultPort`, {
+      port: 80,
+      open: true,
+    });
     const ecsCluster = new ecs.Cluster(parentStack, `ECSCluster`, {
         vpc,
     });
-
 
     stack = new Tuna.ContentServerStack(parentStack, 'ContentServerStack', {
       vpc,
       fileSystemId: 'fs-012345',
       notifyTopic: topic,
-      externalALB,
+      listener: defaultALBListener,
       ecsCluster
     });
   });
@@ -140,7 +143,7 @@ describe('Content Server stack', () => {
     expect(stack).toHaveResourceLike('AWS::ECS::TaskDefinition', {
       "TaskRoleArn": {
         "Fn::GetAtt": [
-          "ContentServerFargateTaskDefTaskRole2679A0EE",
+          "ContentServerTaskDefinitonTaskRole24E35D33",
           "Arn"
         ]
       },
@@ -155,8 +158,11 @@ describe('Content Server stack', () => {
       "LaunchType": "FARGATE",
       "LoadBalancers": [
         {
-          "ContainerName": "web",
+          "ContainerName": "content-server",
           "ContainerPort": 80,
+          "TargetGroupArn": {
+            "Ref": "referencetoParentStackExternalALBDefaultPortContentServerGroupD94FAC32Ref"
+          }
         }
       ],
       "PlatformVersion": "1.4.0",
@@ -168,7 +174,7 @@ describe('Content Server stack', () => {
       ],
       "TaskDefinition": {
         "Fn::GetAtt": [
-          "ContentServerFargateContentServerCustomTaskDefinition8B703CE7",
+          "ContentServerCustomTaskDefinitionFA01326F",
           "taskDefinition.taskDefinitionArn"
         ]
       }
@@ -189,7 +195,8 @@ describe('Content Server stack', () => {
                     "Ref": "ContentServerLogGroup11BFCDBD"
                   },
                   "awslogs-stream-prefix": "ContentServer",
-                  "awslogs-region": "cn-north-1"
+                  "awslogs-region": "cn-north-1",
+                  "awslogs-datetime-format": "\\[%d/%b/%Y:%H:%M:%S %z\\]"
                 }
               },
               "memory": 512,
@@ -201,7 +208,7 @@ describe('Content Server stack', () => {
                   "readOnly": "TRUE:BOOLEAN"
                 }
               ],
-              "name": "web",
+              "name": "content-server",
               "portMappings": [
                 {
                   "containerPort": 80,
@@ -214,7 +221,7 @@ describe('Content Server stack', () => {
           "cpu": "256",
           "executionRoleArn": {
             "Fn::GetAtt": [
-              "ContentServerFargateTaskDefExecutionRoleB5100984",
+              "ContentServerTaskDefinitonExecutionRole329A7455",
               "Arn"
             ]
           },
@@ -225,7 +232,7 @@ describe('Content Server stack', () => {
           ],
           "taskRoleArn": {
             "Fn::GetAtt": [
-              "ContentServerFargateTaskDefTaskRole2679A0EE",
+              "ContentServerTaskDefinitonTaskRole24E35D33",
               "Arn"
             ]
           },
