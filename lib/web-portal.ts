@@ -6,7 +6,6 @@ import elbv2 = require('@aws-cdk/aws-elasticloadbalancingv2');
 import ecr_assets = require('@aws-cdk/aws-ecr-assets');
 import autoscaling = require('@aws-cdk/aws-autoscaling');
 import path = require('path');
-import { ITopic } from '@aws-cdk/aws-sns';
 
 export interface WebPortalProps extends cdk.NestedStackProps {
     readonly vpc: ec2.IVpc;
@@ -54,16 +53,16 @@ export class WebPortalStack extends cdk.NestedStack {
 
         // one target can have at most 5 path patterns, so split them
         // route web files to this service
-        const commonSettings = {
+        let webTargetGroup = new elbv2.ApplicationTargetGroup(scope, `${usage}WebTargetGroup`, {
             port: httpPort,
-            protocol: elbv2.ApplicationProtocol.HTTP,
-            targets: [service],
+            vpc: props.vpc,
             slowStart: cdk.Duration.seconds(60),
             deregistrationDelay: cdk.Duration.seconds(10),
-        };
-        props.externalALBListener.addTargets(`${usage}TargetGroup`, {
-            ...commonSettings,
+            targets: [service],
+        });
+        props.externalALBListener.addTargetGroups(`${usage}TargetGroup`, {
             priority: 10,
+            targetGroups: [webTargetGroup],
             conditions: [elbv2.ListenerCondition.pathPatterns([
                 "/",
                 "/404.html",
@@ -72,8 +71,8 @@ export class WebPortalStack extends cdk.NestedStack {
                 "/sitemap.xml",
             ])],
         })
-        props.externalALBListener.addTargets(`${usage}TargetGroup2`, {
-            ...commonSettings,
+        props.externalALBListener.addTargetGroups(`${usage}TargetGroup2`, {
+            targetGroups: [webTargetGroup],
             priority: 15,
             conditions: [elbv2.ListenerCondition.pathPatterns([
                 "/help/*",
