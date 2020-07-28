@@ -86,6 +86,7 @@ describe('Tuna Manager stack', () => {
 
     stack = new Tuna.OpentunaStack(app, 'OpenTunaStack', {
       vpcId,
+      domainName: 'example.com',
       fileSystemId: 'fs-012345',
       notifyTopic: topic,
     });

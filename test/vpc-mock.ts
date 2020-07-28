@@ -14,28 +14,36 @@ export function mockVpcContextProviderWith(
     paramValidator?: (options: cxschema.VpcContextQuery) => void) {
     const previous = cdk.ContextProvider.getValue;
     cdk.ContextProvider.getValue = (_scope: cdk.Construct, options: cdk.GetContextValueOptions) => {
-        // do some basic sanity checks
-        expect(options.provider).toEqual(cxschema.ContextProvider.VPC_PROVIDER);
+        if (options.provider === cxschema.ContextProvider.VPC_PROVIDER) {
+            if (paramValidator) {
+                paramValidator(options.props as any);
+            }
 
-        if (paramValidator) {
-            paramValidator(options.props as any);
+            return {
+                value: {
+                    availabilityZones: [],
+                    isolatedSubnetIds: undefined,
+                    isolatedSubnetNames: undefined,
+                    isolatedSubnetRouteTableIds: undefined,
+                    privateSubnetIds: undefined,
+                    privateSubnetNames: undefined,
+                    privateSubnetRouteTableIds: undefined,
+                    publicSubnetIds: undefined,
+                    publicSubnetNames: undefined,
+                    publicSubnetRouteTableIds: undefined,
+                    ...response,
+                } as cxapi.VpcContextResponse,
+            };
+        } else if (options.provider === cxschema.ContextProvider.HOSTED_ZONE_PROVIDER) {
+            return {
+                value: {
+                    Id: '12345678',
+                    Name: 'example.com',
+                },
+            };
+        } else {
+            expect(false);
         }
-
-        return {
-            value: {
-                availabilityZones: [],
-                isolatedSubnetIds: undefined,
-                isolatedSubnetNames: undefined,
-                isolatedSubnetRouteTableIds: undefined,
-                privateSubnetIds: undefined,
-                privateSubnetNames: undefined,
-                privateSubnetRouteTableIds: undefined,
-                publicSubnetIds: undefined,
-                publicSubnetNames: undefined,
-                publicSubnetRouteTableIds: undefined,
-                ...response,
-            } as cxapi.VpcContextResponse,
-        };
     };
     return previous;
 }
