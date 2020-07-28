@@ -53,6 +53,12 @@ export class OpentunaStack extends cdk.Stack {
       securityGroup: externalALBSG,
       internetFacing: true,
     });
+    const defaultALBPort: number = 80;
+    const defaultALBListener = externalALB.addListener(`DefaultPort-${defaultALBPort}`, {
+      protocol: defaultALBPort === 443 ? elbv2.ApplicationProtocol.HTTPS : elbv2.ApplicationProtocol.HTTP,
+      port: defaultALBPort,
+      open: true,
+    });
 
     // Tunasync Manager stack
     const tunaManagerStack = new TunaManagerStack(this, 'TunaManagerStack', {
@@ -87,14 +93,14 @@ export class OpentunaStack extends cdk.Stack {
       vpc,
       fileSystemId: props.fileSystemId,
       notifyTopic: props.notifyTopic,
-      externalALB,
-      ecsCluster
+      ecsCluster,
+      listener: defaultALBListener,
     });
 
     // Web Portal stack
     const webPortalStack = new WebPortalStack(this, 'WebPortalStack', {
       vpc,
-      externalALBListener: contentServerStack.externalALBListener,
+      externalALBListener: defaultALBListener,
       ecsCluster,
       tunaManagerASG: tunaManagerStack.managerASG,
       tunaManagerALBTargetGroup: tunaManagerStack.managerALBTargetGroup,

@@ -183,4 +183,159 @@ describe('Tuna Manager stack', () => {
       "DeletionPolicy": "Delete",
     }, ResourcePart.CompleteDefinition);
   });
+
+  test('default listener 80 created without custom domain', () => {
+    expect(stack).toHaveResourceLike('AWS::ElasticLoadBalancingV2::Listener', {
+      "DefaultActions": [
+        {
+          "TargetGroupArn": {
+            "Ref": "ExternalALBDefaultPort80ContentServerGroup4C4C350F"
+          },
+          "Type": "forward"
+        }
+      ],
+      "LoadBalancerArn": {
+        "Ref": "ExternalALB7DC65DEC"
+      },
+      "Port": 80,
+      "Protocol": "HTTP"
+    });
+
+    expect(stack).toHaveResource('AWS::ElasticLoadBalancingV2::TargetGroup', {
+      "HealthCheckEnabled": true,
+      "HealthCheckTimeoutSeconds": 15,
+      "Port": 80,
+      "Protocol": "HTTP",
+      "TargetType": "ip",
+      "VpcId": vpcId,
+    });
+
+    expect(stack).toHaveResource('AWS::ElasticLoadBalancingV2::TargetGroup', {
+      "Port": 80,
+        "Protocol": "HTTP",
+        "TargetGroupAttributes": [
+          {
+            "Key": "deregistration_delay.timeout_seconds",
+            "Value": "10"
+          },
+          {
+            "Key": "slow_start.duration_seconds",
+            "Value": "60"
+          }
+        ],
+        "TargetType": "ip",
+        "VpcId": vpcId,
+    });
+
+    expect(stack).toHaveResource('AWS::ElasticLoadBalancingV2::ListenerRule', {
+      "Actions": [
+        {
+          "TargetGroupArn": {
+            "Ref": "WebPortalWebTargetGroupB563B993"
+          },
+          "Type": "forward"
+        }
+      ],
+      "Conditions": [
+        {
+          "Field": "path-pattern",
+          "PathPatternConfig": {
+            "Values": [
+              "/",
+              "/404.html",
+              "/index.html",
+              "/robots.txt",
+              "/sitemap.xml"
+            ]
+          }
+        }
+      ],
+      "ListenerArn": {
+        "Ref": "ExternalALBDefaultPort806952D605"
+      },
+      "Priority": 10
+    });
+
+    expect(stack).toHaveResource('AWS::ElasticLoadBalancingV2::ListenerRule', {
+      "Actions": [
+        {
+          "TargetGroupArn": {
+            "Ref": "WebPortalWebTargetGroupB563B993"
+          },
+          "Type": "forward"
+        }
+      ],
+      "Conditions": [
+        {
+          "Field": "path-pattern",
+          "PathPatternConfig": {
+            "Values": [
+              "/help/*",
+              "/news/*",
+              "/static/*",
+              "/status/*"
+            ]
+          }
+        }
+      ],
+      "ListenerArn": {
+        "Ref": "ExternalALBDefaultPort806952D605"
+      },
+      "Priority": 15
+    });
+
+    expect(stack).toHaveResource('AWS::ElasticLoadBalancingV2::ListenerRule', {
+      "Actions": [
+        {
+          "RedirectConfig": {
+            "Path": "/jobs",
+            "StatusCode": "HTTP_302"
+          },
+          "Type": "redirect"
+        }
+      ],
+      "Conditions": [
+        {
+          "Field": "path-pattern",
+          "PathPatternConfig": {
+            "Values": [
+              "/static/tunasync.json"
+            ]
+          }
+        }
+      ],
+      "ListenerArn": {
+        "Ref": "ExternalALBDefaultPort806952D605"
+      },
+      "Priority": 5
+    });
+
+    expect(stack).toHaveResource('AWS::ElasticLoadBalancingV2::ListenerRule', {
+      "Actions": [
+        {
+          "TargetGroupArn": {
+            "Fn::GetAtt": [
+              "WebPortalStackNestedStackWebPortalStackNestedStackResourceFBF35EF3",
+              "Outputs.OpenTunaStackWebPortalStackWebPortalManagerTargetGroup51E2D9E3Ref"
+            ]
+          },
+          "Type": "forward"
+        }
+      ],
+      "Conditions": [
+        {
+          "Field": "path-pattern",
+          "PathPatternConfig": {
+            "Values": [
+              "/jobs"
+            ]
+          }
+        }
+      ],
+      "ListenerArn": {
+        "Ref": "ExternalALBDefaultPort806952D605"
+      },
+      "Priority": 20
+    });
+  });
 });
