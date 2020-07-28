@@ -106,7 +106,8 @@ export class OpentunaStack extends cdk.Stack {
     const distribution = new cloudfront.Distribution(this, 'CloudFrontDist', {
       defaultBehavior: {
         origin: cloudfront.Origin.fromHttpServer({
-          domainName: externalALB.loadBalancerDnsName
+          domainName: externalALB.loadBalancerDnsName,
+          protocolPolicy: cloudfront.OriginProtocolPolicy.HTTP_ONLY,
         })
       },
     });
