@@ -2,6 +2,7 @@ import * as cdk from '@aws-cdk/core';
 import * as cloudfront from '@aws-cdk/aws-cloudfront';
 import * as route53 from '@aws-cdk/aws-route53';
 import * as route53targets from '@aws-cdk/aws-route53-targets';
+import * as acm from '@aws-cdk/aws-certificatemanager';
 import ec2 = require('@aws-cdk/aws-ec2');
 import sns = require('@aws-cdk/aws-sns');
 import elbv2 = require('@aws-cdk/aws-elasticloadbalancingv2');
@@ -110,8 +111,20 @@ export class OpentunaStack extends cdk.Stack {
       domainName: props.domainName,
     });
 
+    // https certificate
+    const certificate = new acm.DnsValidatedCertificate(this, 'Cert', {
+      domainName: props.domainName,
+      hostedZone: zone,
+      // cloudfront requirement
+      region: 'us-east-1',
+    });
+
     // CloudFront as cdn
     const distribution = new cloudfront.CloudFrontWebDistribution(this, 'CloudFrontDist', {
+      aliasConfiguration: {
+        acmCertRef: certificate.certificateArn,
+        names: [props.domainName],
+      },
       originConfigs: [{
         customOriginSource: {
           domainName: externalALB.loadBalancerDnsName,
