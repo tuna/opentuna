@@ -37,8 +37,6 @@
     "@aws-cdk/aws-route53": "^1.54.0",
     "@aws-cdk/aws-route53-targets": "^1.54.0",
     "@aws-cdk/aws-s3-deployment": "^1.54.0",
-    "@aws-cdk/aws-route53": "^1.54.0",
-    "@aws-cdk/aws-route53-targets": "^1.54.0",
     "@aws-cdk/core": "1.54.0",
     "mustache": "^4.0.1",
     "source-map-support": "^0.5.16"

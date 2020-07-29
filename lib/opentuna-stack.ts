@@ -27,18 +27,21 @@ export class OpentunaStack extends cdk.Stack {
     const stack = cdk.Stack.of(this);
 
     const domainName = this.node.tryGetContext('domainName');
+    let useHTTPS = false;
     let domainZone: r53.IHostedZone | undefined;
-    let cert: acm.Certificate | undefined;
+    let cloudfrontCert: acm.Certificate | undefined;
     if (domainName) {
       const domainZoneName = this.node.tryGetContext('domainZone');
       if (domainZoneName) {
         domainZone = r53.HostedZone.fromLookup(this, 'HostedZone', {
           domainName: domainZoneName,
         });
-        cert = new acm.Certificate(this, 'Certificate', {
+        useHTTPS = true;
+        cloudfrontCert = new acm.DnsValidatedCertificate(this, 'CloudFrontCertificate', {
           domainName: domainName,
-          subjectAlternativeNames: [`${stack.region}.${domainName}`],
+          hostedZone: domainZone,
           validation: acm.CertificateValidation.fromDns(domainZone),
+          region: 'us-east-1',
         });
       }
     }
@@ -75,17 +78,26 @@ export class OpentunaStack extends cdk.Stack {
       vpc,
       securityGroup: externalALBSG,
       internetFacing: true,
-      http2Enabled: cert ? true : false,
+      http2Enabled: useHTTPS,
     });
-    const defaultALBPort: number = cert ? 443 : 80;
+    let cert: acm.Certificate | undefined;
+    if (useHTTPS) {
+      cert = new acm.Certificate(this, 'Certificate', {
+        domainName: domainName,
+        subjectAlternativeNames: [`${stack.region}.${domainName}`],
+        validation: acm.CertificateValidation.fromDns(domainZone),
+      });
+    }
+    const defaultALBPort: number = useHTTPS ? 443 : 80;
     const defaultALBListener = externalALB.addListener(`DefaultPort-${defaultALBPort}`, {
-      protocol: defaultALBPort === 443 ? elbv2.ApplicationProtocol.HTTPS : elbv2.ApplicationProtocol.HTTP,
+      protocol: useHTTPS ? elbv2.ApplicationProtocol.HTTPS : elbv2.ApplicationProtocol.HTTP,
       port: defaultALBPort,
       open: true,
       certificates: cert ? [cert] : undefined,
-      sslPolicy: cert ? elbv2.SslPolicy.RECOMMENDED : undefined,
+      sslPolicy: useHTTPS ? elbv2.SslPolicy.RECOMMENDED : undefined,
     });
-    if (cert) {
+    if (useHTTPS) {
+      // redirect HTTP to HTTPS
       externalALB.addListener(`DefaultPort-80`, {
         protocol: elbv2.ApplicationProtocol.HTTP,
         port: 80,
@@ -155,26 +167,23 @@ export class OpentunaStack extends cdk.Stack {
     let cloudfrontProps = {
       originConfigs: [{
         customOriginSource: {
-          domainName: externalALB.loadBalancerDnsName,
-          originProtocolPolicy: cloudfront.OriginProtocolPolicy.HTTP_ONLY,
+          domainName: useHTTPS ? `${stack.region}.${domainName}` : externalALB.loadBalancerDnsName,
         },
         behaviors: [{
-          isDefaultBehavior: true,
-        }, {
-          // special handling for /static/tunasync.json
-          // because of redirection
-          pathPattern: '/static/tunasync.json',
+          // special handling for HTTPS forwarding
           forwardedValues: {
             headers: ['Host', 'CloudFront-Forwarded-Proto'],
             queryString: true,
           },
+          isDefaultBehavior: true,
         }],
       }],
     } as cloudfront.CloudFrontWebDistributionProps;
-    if (cert) {
+    if (cloudfrontCert) {
+      // when https is enabled
       cloudfrontProps = {
         aliasConfiguration: {
-          acmCertRef: cert.certificateArn,
+          acmCertRef: cloudfrontCert.certificateArn,
           names: [domainName],
         },
         ...cloudfrontProps
