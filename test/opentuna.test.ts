@@ -434,7 +434,71 @@ describe('Tuna Manager stack', () => {
       "HostedZoneId": "12345678"
     });
   });
+
+  test('cloudfront distribution', () => {
+    ({ app, stack } = overrideTunaStackWithContextDomainName(app, stack, vpcId));
+
+    expect(stack).toHaveResourceLike('AWS::CloudFront::Distribution', {
+      "DistributionConfig": {
+        "Aliases": [
+          "example.com"
+        ],
+        "DefaultCacheBehavior": {
+          "ForwardedValues": {
+            "Headers": [
+              "Host",
+              "CloudFront-Forwarded-Proto"
+            ],
+            "QueryString": true
+          },
+          "TargetOriginId": "origin1",
+          "ViewerProtocolPolicy": "redirect-to-https"
+        },
+        "Enabled": true,
+        "HttpVersion": "http2",
+        "IPV6Enabled": true,
+        "Origins": [
+          {
+            "CustomOriginConfig": {
+              "HTTPPort": 80,
+              "HTTPSPort": 443,
+              "OriginProtocolPolicy": "https-only",
+              "OriginSSLProtocols": [
+                "TLSv1.2"
+              ]
+            },
+            "DomainName": "cn-north-1.example.com",
+            "Id": "origin1"
+          }
+        ],
+      },
+    });
+
+    expect(stack).toHaveResourceLike('AWS::Route53::RecordSet', {
+      "Name": "example.com.",
+      "Type": "A",
+      "AliasTarget": {
+        "DNSName": {
+          "Fn::GetAtt": [
+            "CloudFrontDistCFDistribution179E93F8",
+            "DomainName"
+          ]
+        },
+        "HostedZoneId": {
+          "Fn::FindInMap": [
+            "AWSCloudFrontPartitionHostedZoneIdMap",
+            {
+              "Ref": "AWS::Partition"
+            },
+            "zoneId"
+          ]
+        }
+      },
+      "HostedZoneId": "12345678"
+    });
+  });
 });
+
 function overrideTunaStackWithContextDomainName(app: cdk.App, stack: cdk.Stack, vpcId: string) {
   app = new cdk.App({
     context: {
