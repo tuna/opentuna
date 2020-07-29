@@ -12,9 +12,10 @@ This is the infrasture project of Open TUNA on AWS orchestrated by [AWS CDK][aws
 - Open TUNA stack
   - S3 asset bucket
   - application load balancer
+  - CloudFront distribution
   - ECS cluster for content server and web portal
   - issue SSL certificate from ACM(only for using Route53 as DNS resolver)
-  - create DNS record in R53 for ALB(only for using Route53 as DNS resolver)
+  - create DNS record in R53 for ALB and CloudFront(only for using Route53 as DNS resolver)
   - Tunasync Manager stack
     - auto scaling group for [tunasync][tunasync] manager
     - intranet application load balancer for manager's API
