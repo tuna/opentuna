@@ -10,7 +10,7 @@
     "watch": "tsc -w",
     "test": "jest",
     "cdk": "cdk",
-    "init": "npx cdk bootstrap && npm i",
+    "init": "npm i",
     "deploy-network": "npx cdk deploy OpenTunaNetworkStack --app 'npx ts-node bin/opentuna-network.ts'"
   },
   "devDependencies": {

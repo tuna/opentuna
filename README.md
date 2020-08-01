@@ -46,10 +46,18 @@ This is the infrasture project of Open TUNA on AWS orchestrated by [AWS CDK][aws
 - Install node.js LTS version, such as 12.x
 - Install Docker Engine
 
-### Install project dependencies
+### Install project dependencies and bootstrap environments(optional)
 
 ```shell
 npm run init
+
+# You only need to do this one time per environment where you want to deploy this application. If you’re unsure whether your environment has been bootstrapped already, you can always run the command again.
+# Make sure you have credentials for ACCOUNT1 in a profile named account1-profile. For more information, see Named profiles. Run the following command in the directory where cdk.json exists for China regions:
+npx cdk bootstrap \
+  --profile account1-profile \
+  --cloudformation-execution-policies arn:aws-cn:iam::aws:policy/AdministratorAccess \
+  -c vpcId=<any placeholder> \
+  aws://ACCOUNT1/cn-northwest-1
 ```
 
 ### Deploy network stack(optional)
