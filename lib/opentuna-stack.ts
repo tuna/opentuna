@@ -163,6 +163,14 @@ export class OpentunaStack extends cdk.Stack {
     });
     tunaManagerSG.connections.allowFrom(externalALBSG, ec2.Port.tcp(80), 'Allow external ALB to access tuna manager');
 
+    let commonBehaviorConfig = {
+      // special handling for HTTPS forwarding
+      forwardedValues: {
+        headers: ['Host', 'CloudFront-Forwarded-Proto'],
+        queryString: true,
+      },
+    };
+
     // CloudFront as cdn
     let cloudfrontProps = {
       originConfigs: [{
@@ -170,14 +178,15 @@ export class OpentunaStack extends cdk.Stack {
           domainName: useHTTPS ? `${stack.region}.${domainName}` : externalALB.loadBalancerDnsName,
         },
         behaviors: [{
-          // special handling for HTTPS forwarding
-          forwardedValues: {
-            headers: ['Host', 'CloudFront-Forwarded-Proto'],
-            queryString: true,
-          },
+          ...commonBehaviorConfig,
           isDefaultBehavior: true,
           // default 1 day cache
           defaultTtl: cdk.Duration.days(1),
+        }, {
+          ...commonBehaviorConfig,
+          // 5min cache for tunasync status
+          pathPattern: '/jobs',
+          defaultTtl: cdk.Duration.minutes(5),
         }],
       }],
     } as cloudfront.CloudFrontWebDistributionProps;

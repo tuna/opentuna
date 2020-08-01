@@ -455,6 +455,21 @@ describe('Tuna Manager stack', () => {
           "TargetOriginId": "origin1",
           "ViewerProtocolPolicy": "redirect-to-https"
         },
+        "CacheBehaviors": [
+          {
+            "DefaultTTL": 300,
+            "ForwardedValues": {
+              "Headers": [
+                "Host",
+                "CloudFront-Forwarded-Proto"
+              ],
+              "QueryString": true
+            },
+            "PathPattern": "/jobs",
+            "TargetOriginId": "origin1",
+            "ViewerProtocolPolicy": "redirect-to-https"
+          }
+        ],
         "Enabled": true,
         "HttpVersion": "http2",
         "IPV6Enabled": true,
