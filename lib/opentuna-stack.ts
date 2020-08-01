@@ -176,6 +176,8 @@ export class OpentunaStack extends cdk.Stack {
             queryString: true,
           },
           isDefaultBehavior: true,
+          // default 1 day cache
+          defaultTtl: cdk.Duration.days(1),
         }],
       }],
     } as cloudfront.CloudFrontWebDistributionProps;

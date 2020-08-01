@@ -451,6 +451,7 @@ describe('Tuna Manager stack', () => {
             ],
             "QueryString": true
           },
+          "DefaultTTL": 86400,
           "TargetOriginId": "origin1",
           "ViewerProtocolPolicy": "redirect-to-https"
         },
