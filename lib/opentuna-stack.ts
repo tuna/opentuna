@@ -1,5 +1,8 @@
 import * as cdk from '@aws-cdk/core';
-import acm = require('@aws-cdk/aws-certificatemanager');
+import * as cloudfront from '@aws-cdk/aws-cloudfront';
+import * as route53 from '@aws-cdk/aws-route53';
+import * as route53targets from '@aws-cdk/aws-route53-targets';
+import * as acm from '@aws-cdk/aws-certificatemanager';
 import alias = require('@aws-cdk/aws-route53-targets');
 import ec2 = require('@aws-cdk/aws-ec2');
 import sns = require('@aws-cdk/aws-sns');
@@ -24,19 +27,24 @@ export class OpentunaStack extends cdk.Stack {
     const stack = cdk.Stack.of(this);
 
     const domainName = this.node.tryGetContext('domainName');
-    let domainZone: r53.IHostedZone;
-    let cert: acm.Certificate | undefined;
+    let useHTTPS = false;
+    let domainZone: r53.IHostedZone | undefined;
+    let cloudfrontCert: acm.Certificate | undefined;
     if (domainName) {
       const domainZoneName = this.node.tryGetContext('domainZone');
       if (domainZoneName) {
         domainZone = r53.HostedZone.fromLookup(this, 'HostedZone', {
           domainName: domainZoneName,
         });
-        cert = new acm.Certificate(this, 'Certificate', {
-          domainName: domainName,
-          subjectAlternativeNames: [`${stack.region}.${domainName}`],
-          validation: acm.CertificateValidation.fromDns(domainZone),
-        });
+        useHTTPS = true;
+        if (!stack.region.startsWith('cn-')) {
+          cloudfrontCert = new acm.DnsValidatedCertificate(this, 'CloudFrontCertificate', {
+            domainName: domainName,
+            hostedZone: domainZone,
+            validation: acm.CertificateValidation.fromDns(domainZone),
+            region: 'us-east-1',
+          });
+        }
       }
     }
 
@@ -72,17 +80,26 @@ export class OpentunaStack extends cdk.Stack {
       vpc,
       securityGroup: externalALBSG,
       internetFacing: true,
-      http2Enabled: cert ? true : false,
+      http2Enabled: useHTTPS,
     });
-    const defaultALBPort: number = cert ? 443 : 80;
+    let cert: acm.Certificate | undefined;
+    if (useHTTPS) {
+      cert = new acm.Certificate(this, 'Certificate', {
+        domainName: domainName,
+        subjectAlternativeNames: [`${stack.region}.${domainName}`],
+        validation: acm.CertificateValidation.fromDns(domainZone),
+      });
+    }
+    const defaultALBPort: number = useHTTPS ? 443 : 80;
     const defaultALBListener = externalALB.addListener(`DefaultPort-${defaultALBPort}`, {
-      protocol: defaultALBPort === 443 ? elbv2.ApplicationProtocol.HTTPS : elbv2.ApplicationProtocol.HTTP,
+      protocol: useHTTPS ? elbv2.ApplicationProtocol.HTTPS : elbv2.ApplicationProtocol.HTTP,
       port: defaultALBPort,
       open: true,
       certificates: cert ? [cert] : undefined,
-      sslPolicy: cert ? elbv2.SslPolicy.RECOMMENDED : undefined,
+      sslPolicy: useHTTPS ? elbv2.SslPolicy.RECOMMENDED : undefined,
     });
-    if (cert) {
+    if (useHTTPS) {
+      // redirect HTTP to HTTPS
       externalALB.addListener(`DefaultPort-80`, {
         protocol: elbv2.ApplicationProtocol.HTTP,
         port: 80,
@@ -147,5 +164,93 @@ export class OpentunaStack extends cdk.Stack {
       tunaManagerALBTargetGroup: tunaManagerStack.managerALBTargetGroup,
     });
     tunaManagerSG.connections.allowFrom(externalALBSG, ec2.Port.tcp(80), 'Allow external ALB to access tuna manager');
+
+    let commonBehaviorConfig = {
+      // special handling for HTTPS forwarding
+      forwardedValues: {
+        headers: ['Host', 'CloudFront-Forwarded-Proto'],
+        queryString: true,
+      },
+    };
+
+    // CloudFront as cdn
+    let cloudfrontProps = {
+      originConfigs: [{
+        customOriginSource: {
+          domainName: useHTTPS ? `${stack.region}.${domainName}` : externalALB.loadBalancerDnsName,
+        },
+        behaviors: [{
+          ...commonBehaviorConfig,
+          isDefaultBehavior: true,
+          // default 1 day cache
+          defaultTtl: cdk.Duration.days(1),
+        }, {
+          ...commonBehaviorConfig,
+          // 5min cache for tunasync status
+          pathPattern: '/jobs',
+          defaultTtl: cdk.Duration.minutes(5),
+        }],
+      }],
+      defaultRootObject: '',
+      errorConfigurations: [
+        {
+          errorCode: 500,
+          errorCachingMinTtl: 30,
+        },
+        {
+          errorCode: 502,
+          errorCachingMinTtl: 0,
+        },
+        {
+          errorCode: 503,
+          errorCachingMinTtl: 0,
+        }
+      ],
+    } as cloudfront.CloudFrontWebDistributionProps;
+    if (cloudfrontCert) {
+      // when https is enabled
+      cloudfrontProps = {
+        httpVersion: cloudfront.HttpVersion.HTTP2,
+        aliasConfiguration: {
+          acmCertRef: cloudfrontCert.certificateArn,
+          names: [domainName],
+        },
+        ...cloudfrontProps
+      };
+    } else {
+      const iamCertId = this.node.tryGetContext('iamCertId');
+      if (iamCertId) {
+        cloudfrontProps = {
+          httpVersion: cloudfront.HttpVersion.HTTP2,
+          viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+          viewerCertificate: cloudfront.ViewerCertificate.fromIamCertificate(
+            iamCertId,
+            {
+              aliases: [domainName],
+              securityPolicy: cloudfront.SecurityPolicyProtocol.TLS_V1_2_2018,
+              sslMethod: cloudfront.SSLMethod.SNI, // default
+            }
+          ),
+          ...cloudfrontProps
+        };
+      }
+    }
+    // some particular options for China regions
+    if (stack.region.startsWith('cn-')) {
+      cloudfrontProps = Object.assign(cloudfrontProps, {
+        enableIpV6: false,
+        priceClass: cloudfront.PriceClass.PRICE_CLASS_ALL,
+      });
+    }
+    const distribution = new cloudfront.CloudFrontWebDistribution(this, 'CloudFrontDist', cloudfrontProps);
+
+    if (domainZone) {
+      new route53.ARecord(this, 'ARecord', {
+        zone: domainZone!,
+        recordName: domainName,
+        target: route53.RecordTarget.fromAlias(new route53targets.CloudFrontTarget(distribution)),
+        ttl: cdk.Duration.minutes(5),
+      });
+    }
   }
 }

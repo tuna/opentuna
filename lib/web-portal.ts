@@ -84,13 +84,27 @@ export class WebPortalStack extends cdk.NestedStack {
         })
 
         // redirect /static/tunasync.json to /jobs
-        props.externalALBListener.addAction(`${usage}RedirectAction`, {
+        props.externalALBListener.addAction(`${usage}RedirectHTTPAction`, {
             action: elbv2.ListenerAction.redirect({
                 path: "/jobs",
             }),
-            priority: 5,
+            priority: 7,
             conditions: [elbv2.ListenerCondition.pathPatterns([
                 "/static/tunasync.json",
+            ])],
+        })
+        // special handling for https
+        props.externalALBListener.addAction(`${usage}RedirectHTTPSAction`, {
+            action: elbv2.ListenerAction.redirect({
+                protocol: "HTTPS",
+                path: "/jobs",
+                port: "443",
+            }),
+            priority: 4,
+            conditions: [elbv2.ListenerCondition.pathPatterns([
+                "/static/tunasync.json",
+            ]), elbv2.ListenerCondition.httpHeader("CloudFront-Forwarded-Proto", [
+                "HTTPS"
             ])],
         })
 
