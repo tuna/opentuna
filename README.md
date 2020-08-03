@@ -75,6 +75,12 @@ npx cdk deploy OpenTunaStack -c vpcId=<existing vpc Id> -c fileSystemId=<existin
 
 # deploy with domain name and use Route53 as DNS resolver
 npx cdk deploy OpenTunaStack -c vpcId=<existing vpc Id> -c domainName=<domain name of site> -c domainZone=<public hosted zone of your domain in Route53>
+
+# deploy with SSL cert of CloudFront for China regions
+# upload SSL cert to IAM, for China region only
+aws iam upload-server-certificate --server-certificate-name my-domain --certificate-body file://cert.pem --private-key file://privkey.pem --certificate-chain file://chain.pem --path '/cloudfront/'
+# get cert id from above output
+npx cdk deploy OpenTunaStack -c vpcId=<existing vpc Id> -c domainName=<domain name of site> -c domainZone=<public hosted zone of your domain in Route53> -c iamCertId=<cert id>
 ```
 
 Docker image for content server is automatically built and published. You can build and publish to ecr manually:

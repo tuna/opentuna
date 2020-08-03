@@ -37,12 +37,14 @@ export class OpentunaStack extends cdk.Stack {
           domainName: domainZoneName,
         });
         useHTTPS = true;
-        cloudfrontCert = new acm.DnsValidatedCertificate(this, 'CloudFrontCertificate', {
-          domainName: domainName,
-          hostedZone: domainZone,
-          validation: acm.CertificateValidation.fromDns(domainZone),
-          region: 'us-east-1',
-        });
+        if (!stack.region.startsWith('cn-')) {
+          cloudfrontCert = new acm.DnsValidatedCertificate(this, 'CloudFrontCertificate', {
+            domainName: domainName,
+            hostedZone: domainZone,
+            validation: acm.CertificateValidation.fromDns(domainZone),
+            region: 'us-east-1',
+          });
+        }
       }
     }
 
@@ -189,22 +191,63 @@ export class OpentunaStack extends cdk.Stack {
           defaultTtl: cdk.Duration.minutes(5),
         }],
       }],
+      defaultRootObject: '',
+      errorConfigurations: [
+        {
+          errorCode: 500,
+          errorCachingMinTtl: 30,
+        },
+        {
+          errorCode: 502,
+          errorCachingMinTtl: 0,
+        },
+        {
+          errorCode: 503,
+          errorCachingMinTtl: 0,
+        }
+      ],
     } as cloudfront.CloudFrontWebDistributionProps;
     if (cloudfrontCert) {
       // when https is enabled
       cloudfrontProps = {
+        httpVersion: cloudfront.HttpVersion.HTTP2,
         aliasConfiguration: {
           acmCertRef: cloudfrontCert.certificateArn,
           names: [domainName],
         },
         ...cloudfrontProps
       };
+    } else {
+      const iamCertId = this.node.tryGetContext('iamCertId');
+      if (iamCertId) {
+        cloudfrontProps = {
+          httpVersion: cloudfront.HttpVersion.HTTP2,
+          viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+          viewerCertificate: cloudfront.ViewerCertificate.fromIamCertificate(
+            iamCertId,
+            {
+              aliases: [domainName],
+              securityPolicy: cloudfront.SecurityPolicyProtocol.TLS_V1_2_2018,
+              sslMethod: cloudfront.SSLMethod.SNI, // default
+            }
+          ),
+          ...cloudfrontProps
+        };
+      }
+    }
+    // some particular options for China regions
+    if (stack.region.startsWith('cn-')) {
+      cloudfrontProps = Object.assign(cloudfrontProps, {
+        enableIpV6: false,
+        priceClass: cloudfront.PriceClass.PRICE_CLASS_ALL,
+      });
     }
     const distribution = new cloudfront.CloudFrontWebDistribution(this, 'CloudFrontDist', cloudfrontProps);
 
     if (domainZone) {
-      const dnsRecord = new route53.ARecord(this, 'ARecord', {
+      new route53.ARecord(this, 'ARecord', {
         zone: domainZone!,
+        recordName: domainName,
         target: route53.RecordTarget.fromAlias(new route53targets.CloudFrontTarget(distribution)),
         ttl: cdk.Duration.minutes(5),
       });
