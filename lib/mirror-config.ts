@@ -36,7 +36,7 @@ export function getMirrorConfig(stage: string) {
                 interval: 720,
                 retry: 100,
                 provider: 'rsync',
-                upstream: 'rsync://mirrors.bfsu.edu.cn/debian/'
+                upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/debian/'
             },
             {
                 name: 'debian-security',
@@ -54,7 +54,7 @@ export function getMirrorConfig(stage: string) {
                 name: 'fedora',
                 interval: 1440,
                 provider: 'rsync',
-                upstream: 'rsync://mirrors.bfsu.edu.cn/fedora/'
+                upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/fedora/'
             },
             {
                 name: 'gitlab-ce',
