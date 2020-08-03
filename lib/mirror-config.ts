@@ -5,7 +5,7 @@ export function getMirrorConfig(stage: string) {
                 name: 'alpine',
                 interval: 1440,
                 provider: 'rsync',
-                upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/alpine/'
+                upstream: 'rsync://mirrors.bfsu.edu.cn/alpine/'
             },
             {
                 name: 'elrepo',
