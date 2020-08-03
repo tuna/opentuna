@@ -88,7 +88,7 @@ export class WebPortalStack extends cdk.NestedStack {
             action: elbv2.ListenerAction.redirect({
                 path: "/jobs",
             }),
-            priority: 5,
+            priority: 7,
             conditions: [elbv2.ListenerCondition.pathPatterns([
                 "/static/tunasync.json",
             ])],
