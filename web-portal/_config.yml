@@ -6,24 +6,14 @@
 # 'jekyll serve'. If you change this file, please restart the server process.
 
 # Site settings
-title: XXXX开源软件镜像站
-school: XXXX
-brand: TUNA Open Source Mirror
-operator: XXXX 
-logo: true
-meow_404: true
-issue_tag: tuna
+title: OpenTUNA 开源软件镜像站
+school: OpenTUNA
+brand: OpenTUNA Open Source Mirror
+issue_tag: opentuna
 baseurl: "" # the subpath of your site, e.g. /blog
 permalink: "/:categories/:title/"
-url: "https://mirrors.xxx"
-hostname: "mirrors.xxx"
-urlv4: "https://mirrors4.xxx"
-urlv6: "https://mirrors6.xxx"
-aosp: "aosp.xxx"
-arch_archive: "arch-archive.xxx"
-aur: "aur.xxx"
-pypi: "pypi.xxx"
-homelink: "https://tuna.moe"
+url: "https://opentuna.cn"
+hostname: "opentuna.cn"
 
 # Build settings
 highlighter: rouge

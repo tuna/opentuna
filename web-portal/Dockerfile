@@ -8,11 +8,8 @@ RUN mv mirror-web-snapshot-*/* .
 
 # Build with our config
 COPY _config.yml /data
+RUN rm -rf _posts/news/*
 RUN jekyll build
-
-# Setup isoinfo
-RUN mkdir -p static/status
-RUN wget https://mirrors.tuna.tsinghua.edu.cn/static/status/isoinfo.json -O static/status/isoinfo.json
 
 FROM nginx:1.18-alpine
 # Setup nginx
