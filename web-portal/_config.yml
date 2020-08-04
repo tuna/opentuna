@@ -9,6 +9,7 @@
 title: OpenTUNA 开源软件镜像站
 school: OpenTUNA
 brand: OpenTUNA Open Source Mirror
+logo: true
 issue_tag: opentuna
 baseurl: "" # the subpath of your site, e.g. /blog
 permalink: "/:categories/:title/"

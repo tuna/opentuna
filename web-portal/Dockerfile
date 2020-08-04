@@ -8,6 +8,9 @@ RUN mv mirror-web-snapshot-*/* .
 
 # Build with our config
 COPY _config.yml /data
+RUN wget https://github.com/tuna/opentuna-site/archive/master.tar.gz -O /site.tar.gz
+RUN tar xvf /site.tar.gz -C /tmp
+RUN cp /tmp/opentuna-site-*/options.yml _data/options.yml
 RUN rm -rf _posts/news/*
 RUN jekyll build
 
