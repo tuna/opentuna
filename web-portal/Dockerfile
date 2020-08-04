@@ -2,7 +2,7 @@ FROM tunathu/mirror-web:latest
 
 # Setup dependencies
 RUN apt-get install -y nginx
-RUN wget https://github.com/tuna/mirror-web/archive/snapshot-20200716.tar.gz -O /snapshot.tar.gz
+RUN wget https://github.com/tuna/mirror-web/archive/snapshot-20200804.tar.gz -O /snapshot.tar.gz
 RUN tar xvf /snapshot.tar.gz
 RUN mv mirror-web-snapshot-*/* .
 
@@ -12,6 +12,7 @@ RUN wget https://github.com/tuna/opentuna-site/archive/master.tar.gz -O /site.ta
 RUN tar xvf /site.tar.gz -C /tmp
 RUN cp /tmp/opentuna-site-*/options.yml _data/options.yml
 RUN rm -rf _posts/news/*
+RUN cp /tmp/opentuna-site-*/news/* _posts/news/
 RUN jekyll build
 
 FROM nginx:1.18-alpine
