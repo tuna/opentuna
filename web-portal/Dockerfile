@@ -13,6 +13,7 @@ RUN tar xvf /site.tar.gz -C /tmp
 RUN cp /tmp/opentuna-site-*/options.yml _data/options.yml
 RUN rm -rf _posts/news/*
 RUN cp /tmp/opentuna-site-*/news/* _posts/news/
+RUN find _posts/help -type f -regextype posix-egrep -not -regex ".*(alpine|centos|debian|docker|elrepo|epel|fedora|gitlab|grafana|jenkins|kubernetes|mariadb|mongodb|mysql|node|opensuse|pypi|ubuntu).*" -delete
 RUN jekyll build
 
 FROM nginx:1.18-alpine
