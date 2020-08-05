@@ -15,6 +15,9 @@ baseurl: "" # the subpath of your site, e.g. /blog
 permalink: "/:categories/:title/"
 url: "https://opentuna.cn"
 hostname: "opentuna.cn"
+hide_navbar: true
+hide_download: true
+hide_server_status: true
 
 # Build settings
 highlighter: rouge
