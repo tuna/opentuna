@@ -7,6 +7,8 @@ import ecr_assets = require('@aws-cdk/aws-ecr-assets');
 import autoscaling = require('@aws-cdk/aws-autoscaling');
 import lambda = require('@aws-cdk/aws-lambda');
 import efs = require('@aws-cdk/aws-efs');
+import events = require('@aws-cdk/aws-events');
+import events_targets = require('@aws-cdk/aws-events-targets');
 import path = require('path');
 import fs = require('fs');
 
@@ -167,6 +169,11 @@ export class WebPortalStack extends cdk.NestedStack {
             vpc: props.vpc,
             filesystem: lambda.FileSystem.fromEfsAccessPoint(accessPoint, '/mnt/data')
         });
+        // trigger lambda every day
+        const rule = new events.Rule(this, `${usage}GenIsoPeriodic`, {
+            schedule: events.Schedule.expression('rate(1 day)')
+        });
+        rule.addTarget(new events_targets.LambdaFunction(func));
 
         cdk.Tag.add(this, 'component', usage);
     }
