@@ -87,6 +87,7 @@ describe('Tuna Manager stack', () => {
     stack = new Tuna.OpentunaStack(app, 'OpenTunaStack', {
       vpcId,
       fileSystemId: 'fs-012345',
+      fileSystemSGId: 'sg-012345',
       notifyTopic: topic,
     });
   });
@@ -604,6 +605,7 @@ function overrideTunaStackWithContextDomainName(app: cdk.App, stack: cdk.Stack, 
   stack = new Tuna.OpentunaStack(app, 'OpenTunaStack', {
     vpcId,
     fileSystemId: 'fs-012345',
+    fileSystemSGId: 'sg-012345',
     notifyTopic: topic,
     env,
   });

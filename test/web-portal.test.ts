@@ -125,6 +125,8 @@ describe('Content Server stack', () => {
       ecsCluster,
       tunaManagerASG,
       tunaManagerALBTargetGroup,
+      fileSystemId: 'sg-012345',
+      fileSystemSGId: 'sg-012345',
     });
   });
 
@@ -180,6 +182,63 @@ describe('Content Server stack', () => {
       "TaskDefinition": {
         "Ref": "WebPortalTaskDefiniton3F36337B"
       }
+    });
+  });
+
+  test('Gen iso lambda function created', () => {
+    expect(stack).toHaveResourceLike('AWS::Lambda::Function', {
+      "Handler": "wrapper.lambda_handler",
+      "Role": {
+        "Fn::GetAtt": [
+          "WebPortalGenIsoLambdaServiceRole8DD34FF6",
+          "Arn"
+        ]
+      },
+      "Runtime": "python3.7",
+      "FileSystemConfigs": [
+        {
+          "LocalMountPath": "/mnt/data",
+          "Arn": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":elasticfilesystem:cn-north-1:1234567890xx:access-point/",
+                {
+                  "Ref": "WebPortalGenIsoLambdaAccessPoint2AA40B4D"
+                }
+              ]
+            ]
+          }
+        }
+      ],
+      "Tags": [
+        {
+          "Key": "component",
+          "Value": "WebPortal"
+        }
+      ],
+    });
+  });
+
+  test('Trigger gen iso lambda function every day', () => {
+    expect(stack).toHaveResourceLike('AWS::Events::Rule', {
+      "ScheduleExpression": "rate(1 day)",
+      "State": "ENABLED",
+      "Targets": [
+        {
+          "Arn": {
+            "Fn::GetAtt": [
+              "WebPortalGenIsoLambda7643ECF2",
+              "Arn"
+            ]
+          },
+          "Id": "Target0"
+        }
+      ]
     });
   });
 
