@@ -8,6 +8,7 @@ import autoscaling = require('@aws-cdk/aws-autoscaling');
 import lambda = require('@aws-cdk/aws-lambda');
 import efs = require('@aws-cdk/aws-efs');
 import path = require('path');
+import fs = require('fs');
 
 export interface WebPortalProps extends cdk.NestedStackProps {
     readonly vpc: ec2.IVpc;
@@ -134,18 +135,25 @@ export class WebPortalStack extends cdk.NestedStack {
         })
 
         // lambda function to generate iso download links
+        fs.copyFileSync(path.join(__dirname, '../web-portal/mirror-web/geninfo/genisolist.ini'), path.join(__dirname, '../web-portal/genisolist/genisolist.ini'));
+        fs.copyFileSync(path.join(__dirname, '../web-portal/mirror-web/geninfo/genisolist.py'), path.join(__dirname, '../web-portal/genisolist/genisolist.py'));
         const fileSystem = efs.FileSystem.fromFileSystemAttributes(this, `FileSystem`, {
             fileSystemId: props.fileSystemId,
             securityGroup: ec2.SecurityGroup.fromSecurityGroupId(this, `FileSystemSG`, props.fileSystemSGId)
         });
         const accessPoint = new efs.AccessPoint(this, `${usage}GenIsoLambdaAccessPoint`, {
             fileSystem,
-            path: '/data'
+            path: '/data',
+            // NOTE: is there a better way?
+            posixUser: {
+                uid: '0',
+                gid: '0',
+            },
         });
         const func = new lambda.Function(this, `${usage}GenIsoLambda`, {
-            code: lambda.Code.fromAsset(path.join(__dirname, '../web-portal/mirror-web/geninfo')),
+            code: lambda.Code.fromAsset(path.join(__dirname, '../web-portal/genisolist')),
             runtime: lambda.Runtime.PYTHON_3_7,
-            handler: 'genisolist',
+            handler: 'wrapper.lambda_handler',
             vpc: props.vpc,
             filesystem: lambda.FileSystem.fromEfsAccessPoint(accessPoint, '/mnt/data')
         });
