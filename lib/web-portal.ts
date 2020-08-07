@@ -5,6 +5,8 @@ import logs = require('@aws-cdk/aws-logs');
 import elbv2 = require('@aws-cdk/aws-elasticloadbalancingv2');
 import ecr_assets = require('@aws-cdk/aws-ecr-assets');
 import autoscaling = require('@aws-cdk/aws-autoscaling');
+import lambda = require('@aws-cdk/aws-lambda');
+import efs = require('@aws-cdk/aws-efs');
 import path = require('path');
 
 export interface WebPortalProps extends cdk.NestedStackProps {
@@ -13,6 +15,8 @@ export interface WebPortalProps extends cdk.NestedStackProps {
     readonly ecsCluster: ecs.Cluster;
     readonly tunaManagerASG: autoscaling.AutoScalingGroup;
     readonly tunaManagerALBTargetGroup: elbv2.ApplicationTargetGroup;
+    readonly fileSystemId: string;
+    readonly fileSystemSGId: string;
 }
 
 export class WebPortalStack extends cdk.NestedStack {
@@ -128,6 +132,23 @@ export class WebPortalStack extends cdk.NestedStack {
                 "/jobs",
             ])],
         })
+
+        // lambda function to generate iso download links
+        const fileSystem = efs.FileSystem.fromFileSystemAttributes(this, `FileSystem`, {
+            fileSystemId: props.fileSystemId,
+            securityGroup: ec2.SecurityGroup.fromSecurityGroupId(this, `FileSystemSG`, props.fileSystemSGId)
+        });
+        const accessPoint = new efs.AccessPoint(this, `${usage}GenIsoLambdaAccessPoint`, {
+            fileSystem,
+            path: '/data'
+        });
+        const func = new lambda.Function(this, `${usage}GenIsoLambda`, {
+            code: lambda.Code.fromAsset(path.join(__dirname, '../web-portal/mirror-web/geninfo')),
+            runtime: lambda.Runtime.PYTHON_3_7,
+            handler: 'genisolist',
+            vpc: props.vpc,
+            filesystem: lambda.FileSystem.fromEfsAccessPoint(accessPoint, '/mnt/data')
+        });
 
         cdk.Tag.add(this, 'component', usage);
     }

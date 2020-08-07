@@ -21,6 +21,7 @@ if (!vpcId) {
 }
 
 let fileSystemId = app.node.tryGetContext('fileSystemId');
+let fileSystemSGId = app.node.tryGetContext('fileSystemSGId');
 
 if (!fileSystemId) {
     const storageStack = new StorageStack(app, `${appPrefix}StorageStack${suffix}`, {
@@ -28,6 +29,7 @@ if (!fileSystemId) {
         vpcId,
     });
     fileSystemId = storageStack.fileSystem.fileSystemId;
+    fileSystemSGId = storageStack.fileSystem.connections.securityGroups[0].securityGroupId;
 }
 
 const commonStack = new CommonStack(app, `${appPrefix}CommonStack${suffix}`, {
@@ -37,6 +39,7 @@ new OpentunaStack(app, `${appPrefix}Stack${suffix}`, {
     env,
     vpcId,
     fileSystemId,
+    fileSystemSGId,
     notifyTopic: commonStack.notifyTopic,
 });
 

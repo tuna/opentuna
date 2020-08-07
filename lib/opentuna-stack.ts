@@ -18,6 +18,7 @@ import { WebPortalStack } from './web-portal';
 export interface OpenTunaStackProps extends cdk.StackProps {
   readonly vpcId: string;
   readonly fileSystemId: string;
+  readonly fileSystemSGId: string;
   readonly notifyTopic: sns.ITopic;
 }
 export class OpentunaStack extends cdk.Stack {
@@ -162,6 +163,8 @@ export class OpentunaStack extends cdk.Stack {
       ecsCluster,
       tunaManagerASG: tunaManagerStack.managerASG,
       tunaManagerALBTargetGroup: tunaManagerStack.managerALBTargetGroup,
+      fileSystemId: props.fileSystemId,
+      fileSystemSGId: props.fileSystemSGId,
     });
     tunaManagerSG.connections.allowFrom(externalALBSG, ec2.Port.tcp(80), 'Allow external ALB to access tuna manager');
 
