@@ -141,4 +141,11 @@ describe('Storage stack', () => {
       exportName: `${stack.stackName}-FileSystemId`,
     });
   });
+
+  test('FileSystemSGId output', () => {
+    expect(stack).toHaveOutput({
+      outputName: 'FileSystemSGId',
+      exportName: `${stack.stackName}-FileSystemSGId`,
+    });
+  });
 });
