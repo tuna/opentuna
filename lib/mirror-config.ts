@@ -36,7 +36,8 @@ export function getMirrorConfig(stage: string) {
                 interval: 720,
                 retry: 100,
                 provider: 'rsync',
-                upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/debian/'
+                upstream: 'rsync://mirrors.bfsu.edu.cn/debian/',
+                rsync_options: [ '"--no-H"' ]
             },
             {
                 name: 'debian-security',
