@@ -84,7 +84,7 @@ describe('Tunasync worker stack', () => {
   beforeEach(() => {
     app = new cdk.App({
       context: {
-        stage: 'testing',
+        stage: 'prod',
       }
     });
     const parentStack = new cdk.Stack(app, 'ParentStack', {
@@ -168,11 +168,15 @@ describe('Tunasync worker stack', () => {
     const confFilePath = path.join(__dirname, `../cdk.out/tuna-worker-conf-files`);
     const tunaWorkers = fs.readdirSync(confFilePath, { withFileTypes: true, }).filter( (file: fs.Dirent) => file.name.match(/tuna-worker-.*\.conf/gi));
     expect(tunaWorkers).toHaveLength(1);
-    const tunaWorkerConf = fs.readFileSync(`${confFilePath}/${tunaWorkers[0].name}`, 'utf-8');
-    expect(tunaWorkerConf).toContain('log_dir = "/mnt/efs/opentuna/log/{{.Name}}"');
-    expect(tunaWorkerConf).toContain('api_base = "++MANAGERURL++"');
-    expect(tunaWorkerConf).toContain('hostname = "++HOSTNAME++"');
 
+    const TOML = require('@iarna/toml');
+    const tunaConf = TOML.parse(fs.readFileSync(`${confFilePath}/${tunaWorkers[0].name}`, 'utf-8'));
+    expect(tunaConf.global.log_dir).toEqual('/mnt/efs/opentuna/log/{{.Name}}');
+    expect(tunaConf.manager.api_base).toEqual('++MANAGERURL++');
+    expect(tunaConf.server.hostname).toEqual('++HOSTNAME++');
+    expect(tunaConf.mirrors[5].name).toEqual('debian');
+    expect(tunaConf.mirrors[5].rsync_options).toEqual(['--no-H']);
+    
     const cloudwatchAgents = fs.readdirSync(confFilePath, { withFileTypes: true, }).filter( (file: fs.Dirent) => file.name.match(/amazon-cloudwatch-agent-.*\.conf/gi));
     expect(cloudwatchAgents).toHaveLength(1);
     const cloudwatchAgentConf = fs.readFileSync(`${confFilePath}/${cloudwatchAgents[0].name}`, 'utf-8');
@@ -180,6 +184,15 @@ describe('Tunasync worker stack', () => {
   });
 
   test('Tunasync worker launch configuration', () => {
+    const confFilePath = path.join(__dirname, `../cdk.out/tuna-worker-conf-files`);
+    const tunaWorkers = fs.readdirSync(confFilePath, { withFileTypes: true, }).filter( (file: fs.Dirent) => file.name.match(/tuna-worker-.*\.conf/gi));
+    expect(tunaWorkers).toHaveLength(1);
+    const tunasyncConfFilename = tunaWorkers[0].name;
+
+    const cloudwatchAgents = fs.readdirSync(confFilePath, { withFileTypes: true, }).filter( (file: fs.Dirent) => file.name.match(/amazon-cloudwatch-agent-.*\.conf/gi));
+    expect(cloudwatchAgents).toHaveLength(1);
+    const cloudAgentConfFilename = cloudwatchAgents[0].name;
+
     expect(stack).toHaveResourceLike('AWS::AutoScaling::LaunchConfiguration', {
       "InstanceType": "c5.xlarge",
       "AssociatePublicIpAddress": true,
@@ -203,11 +216,11 @@ describe('Tunasync worker stack', () => {
               {
                 "Ref": "referencetoParentStackAssetBucket9670BCE7Ref"
               },
-              "/tunasync/worker/tuna-worker-2a7a32b57c7f2feaf0044766dfebcc17.conf /etc/tunasync/worker.conf\nsed -i \"s|++HOSTNAME++|$HOSTNAME|g\" /etc/tunasync/worker.conf\nsed -i \"s|++MANAGERURL++|$MANAGERURL|g\" /etc/tunasync/worker.conf\n\n# create tunasync service\ncat > /usr/lib/systemd/system/tunasync.service << EOF\n[Unit]\nDescription=Tunasync Worker daemon\n\n[Service]\nExecStart=/usr/local/bin/tunasync worker -config /etc/tunasync/worker.conf\nExecReload=/bin/kill -HUP \\$MAINPID\nType=simple\nKillMode=control-group\nRestart=on-failure\nRestartSec=20s\nStandardOutput=syslog\nStandardError=syslog\nSyslogIdentifier=tunasync\n\n[Install]\nWantedBy=multi-user.target\nEOF\n\ncat > /etc/rsyslog.d/tunasync.conf << EOF\nif \\$programname == 'tunasync' then /var/log/tunasync.log\n& stop\nEOF\n\n# start tunasync service\nsystemctl daemon-reload\nsystemctl restart rsyslog\nsystemctl enable tunasync.service\nsystemctl start tunasync.service\n\n# configure conf json of CloudWatch agent\nmkdir -p /opt/aws/amazon-cloudwatch-agent/etc/\naws s3 cp s3://",
+              `/tunasync/worker/${tunasyncConfFilename} /etc/tunasync/worker.conf\nsed -i \"s|++HOSTNAME++|$HOSTNAME|g\" /etc/tunasync/worker.conf\nsed -i \"s|++MANAGERURL++|$MANAGERURL|g\" /etc/tunasync/worker.conf\n\n# create tunasync service\ncat > /usr/lib/systemd/system/tunasync.service << EOF\n[Unit]\nDescription=Tunasync Worker daemon\n\n[Service]\nExecStart=/usr/local/bin/tunasync worker -config /etc/tunasync/worker.conf\nExecReload=/bin/kill -HUP \\$MAINPID\nType=simple\nKillMode=control-group\nRestart=on-failure\nRestartSec=20s\nStandardOutput=syslog\nStandardError=syslog\nSyslogIdentifier=tunasync\n\n[Install]\nWantedBy=multi-user.target\nEOF\n\ncat > /etc/rsyslog.d/tunasync.conf << EOF\nif \\$programname == 'tunasync' then /var/log/tunasync.log\n& stop\nEOF\n\n# start tunasync service\nsystemctl daemon-reload\nsystemctl restart rsyslog\nsystemctl enable tunasync.service\nsystemctl start tunasync.service\n\n# configure conf json of CloudWatch agent\nmkdir -p /opt/aws/amazon-cloudwatch-agent/etc/\naws s3 cp s3://`,
               {
                 "Ref": "referencetoParentStackAssetBucket9670BCE7Ref"
               },
-              "/tunasync/worker/amazon-cloudwatch-agent-b0f6a145d6ac64abbc08396a57bd3036.conf /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json\n\n# start cloudwatch agent\n/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json -s &\n--//"
+              `/tunasync/worker/${cloudAgentConfFilename} /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json\n\n# start cloudwatch agent\n/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json -s &\n--//`
             ]
           ]
         }
