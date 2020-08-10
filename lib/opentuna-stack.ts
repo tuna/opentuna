@@ -15,6 +15,7 @@ import { TunaWorkerStack } from './tuna-worker';
 import { ContentServerStack } from './content-server';
 import { WebPortalStack } from './web-portal';
 import { CloudFrontInvalidate } from './cloudfront-invalidate';
+import { AnalyticsStack } from './analytics-stack'
 
 export interface OpenTunaStackProps extends cdk.StackProps {
   readonly vpcId: string;
@@ -256,6 +257,24 @@ export class OpentunaStack extends cdk.Stack {
         priceClass: cloudfront.PriceClass.PRICE_CLASS_ALL,
       });
     }
+    const OpentunaLogsBucket = new s3.Bucket(this, "OpentunaLogs");
+    const cloudfrontLogPrefix = "new/";
+    // nested stack for log analysis
+    const OpentunaAnalyticsStack = new AnalyticsStack(this, 'OpentunaAnalyticsStack', {
+      resourcePrefix: "opentuna",
+      newKeyPrefix: cloudfrontLogPrefix,
+      gzKeyPrefix: "partitioned-gz/",
+      parquetKeyPrefix: "partitioned-parquet/",
+      logBucket: OpentunaLogsBucket,
+      notifyTopic: props.notifyTopic
+    });
+    cloudfrontProps = Object.assign(cloudfrontProps, {
+      loggingConfig: {
+        bucket: OpentunaLogsBucket,
+        includeCookies: true,
+        prefix: cloudfrontLogPrefix
+      }
+    });
     const distribution = new cloudfront.CloudFrontWebDistribution(this, 'CloudFrontDist', cloudfrontProps);
 
     if (domainZone) {

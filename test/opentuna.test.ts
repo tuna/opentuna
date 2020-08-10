@@ -132,6 +132,42 @@ describe('Tuna Manager stack', () => {
     });
   });
 
+  test('Nested Analytics stack created', () => {
+    expect(stack).toHaveResourceLike('AWS::CloudFormation::Stack', {
+      "Parameters": {
+        "referencetoOpenTunaStackOpentunaLogs65B95EA3Ref": {
+          "Ref": "OpentunaLogsA361D92E"
+        },
+        "referencetoOpenTunaStackOpentunaLogs65B95EA3Arn": {
+          "Fn::GetAtt": [
+            "OpentunaLogsA361D92E",
+            "Arn"
+          ]
+        },
+        "referencetoOpenTunaStackAssetParameters2701798aa8ab89b534cb48e7dba835aaaf846305bfc31d56e470d21afb52cfbdS3Bucket5CE45487Ref": {
+          "Ref": "AssetParameters2701798aa8ab89b534cb48e7dba835aaaf846305bfc31d56e470d21afb52cfbdS3BucketE1D9B02B"
+        },
+        "referencetoOpenTunaStackAssetParameters2701798aa8ab89b534cb48e7dba835aaaf846305bfc31d56e470d21afb52cfbdS3VersionKey8BCE27ADRef": {
+          "Ref": "AssetParameters2701798aa8ab89b534cb48e7dba835aaaf846305bfc31d56e470d21afb52cfbdS3VersionKey0DC029EB"
+        }
+      }
+    });
+    expect(stack).toHaveResourceLike('AWS::CloudFront::Distribution', {
+      "DistributionConfig": {
+        "Logging": {
+          "Bucket": {
+            "Fn::GetAtt": [
+              "OpentunaLogsA361D92E",
+              "RegionalDomainName"
+            ]
+          },
+          "IncludeCookies": true,
+          "Prefix": "new/"
+        }
+      }
+    });
+  });
+
   test('Security groups between worker and manager with least privillege', () => {
     expect(stack).toHaveResourceLike('AWS::EC2::SecurityGroupIngress', {
       "IpProtocol": "tcp",
