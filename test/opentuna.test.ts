@@ -308,7 +308,7 @@ describe('Tuna Manager stack', () => {
       "ListenerArn": {
         "Ref": "ExternalALBDefaultPort806952D605"
       },
-      "Priority": 7
+      "Priority": 6
     });
 
     expect(stack).toHaveResource('AWS::ElasticLoadBalancingV2::ListenerRule', {
