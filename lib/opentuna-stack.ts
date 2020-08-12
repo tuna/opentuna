@@ -39,7 +39,7 @@ export class OpentunaStack extends cdk.Stack {
         domainName: domainZoneName,
       });
       useHTTPS = true;
-      if (iamCertId) {
+      if (iamCertId !== undefined) {
         // Use IAM first when specified
         cloudfrontCert = iamCertId;
       } else if (!stack.region.startsWith('cn-')) {
@@ -224,7 +224,7 @@ export class OpentunaStack extends cdk.Stack {
         ...cloudfrontProps
       };
 
-      if (cloudfrontCert instanceof acm.Certificate) {
+      if (cloudfrontCert instanceof acm.DnsValidatedCertificate) {
         // ACM cert
         cloudfrontProps = {
           aliasConfiguration: {

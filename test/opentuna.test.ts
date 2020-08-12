@@ -341,7 +341,7 @@ describe('Tuna Manager stack', () => {
   });
 
   test('alb listeners created with custom domain and domain zone', () => {
-    ({ app, stack } = overrideTunaStackWithContextDomainName(app, stack, vpcId));
+    ({ app, stack } = overrideTunaStackWithContextDomainName(app, stack, vpcId, undefined, 'ap-northeast-1'));
 
     expect(stack).toHaveResourceLike('AWS::ElasticLoadBalancingV2::Listener', {
       "DefaultActions": [
@@ -387,7 +387,8 @@ describe('Tuna Manager stack', () => {
   });
 
   test('certificate and r53 record of alb', () => {
-    ({ app, stack } = overrideTunaStackWithContextDomainName(app, stack, vpcId));
+    const iamCertId = 'iam-cert-id';
+    ({ app, stack } = overrideTunaStackWithContextDomainName(app, stack, vpcId, iamCertId));
 
     expect(stack).toHaveResourceLike('AWS::CertificateManager::Certificate', {
       "DomainName": "tuna.example.com",
@@ -436,84 +437,6 @@ describe('Tuna Manager stack', () => {
     });
   });
 
-  test('cloudfront distribution without iam cert in China', () => {
-    ({ app, stack } = overrideTunaStackWithContextDomainName(app, stack, vpcId));
-
-    expect(stack).toHaveResourceLike('AWS::CloudFront::Distribution', {
-      "DistributionConfig": {
-        "DefaultCacheBehavior": {
-          "ForwardedValues": {
-            "Headers": [
-              "Host",
-              "CloudFront-Forwarded-Proto"
-            ],
-            "QueryString": true
-          },
-          "DefaultTTL": 86400,
-          "TargetOriginId": "origin1",
-          "ViewerProtocolPolicy": "redirect-to-https"
-        },
-        "CacheBehaviors": [
-          {
-            "DefaultTTL": 300,
-            "ForwardedValues": {
-              "Headers": [
-                "Host",
-                "CloudFront-Forwarded-Proto"
-              ],
-              "QueryString": true
-            },
-            "PathPattern": "/jobs",
-            "TargetOriginId": "origin1",
-            "ViewerProtocolPolicy": "redirect-to-https"
-          }
-        ],
-        "DefaultRootObject": "",
-        "Enabled": true,
-        "HttpVersion": "http2",
-        "IPV6Enabled": false,
-        "PriceClass": "PriceClass_All",
-        "Origins": [
-          {
-            "CustomOriginConfig": {
-              "HTTPPort": 80,
-              "HTTPSPort": 443,
-              "OriginProtocolPolicy": "https-only",
-              "OriginSSLProtocols": [
-                "TLSv1.2"
-              ]
-            },
-            "DomainName": "cn-north-1.tuna.example.com",
-            "Id": "origin1"
-          }
-        ],
-      },
-    });
-
-    expect(stack).toHaveResourceLike('AWS::Route53::RecordSet', {
-      "Name": "tuna.example.com.",
-      "Type": "A",
-      "AliasTarget": {
-        "DNSName": {
-          "Fn::GetAtt": [
-            "CloudFrontDistCFDistribution179E93F8",
-            "DomainName"
-          ]
-        },
-        "HostedZoneId": {
-          "Fn::FindInMap": [
-            "AWSCloudFrontPartitionHostedZoneIdMap",
-            {
-              "Ref": "AWS::Partition"
-            },
-            "zoneId"
-          ]
-        }
-      },
-      "HostedZoneId": "12345678"
-    });
-  });
-
   test('cloudfront distribution with iam cert in China', () => {
     const iamCertId = 'iam-cert-id';
     ({ app, stack } = overrideTunaStackWithContextDomainName(app, stack, vpcId, iamCertId));
@@ -537,7 +460,6 @@ describe('Tuna Manager stack', () => {
   });
 
   test('cloudfront distribution in global', () => {
-    const iamCertId = 'iam-cert-id';
     ({ app, stack } = overrideTunaStackWithContextDomainName(app, stack, vpcId, undefined, 'ap-northeast-1'));
   
     expect(stack).toHaveResourceLike('AWS::CloudFront::Distribution', {
