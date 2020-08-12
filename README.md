@@ -37,6 +37,7 @@ It consits of below independent [stacks][cfn-stack],
   - Web Portal stack
     - use tuna/mirror-web
     - route tunasync.json to tunasync manager
+    - create and run lambda function periodically to generate iso download links
 
 ## Prerequisites
 - VPC with both public and private subnets crossing two AZs at least and NAT gateway. You can [deploy the network stack](#deploy-network-stackoptional) if you don't have a VPC sastfied the requirements.

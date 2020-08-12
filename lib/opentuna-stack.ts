@@ -18,6 +18,7 @@ import { WebPortalStack } from './web-portal';
 export interface OpenTunaStackProps extends cdk.StackProps {
   readonly vpcId: string;
   readonly fileSystemId: string;
+  readonly fileSystemSGId: string;
   readonly notifyTopic: sns.ITopic;
 }
 export class OpentunaStack extends cdk.Stack {
@@ -27,24 +28,30 @@ export class OpentunaStack extends cdk.Stack {
     const stack = cdk.Stack.of(this);
 
     const domainName = this.node.tryGetContext('domainName');
+    const domainZoneName = this.node.tryGetContext('domainZone');
+    const iamCertId = this.node.tryGetContext('iamCertId');
     let useHTTPS = false;
     let domainZone: r53.IHostedZone | undefined;
-    let cloudfrontCert: acm.Certificate | undefined;
-    if (domainName) {
-      const domainZoneName = this.node.tryGetContext('domainZone');
-      if (domainZoneName) {
-        domainZone = r53.HostedZone.fromLookup(this, 'HostedZone', {
-          domainName: domainZoneName,
+    // ACM or IAM certificate
+    let cloudfrontCert: acm.Certificate | string | null = null;
+    if (domainName && domainZoneName) {
+      domainZone = r53.HostedZone.fromLookup(this, 'HostedZone', {
+        domainName: domainZoneName,
+      });
+      useHTTPS = true;
+      if (iamCertId !== undefined) {
+        // Use IAM first when specified
+        cloudfrontCert = iamCertId;
+      } else if (!stack.region.startsWith('cn-')) {
+        // Try to use ACM certificate in us-east-1 for CloudFront
+        cloudfrontCert = new acm.DnsValidatedCertificate(this, 'CloudFrontCertificate', {
+          domainName: domainName,
+          hostedZone: domainZone,
+          validation: acm.CertificateValidation.fromDns(domainZone),
+          region: 'us-east-1',
         });
-        useHTTPS = true;
-        if (!stack.region.startsWith('cn-')) {
-          cloudfrontCert = new acm.DnsValidatedCertificate(this, 'CloudFrontCertificate', {
-            domainName: domainName,
-            hostedZone: domainZone,
-            validation: acm.CertificateValidation.fromDns(domainZone),
-            region: 'us-east-1',
-          });
-        }
+      } else {
+        throw new Error('You must specify iamCertId context for cn regions');
       }
     }
 
@@ -162,6 +169,8 @@ export class OpentunaStack extends cdk.Stack {
       ecsCluster,
       tunaManagerASG: tunaManagerStack.managerASG,
       tunaManagerALBTargetGroup: tunaManagerStack.managerALBTargetGroup,
+      fileSystemId: props.fileSystemId,
+      fileSystemSGId: props.fileSystemSGId,
     });
     tunaManagerSG.connections.allowFrom(externalALBSG, ec2.Port.tcp(80), 'Allow external ALB to access tuna manager');
 
@@ -207,24 +216,28 @@ export class OpentunaStack extends cdk.Stack {
         }
       ],
     } as cloudfront.CloudFrontWebDistributionProps;
-    if (cloudfrontCert) {
+    if (useHTTPS) {
       // when https is enabled
       cloudfrontProps = {
         httpVersion: cloudfront.HttpVersion.HTTP2,
-        aliasConfiguration: {
-          acmCertRef: cloudfrontCert.certificateArn,
-          names: [domainName],
-        },
+        viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         ...cloudfrontProps
       };
-    } else {
-      const iamCertId = this.node.tryGetContext('iamCertId');
-      if (iamCertId) {
+
+      if (cloudfrontCert instanceof acm.DnsValidatedCertificate) {
+        // ACM cert
         cloudfrontProps = {
-          httpVersion: cloudfront.HttpVersion.HTTP2,
-          viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+          aliasConfiguration: {
+            acmCertRef: cloudfrontCert.certificateArn,
+            names: [domainName],
+          },
+          ...cloudfrontProps
+        }
+      } else if (typeof cloudfrontCert === "string") {
+        // IAM cert
+        cloudfrontProps = {
           viewerCertificate: cloudfront.ViewerCertificate.fromIamCertificate(
-            iamCertId,
+            cloudfrontCert,
             {
               aliases: [domainName],
               securityPolicy: cloudfront.SecurityPolicyProtocol.TLS_V1_2_2018,

@@ -37,5 +37,11 @@ export class StorageStack extends cdk.Stack {
       exportName: `${stack.stackName}-FileSystemId`,
       description: 'EFS FileSystem id'
     });
+
+    new cdk.CfnOutput(this, 'FileSystemSGId', {
+      value: `${this.fileSystem.connections.securityGroups[0].securityGroupId}`,
+      exportName: `${stack.stackName}-FileSystemSGId`,
+      description: 'EFS FileSystem SG id'
+    });
   }
 }

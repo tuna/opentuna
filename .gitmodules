@@ -1,0 +1,3 @@
+[submodule "web-portal/mirror-web"]
+	path = web-portal/mirror-web
+	url = https://github.com/tuna/mirror-web

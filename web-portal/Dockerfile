@@ -2,18 +2,16 @@ FROM tunathu/mirror-web:latest
 
 # Setup dependencies
 RUN apt-get install -y nginx
-RUN wget https://github.com/tuna/mirror-web/archive/snapshot-20200805.tar.gz -O /snapshot.tar.gz
-RUN tar xvf /snapshot.tar.gz
-RUN mv mirror-web-snapshot-*/* .
+COPY mirror-web ./
 
 # Build with our config
 COPY _config.yml /data
 RUN wget https://github.com/tuna/opentuna-site/archive/master.tar.gz -O /site.tar.gz
 RUN tar xvf /site.tar.gz -C /tmp
 RUN cp /tmp/opentuna-site-*/options.yml _data/options.yml
-RUN rm -rf _posts/news/*
-RUN cp /tmp/opentuna-site-*/news/* _posts/news/
-RUN find _posts/help -type f -regextype posix-egrep -not -regex ".*(alpine|centos|debian|docker|elrepo|epel|fedora|gitlab|grafana|jenkins|kubernetes|mariadb|mongodb|mysql|node|opensuse|pypi|ubuntu).*" -delete
+RUN rm -rf news/_posts/*
+RUN cp /tmp/opentuna-site-*/news/* news/_posts/
+RUN find help/_posts -type f -regextype posix-egrep -not -regex ".*(alpine|centos|debian|docker|elrepo|epel|fedora|gitlab|grafana|jenkins|kubernetes|mariadb|mongodb|mysql|node|opensuse|pypi|ubuntu).*" -delete
 RUN jekyll build
 
 FROM nginx:1.18-alpine
