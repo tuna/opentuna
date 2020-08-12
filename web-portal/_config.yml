@@ -15,6 +15,7 @@ baseurl: "" # the subpath of your site, e.g. /blog
 permalink: "/:categories/:title/"
 url: "https://opentuna.cn"
 hostname: "opentuna.cn"
+pypi: "opentuna.cn/pypi/web"
 hide_navbar: true
 hide_server_status: true
 footnote: <img alt="wangan_icon" title="wangan_icon" src="//s3.cn-north-1.amazonaws.com.cn/aws-dam-prod/china/0089205973_1471847044_icon.888cd2e3d7db9c6704dffbf66a752793979f7bf2.png"> 京公网安备 11010802032579号 | 京ICP备20029420号-1
