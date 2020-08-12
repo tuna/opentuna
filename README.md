@@ -1,6 +1,11 @@
 # Open TUNA project!
 
-This is the infrasture project of Open TUNA on AWS orchestrated by [AWS CDK][aws-cdk]. It consits of below independent [stacks][cfn-stack],
+This is the infrasture project of Open TUNA on AWS orchestrated by [AWS CDK][aws-cdk].
+
+See overall architecture below,
+![overall-arch](arch-digram.png)
+
+It consits of below independent [stacks][cfn-stack],
 
 - Network stack(optional)
   - Create a dedicated VPC with public and private subnets across three AZs with NAT gateways
