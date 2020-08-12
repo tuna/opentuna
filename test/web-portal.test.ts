@@ -194,7 +194,7 @@ describe('Content Server stack', () => {
           "Arn"
         ]
       },
-      "Runtime": "python3.7",
+      "Runtime": "python3.8",
       "FileSystemConfigs": [
         {
           "LocalMountPath": "/mnt/data",

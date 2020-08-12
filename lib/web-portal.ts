@@ -164,7 +164,7 @@ export class WebPortalStack extends cdk.NestedStack {
         });
         const func = new lambda.Function(this, `${usage}GenIsoLambda`, {
             code: lambda.Code.fromAsset(path.join(__dirname, '../web-portal/genisolist')),
-            runtime: lambda.Runtime.PYTHON_3_7,
+            runtime: lambda.Runtime.PYTHON_3_8,
             handler: 'wrapper.lambda_handler',
             vpc: props.vpc,
             filesystem: lambda.FileSystem.fromEfsAccessPoint(accessPoint, '/mnt/data')
