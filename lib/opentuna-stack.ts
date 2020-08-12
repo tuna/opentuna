@@ -14,6 +14,7 @@ import { TunaManagerStack } from './tuna-manager';
 import { TunaWorkerStack } from './tuna-worker';
 import { ContentServerStack } from './content-server';
 import { WebPortalStack } from './web-portal';
+import { CloudFrontInvalidate } from './cloudfront-invalidate';
 
 export interface OpenTunaStackProps extends cdk.StackProps {
   readonly vpcId: string;
@@ -265,5 +266,12 @@ export class OpentunaStack extends cdk.Stack {
         ttl: cdk.Duration.minutes(5),
       });
     }
+
+    // invalidate cloudfront when web-portal changes
+    new CloudFrontInvalidate(this, 'CloudFrontInvalidate', {
+      distribution: distribution,
+      distributionPaths: ['/help', '/news', '/status', '/*.html'],
+      updateKey: webPortalStack.dockerImageHash,
+    });
   }
 }
