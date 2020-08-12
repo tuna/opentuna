@@ -459,6 +459,10 @@ describe('Tuna Manager stack', () => {
     });
   });
 
+  test('cloudfront distribution without iam cert in China should fail', () => {
+    expect(() => overrideTunaStackWithContextDomainName(app, stack, vpcId)).toThrow('You must specify iamCertId context for cn regions');
+  });
+
   test('cloudfront distribution in global', () => {
     ({ app, stack } = overrideTunaStackWithContextDomainName(app, stack, vpcId, undefined, 'ap-northeast-1'));
   
