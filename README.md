@@ -52,6 +52,12 @@ It consits of below independent [stacks][cfn-stack],
 - Install node.js LTS version, such as 12.x
 - Install Docker Engine
 
+### Checkout submodules
+```shell
+git submodule init
+git submodule update
+```
+
 ### Install project dependencies
 
 ```shell
