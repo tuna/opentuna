@@ -23,6 +23,8 @@ export interface WebPortalProps extends cdk.NestedStackProps {
 }
 
 export class WebPortalStack extends cdk.NestedStack {
+    readonly dockerImageHash: string;
+
     constructor(scope: cdk.Construct, id: string, props: WebPortalProps) {
         super(scope, id, props);
 
@@ -33,6 +35,7 @@ export class WebPortalStack extends cdk.NestedStack {
             directory: path.join(__dirname, '../web-portal'),
             repositoryName: "opentuna/web-portal"
         });
+        this.dockerImageHash = imageAsset.sourceHash;
 
         const httpPort = 80;
         const taskDefinition = new ecs.FargateTaskDefinition(this, `${usage}TaskDefiniton`, {});

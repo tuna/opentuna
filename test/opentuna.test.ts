@@ -440,7 +440,7 @@ describe('Tuna Manager stack', () => {
   test('cloudfront distribution with iam cert in China', () => {
     const iamCertId = 'iam-cert-id';
     ({ app, stack } = overrideTunaStackWithContextDomainName(app, stack, vpcId, iamCertId));
-  
+
     expect(stack).toHaveResourceLike('AWS::CloudFront::Distribution', {
       "DistributionConfig": {
         "Aliases": [
@@ -465,7 +465,7 @@ describe('Tuna Manager stack', () => {
 
   test('cloudfront distribution in global', () => {
     ({ app, stack } = overrideTunaStackWithContextDomainName(app, stack, vpcId, undefined, 'ap-northeast-1'));
-  
+
     expect(stack).toHaveResourceLike('AWS::CloudFront::Distribution', {
       "DistributionConfig": {
         "Origins": [
@@ -506,6 +506,62 @@ describe('Tuna Manager stack', () => {
     });
   });
 
+  test('custom resource to invalidate cloudfront distribution', () => {
+    ({ app, stack } = overrideTunaStackWithContextDomainName(app, stack, vpcId, undefined, 'ap-northeast-1'));
+
+    expect(stack).toHaveResourceLike('Custom::CloudFrontInvalidate', {
+      "ServiceToken": {
+        "Fn::GetAtt": [
+          "SingletonLambdaCloudFrontInvalidateSingletonFunctionED3F4C9D",
+          "Arn"
+        ]
+      },
+      "DistributionId": {
+        "Ref": "CloudFrontDistCFDistribution179E93F8"
+      },
+      "DistributionPaths": [
+        "/help/*",
+        "/news/*",
+        "/status/*",
+        "/*.html",
+        "/"
+      ],
+    });
+
+    expect(stack).toHaveResourceLike('AWS::IAM::Policy', {
+      "PolicyDocument": {
+        "Statement": [
+          {
+            "Action": [
+              "cloudfront:GetInvalidation",
+              "cloudfront:CreateInvalidation"
+            ],
+            "Effect": "Allow",
+            "Resource": "*"
+          }
+        ],
+        "Version": "2012-10-17"
+      },
+      "PolicyName": "SingletonLambdaCloudFrontInvalidateSingletonFunctionServiceRoleDefaultPolicyCA9A4034",
+      "Roles": [
+        {
+          "Ref": "SingletonLambdaCloudFrontInvalidateSingletonFunctionServiceRoleA1C3B8D5"
+        }
+      ]
+    });
+
+    expect(stack).toHaveResourceLike('AWS::Lambda::Function', {
+      "Handler": "index.handler",
+      "Role": {
+        "Fn::GetAtt": [
+          "SingletonLambdaCloudFrontInvalidateSingletonFunctionServiceRoleA1C3B8D5",
+          "Arn"
+        ]
+      },
+      "Runtime": "python3.8",
+      "Timeout": 600
+    });
+  });
 });
 
 function overrideTunaStackWithContextDomainName(app: cdk.App, stack: cdk.Stack, vpcId: string,
