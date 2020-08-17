@@ -1,11 +1,12 @@
-import cdk = require('@aws-cdk/core');
-import ec2 = require('@aws-cdk/aws-ec2');
-import ecs = require('@aws-cdk/aws-ecs');
-import logs = require('@aws-cdk/aws-logs');
-import custom_resources = require('@aws-cdk/custom-resources');
-import elbv2 = require('@aws-cdk/aws-elasticloadbalancingv2');
-import ecr_assets = require('@aws-cdk/aws-ecr-assets');
-import path = require('path');
+import * as cdk from '@aws-cdk/core';
+import * as ec2 from '@aws-cdk/aws-ec2';
+import * as ecs from '@aws-cdk/aws-ecs';
+import * as logs from '@aws-cdk/aws-logs';
+import * as custom_resources from '@aws-cdk/custom-resources';
+import * as elbv2 from '@aws-cdk/aws-elasticloadbalancingv2';
+import * as ecr_assets from '@aws-cdk/aws-ecr-assets';
+import * as path from 'path';
+import * as ssm from '@aws-cdk/aws-ssm';
 import { ITopic } from '@aws-cdk/aws-sns';
 
 export interface ContentServerProps extends cdk.NestedStackProps {
@@ -26,6 +27,20 @@ export class ContentServerStack extends cdk.NestedStack {
         const imageAsset = new ecr_assets.DockerImageAsset(this, `${usage}DockerImage`, {
             directory: path.join(__dirname, '../content-server'),
             repositoryName: "opentuna/content-server"
+        });
+
+        const param = new ssm.StringParameter(this, 'CloudWatchConfigStringParameter', {
+            description: 'Parameter for CloudWatch agent',
+            parameterName: 'CloudWatchConfig',
+            stringValue: JSON.stringify(
+                {
+                    "logs": {
+                        "metrics_collected": {
+                            "emf": {}
+                        }
+                    }
+                }
+            ),
         });
 
         const httpPort = 80;
@@ -125,7 +140,7 @@ export class ContentServerStack extends cdk.NestedStack {
         props.listener.addTargets('ContentServer', {
             port: httpPort,
             protocol: elbv2.ApplicationProtocol.HTTP,
-            targets: [ service ],
+            targets: [service],
             healthCheck: {
                 enabled: true,
                 timeout: cdk.Duration.seconds(15),
