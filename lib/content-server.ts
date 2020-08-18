@@ -7,6 +7,7 @@ import * as elbv2 from '@aws-cdk/aws-elasticloadbalancingv2';
 import * as ecr_assets from '@aws-cdk/aws-ecr-assets';
 import * as path from 'path';
 import * as ssm from '@aws-cdk/aws-ssm';
+import * as iam from '@aws-cdk/aws-iam';
 import { ITopic } from '@aws-cdk/aws-sns';
 
 export interface ContentServerProps extends cdk.NestedStackProps {
@@ -62,6 +63,20 @@ export class ContentServerStack extends cdk.NestedStack {
             containerPort: httpPort,
         });
 
+        // cloudwatch agent
+        const cloudWatchAgentlogGroup = new logs.LogGroup(this, `${usage}CloudWatchAgentLogGroup`, {
+            logGroupName: `/opentuna/cloudwatch-agent`,
+            removalPolicy: cdk.RemovalPolicy.DESTROY
+        });
+        const cloudWatchAgent = taskDefinition.addContainer("cloudwatch-agent", {
+            image: ecs.ContainerImage.fromRegistry('amazon/cloudwatch-agent:latest'),
+            logging: new ecs.AwsLogDriver({
+                streamPrefix: usage,
+                logGroup: cloudWatchAgentlogGroup,
+            }),
+            essential: false,
+        });
+
         // learned from https://github.com/aws-samples/amazon-efs-integrations/blob/master/lib/amazon-efs-integrations/ecs-service.ts
         const customTaskDefinitionJson = {
             containerDefinitions: [
@@ -69,8 +84,8 @@ export class ContentServerStack extends cdk.NestedStack {
                     essential: true,
                     image: imageAsset.imageUri,
                     logConfiguration: {
-                        logDriver: taskDefinition.defaultContainer!.logDriverConfig!.logDriver,
-                        options: taskDefinition.defaultContainer!.logDriverConfig!.options,
+                        logDriver: container.logDriverConfig!.logDriver,
+                        options: container.logDriverConfig!.options,
                     },
                     memory: 512,
                     user: "root",
@@ -79,7 +94,7 @@ export class ContentServerStack extends cdk.NestedStack {
                         sourceVolume: "efs-volume",
                         readOnly: true,
                     }],
-                    name: taskDefinition.defaultContainer!.containerName,
+                    name: container.containerName,
                     portMappings: [
                         {
                             containerPort: httpPort,
@@ -87,6 +102,19 @@ export class ContentServerStack extends cdk.NestedStack {
                             protocol: 'tcp',
                         },
                     ],
+                },
+                {
+                    essential: false,
+                    name: cloudWatchAgent.containerName,
+                    image: "amazon/cloudwatch-agent:latest",
+                    logConfiguration: {
+                        logDriver: cloudWatchAgent.logDriverConfig!.logDriver,
+                        options: cloudWatchAgent.logDriverConfig!.options,
+                    },
+                    secrets: [{
+                        name: 'CW_CONFIG_CONTENT',
+                        valueFrom: param.parameterName
+                    }]
                 },
             ],
             cpu: '256',
@@ -130,6 +158,11 @@ export class ContentServerStack extends cdk.NestedStack {
         });
         service.taskDefinition.executionRole?.grantPassRole(customTaskDefinition.grantPrincipal);
         service.taskDefinition.taskRole.grantPassRole(customTaskDefinition.grantPrincipal);
+
+        // setup cloudwatch agent permissions
+        service.taskDefinition.executionRole!.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonSSMReadOnlyAccess'));
+        service.taskDefinition.executionRole!.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName('CloudWatchAgentServerPolicy'));
+        service.taskDefinition.taskRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName('CloudWatchAgentServerPolicy'));
 
         // we will replace this hack when CDK supports EFS in Fargate
         (service.node.tryFindChild('Service') as ecs.CfnService)?.addPropertyOverride(
