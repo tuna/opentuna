@@ -35,6 +35,20 @@ export class ContentServerStack extends cdk.NestedStack {
             parameterName: 'CloudWatchConfig',
             stringValue: JSON.stringify(
                 {
+                    "metrics": {
+                        "namespace": "OpenTuna",
+                        "metrics_collected": {
+                            "cpu": {
+                                "measurement": ["usage_idle", "usage_iowait", "usage_system", "usage_user"],
+                            },
+                            "net": {
+                                "measurement": ["bytes_sent", "bytes_recv", "packets_sent", "packets_recv"],
+                            },
+                            "netstat": {
+                                "measurement": ["tcp_established", "tcp_syn_sent", "tcp_close"],
+                            }
+                        }
+                    },
                     "logs": {
                         "metrics_collected": {
                             "emf": {}
