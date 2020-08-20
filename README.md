@@ -37,6 +37,8 @@ It consits of below independent [stacks][cfn-stack],
     - build custom nginx container
     - use Fargate service to serve mirror contents
     - internet facing appplication load balancer
+    - collect CloudWatch metrics
+    - setup auto scaling rules based on metrics
   - Web Portal stack
     - use tuna/mirror-web
     - route tunasync.json to tunasync manager
