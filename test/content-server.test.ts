@@ -255,4 +255,76 @@ describe('Content Server stack', () => {
     });
   });
 
+  test('Content server auto scaling policy created', () => {
+    expect(stack).toHaveResourceLike('AWS::ApplicationAutoScaling::ScalingPolicy', {
+      "PolicyName": "ParentStackContentServerStackContentServerFargateTaskCountTargetNetworkScalingUpperPolicy9729D2C2",
+      "PolicyType": "StepScaling",
+      "ScalingTargetId": {
+        "Ref": "ContentServerFargateTaskCountTarget2FDCB83B"
+      },
+      "StepScalingPolicyConfiguration": {
+        "AdjustmentType": "ChangeInCapacity",
+        "MetricAggregationType": "Average",
+        "StepAdjustments": [
+          {
+            "MetricIntervalLowerBound": 0,
+            "MetricIntervalUpperBound": 234881024,
+            "ScalingAdjustment": 4
+          },
+          {
+            "MetricIntervalLowerBound": 234881024,
+            "ScalingAdjustment": 8
+          }
+        ]
+      }
+    });
+
+    expect(stack).toHaveResourceLike('AWS::ApplicationAutoScaling::ScalableTarget', {
+      "MaxCapacity": 16,
+      "MinCapacity": 1,
+      "ResourceId": {
+        "Fn::Join": [
+          "",
+          [
+            "service/",
+            {
+              "Ref": "referencetoParentStackECSCluster91DDD157Ref"
+            },
+            "/",
+            {
+              "Fn::GetAtt": [
+                "ContentServerFargateServiceDD089154",
+                "Name"
+              ]
+            }
+          ]
+        ]
+      },
+      "ScalableDimension": "ecs:service:DesiredCount",
+      "ServiceNamespace": "ecs"
+    });
+
+    expect(stack).toHaveResourceLike('AWS::CloudWatch::Alarm', {
+      "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+      "EvaluationPeriods": 1,
+      "AlarmActions": [
+        {
+          "Ref": "ContentServerFargateTaskCountTargetNetworkScalingUpperPolicyB7F0C8F8"
+        }
+      ],
+      "AlarmDescription": "Upper threshold scaling alarm",
+      "Dimensions": [
+        {
+          "Name": "interface",
+          "Value": "eth1"
+        }
+      ],
+      "MetricName": "net_bytes_sent",
+      "Namespace": "OpenTuna",
+      "Period": 300,
+      "Statistic": "Average",
+      "Threshold": 33554432
+    });
+  });
+
 });
