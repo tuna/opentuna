@@ -2,12 +2,12 @@ import * as cdk from '@aws-cdk/core';
 import * as ec2 from '@aws-cdk/aws-ec2';
 import * as ecs from '@aws-cdk/aws-ecs';
 import * as logs from '@aws-cdk/aws-logs';
-import * as custom_resources from '@aws-cdk/custom-resources';
 import * as elbv2 from '@aws-cdk/aws-elasticloadbalancingv2';
 import * as ecr_assets from '@aws-cdk/aws-ecr-assets';
 import * as path from 'path';
 import * as ssm from '@aws-cdk/aws-ssm';
 import * as iam from '@aws-cdk/aws-iam';
+import * as cloudwatch from '@aws-cdk/aws-cloudwatch';
 import { ITopic } from '@aws-cdk/aws-sns';
 
 export interface ContentServerProps extends cdk.NestedStackProps {
@@ -119,7 +119,7 @@ export class ContentServerStack extends cdk.NestedStack {
         service.taskDefinition.executionRole!.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName('CloudWatchAgentServerPolicy'));
         service.taskDefinition.taskRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName('CloudWatchAgentServerPolicy'));
 
-        props.listener.addTargets('ContentServer', {
+        const targetGroup = props.listener.addTargets('ContentServer', {
             port: httpPort,
             protocol: elbv2.ApplicationProtocol.HTTP,
             targets: [service],
@@ -128,6 +128,33 @@ export class ContentServerStack extends cdk.NestedStack {
                 timeout: cdk.Duration.seconds(15),
             },
         });
+
+        // auto scaling
+        const scaling = service.autoScaleTaskCount({
+            minCapacity: 1,
+            maxCapacity: 16
+        });
+        scaling.scaleOnMetric('NetworkScaling', {
+            metric: new cloudwatch.Metric({
+                namespace: 'OpenTuna',
+                metricName: 'net_bytes_sent',
+                dimensions: {
+                    interface: "eth1"
+                }
+            }),
+            scalingSteps: [{
+                upper: 32 * 1024 * 1024, // 32MiB
+                change: 0,
+            }, {
+                lower: 32 * 1024 * 1024, // 32MiB
+                upper: 256 * 1024 * 1024, // 256MiB
+                change: 4,
+            }, {
+                lower: 256 * 1024 * 1024, // 256MiB
+                change: 8,
+            }]
+        });
+
 
         cdk.Tag.add(this, 'component', usage);
     }
