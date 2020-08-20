@@ -59,7 +59,15 @@ export class ContentServerStack extends cdk.NestedStack {
         });
 
         const httpPort = 80;
-        const taskDefinition = new ecs.FargateTaskDefinition(this, `${usage}TaskDefiniton`, {});
+        const taskDefinition = new ecs.FargateTaskDefinition(this, `${usage}TaskDefiniton`, {
+            volumes: [{
+                name: "efs-volume",
+                efsVolumeConfiguration: {
+                    fileSystemId: props.fileSystemId,
+                    rootDirectory: "/data",
+                },
+            }]
+        });
         const logGroup = new logs.LogGroup(this, `${usage}LogGroup`, {
             logGroupName: `/opentuna/contentserver`,
             removalPolicy: cdk.RemovalPolicy.DESTROY
@@ -72,6 +80,11 @@ export class ContentServerStack extends cdk.NestedStack {
                 datetimeFormat: "\\[%d/%b/%Y:%H:%M:%S %z\\]",
                 logGroup,
             }),
+        });
+        container.addMountPoints({
+            readOnly: true,
+            containerPath: "/mnt/efs",
+            sourceVolume: "efs-volume"
         });
         container.addPortMappings({
             containerPort: httpPort,
@@ -89,79 +102,9 @@ export class ContentServerStack extends cdk.NestedStack {
                 logGroup: cloudWatchAgentlogGroup,
             }),
             essential: false,
-        });
-
-        // learned from https://github.com/aws-samples/amazon-efs-integrations/blob/master/lib/amazon-efs-integrations/ecs-service.ts
-        const customTaskDefinitionJson = {
-            containerDefinitions: [
-                {
-                    essential: true,
-                    image: imageAsset.imageUri,
-                    logConfiguration: {
-                        logDriver: container.logDriverConfig!.logDriver,
-                        options: container.logDriverConfig!.options,
-                    },
-                    memory: 512,
-                    user: "root",
-                    mountPoints: [{
-                        containerPath: "/mnt/efs",
-                        sourceVolume: "efs-volume",
-                        readOnly: true,
-                    }],
-                    name: container.containerName,
-                    portMappings: [
-                        {
-                            containerPort: httpPort,
-                            hostPort: httpPort,
-                            protocol: 'tcp',
-                        },
-                    ],
-                },
-                {
-                    essential: false,
-                    name: cloudWatchAgent.containerName,
-                    image: "amazon/cloudwatch-agent:latest",
-                    logConfiguration: {
-                        logDriver: cloudWatchAgent.logDriverConfig!.logDriver,
-                        options: cloudWatchAgent.logDriverConfig!.options,
-                    },
-                    secrets: [{
-                        name: 'CW_CONFIG_CONTENT',
-                        valueFrom: param.parameterName
-                    }]
-                },
-            ],
-            cpu: '256',
-            executionRoleArn: taskDefinition.executionRole?.roleArn,
-            family: taskDefinition.family,
-            memory: '1024',
-            networkMode: ecs.NetworkMode.AWS_VPC,
-            requiresCompatibilities: [
-                "FARGATE",
-            ],
-            taskRoleArn: taskDefinition.taskRole.roleArn,
-            volumes: [{
-                name: "efs-volume",
-                efsVolumeConfiguration: {
-                    fileSystemId: props.fileSystemId,
-                    rootDirectory: "/data",
-                },
-            }],
-        };
-
-        const createOrUpdateCustomTaskDefinition = {
-            action: 'registerTaskDefinition',
-            outputPath: 'taskDefinition.taskDefinitionArn',
-            parameters: customTaskDefinitionJson,
-            physicalResourceId: custom_resources.PhysicalResourceId.fromResponse('taskDefinition.taskDefinitionArn'),
-            service: 'ECS',
-        };
-        const customTaskDefinition = new custom_resources.AwsCustomResource(this, `${usage}CustomTaskDefinition`, {
-            onCreate: createOrUpdateCustomTaskDefinition,
-            onUpdate: createOrUpdateCustomTaskDefinition,
-            policy: custom_resources.AwsCustomResourcePolicy.fromSdkCalls({
-                resources: custom_resources.AwsCustomResourcePolicy.ANY_RESOURCE,
-            }),
+            secrets: {
+                "CW_CONFIG_CONTENT": ecs.Secret.fromSsmParameter(param),
+            }
         });
 
         const service = new ecs.FargateService(this, `${usage}Fargate`, {
@@ -170,19 +113,11 @@ export class ContentServerStack extends cdk.NestedStack {
             platformVersion: ecs.FargatePlatformVersion.VERSION1_4,
             taskDefinition,
         });
-        service.taskDefinition.executionRole?.grantPassRole(customTaskDefinition.grantPrincipal);
-        service.taskDefinition.taskRole.grantPassRole(customTaskDefinition.grantPrincipal);
 
         // setup cloudwatch agent permissions
         service.taskDefinition.executionRole!.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonSSMReadOnlyAccess'));
         service.taskDefinition.executionRole!.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName('CloudWatchAgentServerPolicy'));
         service.taskDefinition.taskRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName('CloudWatchAgentServerPolicy'));
-
-        // we will replace this hack when CDK supports EFS in Fargate
-        (service.node.tryFindChild('Service') as ecs.CfnService)?.addPropertyOverride(
-            'TaskDefinition',
-            customTaskDefinition.getResponseField('taskDefinition.taskDefinitionArn'),
-        );
 
         props.listener.addTargets('ContentServer', {
             port: httpPort,
