@@ -92,7 +92,7 @@ export class ContentServerStack extends cdk.NestedStack {
 
         // cloudwatch agent
         const cloudWatchAgentlogGroup = new logs.LogGroup(this, `${usage}CloudWatchAgentLogGroup`, {
-            logGroupName: `/opentuna/cloudwatch-agent`,
+            logGroupName: `/opentuna/${usage}/cloudwatch-agent`,
             removalPolicy: cdk.RemovalPolicy.DESTROY
         });
         const cloudWatchAgent = taskDefinition.addContainer("cloudwatch-agent", {
