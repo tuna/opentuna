@@ -18,6 +18,7 @@ It consits of below independent [stacks][cfn-stack],
   - S3 asset bucket
   - application load balancer
   - CloudFront distribution
+  - log analysis for CloudFront distribution
   - ECS cluster for content server and web portal
   - issue SSL certificate from ACM(only for using Route53 as DNS resolver)
   - create DNS record in R53 for ALB and CloudFront(only for using Route53 as DNS resolver)

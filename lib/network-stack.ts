@@ -36,6 +36,6 @@ export class NetworkStack extends cdk.Stack {
       value: `${vpc.vpcId}`,
       exportName: `${stack.stackName}-VPCId`,
       description: 'Vpc id'
-    });    
+    });
   }
 }

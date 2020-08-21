@@ -10,3 +10,6 @@ cdk.context.json
 
 # Parcel default cache directory
 .parcel-cache
+
+# lambda functions in directory `lib`
+!lib/functions/*.js
