@@ -115,7 +115,8 @@ export class ContentServerStack extends cdk.NestedStack {
         });
 
         // setup cloudwatch agent permissions
-        service.taskDefinition.executionRole!.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonSSMReadOnlyAccess'));
+        // allow execution role to read ssm parameter
+        param.grantRead(service.taskDefinition.executionRole!);
         service.taskDefinition.executionRole!.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName('CloudWatchAgentServerPolicy'));
         service.taskDefinition.taskRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName('CloudWatchAgentServerPolicy'));
 
