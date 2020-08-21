@@ -153,7 +153,8 @@ export class ContentServerStack extends cdk.NestedStack {
             }, {
                 lower: 256 * 1024 * 1024, // 256MiB
                 change: 8,
-            }]
+            }],
+            cooldown: cdk.Duration.minutes(10)
         });
 
 
