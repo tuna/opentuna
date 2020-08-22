@@ -21,7 +21,7 @@ export class CloudFrontInvalidate extends cdk.Construct {
 
         const handler = new lambda.SingletonFunction(this, `${id}CustomResourceHandler`, {
             uuid: 'CloudFrontInvalidateSingletonFunction',
-            code: lambda.Code.fromAsset(path.join(__dirname, '../cloudfront-invalidate')),
+            code: lambda.Code.fromAsset(path.join(__dirname, './lambda.d/cloudfront-invalidate')),
             runtime: lambda.Runtime.PYTHON_3_8,
             handler: 'index.handler',
             timeout: cdk.Duration.minutes(10),
