@@ -75,4 +75,30 @@ describe('Tuna Common stack', () => {
   test('Topic property assigend.', () => {
     expect(stack.notifyTopic).toBeDefined();
   });
+
+  test('Slack subscription is created.', () => {
+    app = new cdk.App({
+      context: {
+        slackHookUrl: 'https://hooks.slack.com/hook-123',
+      }
+    });
+    stack = new Tuna.CommonStack(app, 'CommonStack', {
+      env: {
+        region: 'cn-northwest-1',
+        account: '1234567890xx',
+      },
+    });
+    expect(stack).toHaveResourceLike('AWS::SNS::Subscription', {
+      "Protocol": "lambda",
+      "TopicArn": {
+        "Ref": "NotificationTopicEB7A0DF1"
+      },
+      "Endpoint": {
+        "Fn::GetAtt": [
+          "slacksubscription7C84D7B0",
+          "Arn"
+        ]
+      }
+    });
+  });
 });

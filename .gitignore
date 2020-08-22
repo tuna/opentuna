@@ -12,4 +12,4 @@ cdk.context.json
 .parcel-cache
 
 # lambda functions in directory `lib`
-!lib/functions/*.js
+!lib/lambda.d/cf-logs-analytics/*.js

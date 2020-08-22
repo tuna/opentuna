@@ -9,6 +9,7 @@ import lambda = require('@aws-cdk/aws-lambda');
 import s3 = require('@aws-cdk/aws-s3');
 import sns = require('@aws-cdk/aws-sns');
 import targets = require('@aws-cdk/aws-events-targets');
+import * as path from 'path';
 
 export interface AnalyticsProps extends cdk.NestedStackProps {
     readonly resourcePrefix: string;
@@ -159,7 +160,7 @@ export class AnalyticsStack extends cdk.NestedStack {
 
         const transformPartFn = new lambda.Function(this, 'transformPartFn', {
             runtime: lambda.Runtime.NODEJS_12_X,
-            code: lambda.Code.asset(`${__dirname}/functions`),
+            code: lambda.Code.asset(path.join(__dirname, './lambda.d/cf-logs-analytics')),
             handler: 'transformPartition.handler',
             timeout: cdk.Duration.seconds(900),
             initialPolicy: [
@@ -199,7 +200,7 @@ export class AnalyticsStack extends cdk.NestedStack {
 
         const createPartFn = new lambda.Function(this, 'createPartFn', {
             runtime: lambda.Runtime.NODEJS_12_X,
-            code: lambda.Code.asset(`${__dirname}/functions`),
+            code: lambda.Code.asset(path.join(__dirname, './lambda.d/cf-logs-analytics')),
             handler: 'createPartitions.handler',
             timeout: cdk.Duration.seconds(5),
             initialPolicy: [
@@ -236,7 +237,7 @@ export class AnalyticsStack extends cdk.NestedStack {
 
         const moveNewAccessLogsFn = new lambda.Function(this, 'moveNewAccessLogsFn', {
             runtime: lambda.Runtime.NODEJS_12_X,
-            code: lambda.Code.asset(`${__dirname}/functions`),
+            code: lambda.Code.asset(path.join(__dirname, './lambda.d/cf-logs-analytics')),
             handler: 'moveAccessLogs.handler',
             timeout: cdk.Duration.seconds(30),
             initialPolicy: [

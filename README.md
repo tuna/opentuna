@@ -14,6 +14,7 @@ It consits of below independent [stacks][cfn-stack],
   - EFS file system
 - Common stack
   - SNS notification topic
+  - Slack webhook subscription(optional)
 - Open TUNA stack
   - S3 asset bucket
   - application load balancer
@@ -83,6 +84,10 @@ npx cdk deploy OpenTunaStorageStack -c vpcId=<existing vpc Id>
 ```shell
 # deploy storage and common stack as well
 npx cdk deploy OpenTunaStack -c vpcId=<existing vpc Id>
+
+# subscribe SNS topic alaram to slack channel
+# Go to https://slack.com/apps/A0F7XDUAZ-incoming-webhooks to apply for webhook
+npx cdk deploy OpenTunaStack -c vpcId=<existing vpc Id> -c slackHookUrl=<webhook url>
 
 # or deploy with existing EFS filesystem
 npx cdk deploy OpenTunaStack -c vpcId=<existing vpc Id> -c fileSystemId=<existing filesystem id>
