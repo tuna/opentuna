@@ -264,7 +264,7 @@ describe('Content Server stack', () => {
       },
       "StepScalingPolicyConfiguration": {
         "AdjustmentType": "ChangeInCapacity",
-        "MetricAggregationType": "Average",
+        "Cooldown": 600,
         "StepAdjustments": [
           {
             "MetricIntervalLowerBound": 0,
@@ -313,16 +313,48 @@ describe('Content Server stack', () => {
         }
       ],
       "AlarmDescription": "Upper threshold scaling alarm",
-      "Dimensions": [
+      "Metrics": [
         {
-          "Name": "interface",
-          "Value": "eth1"
+          "Expression": "eth0 + eth1",
+          "Id": "expr_1"
+        },
+        {
+          "Id": "eth0",
+          "MetricStat": {
+            "Metric": {
+              "Dimensions": [
+                {
+                  "Name": "interface",
+                  "Value": "eth0"
+                }
+              ],
+              "MetricName": "net_bytes_sent",
+              "Namespace": "OpenTuna"
+            },
+            "Period": 300,
+            "Stat": "Average"
+          },
+          "ReturnData": false
+        },
+        {
+          "Id": "eth1",
+          "MetricStat": {
+            "Metric": {
+              "Dimensions": [
+                {
+                  "Name": "interface",
+                  "Value": "eth1"
+                }
+              ],
+              "MetricName": "net_bytes_sent",
+              "Namespace": "OpenTuna"
+            },
+            "Period": 300,
+            "Stat": "Average"
+          },
+          "ReturnData": false
         }
       ],
-      "MetricName": "net_bytes_sent",
-      "Namespace": "OpenTuna",
-      "Period": 300,
-      "Statistic": "Average",
       "Threshold": 33554432
     });
   });

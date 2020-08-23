@@ -135,14 +135,29 @@ export class ContentServerStack extends cdk.NestedStack {
             minCapacity: 1,
             maxCapacity: 16
         });
+        const bytesSentEth0 = new cloudwatch.Metric({
+            namespace: 'OpenTuna',
+            metricName: 'net_bytes_sent',
+            dimensions: {
+                interface: "eth0"
+            }
+        });
+        const bytesSentEth1 = new cloudwatch.Metric({
+            namespace: 'OpenTuna',
+            metricName: 'net_bytes_sent',
+            dimensions: {
+                interface: "eth1"
+            }
+        });
+        const sum = new cloudwatch.MathExpression({
+            expression: 'eth0 + eth1',
+            usingMetrics: {
+                eth0: bytesSentEth0,
+                eth1: bytesSentEth1
+            }
+        });
         scaling.scaleOnMetric('NetworkScaling', {
-            metric: new cloudwatch.Metric({
-                namespace: 'OpenTuna',
-                metricName: 'net_bytes_sent',
-                dimensions: {
-                    interface: "eth1"
-                }
-            }),
+            metric: sum,
             scalingSteps: [{
                 upper: 32 * 1024 * 1024, // 32MiB
                 change: 0,
