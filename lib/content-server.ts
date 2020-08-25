@@ -140,14 +140,16 @@ export class ContentServerStack extends cdk.NestedStack {
             metricName: 'net_bytes_sent',
             dimensions: {
                 interface: "eth0"
-            }
+            },
+            statistic: cloudwatch.Statistic.SUM,
         });
         const bytesSentEth1 = new cloudwatch.Metric({
             namespace: 'OpenTuna',
             metricName: 'net_bytes_sent',
             dimensions: {
                 interface: "eth1"
-            }
+            },
+            statistic: cloudwatch.Statistic.SUM,
         });
         const sum = new cloudwatch.MathExpression({
             expression: 'eth0 + eth1',
