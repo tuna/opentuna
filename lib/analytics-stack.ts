@@ -258,6 +258,7 @@ export class AnalyticsStack extends cdk.NestedStack {
             alarmDescription: `MoveNewAccessLogs Lambda Function Alarm.`,
             threshold: 1,
             evaluationPeriods: 3,
+            treatMissingData: cloudwatch.TreatMissingData.IGNORE,
             actionsEnabled: true,
         });
         moveNewAccessLogsFnAlarm.addAlarmAction(new cw_actions.SnsAction(props.notifyTopic));

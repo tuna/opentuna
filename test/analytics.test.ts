@@ -1150,6 +1150,7 @@ describe('Tuna log analysis stack', () => {
       "Period": 3600,
       "Statistic": "Sum",
       "Threshold": 1,
+      "TreatMissingData": "ignore"
     });
   });
 });
