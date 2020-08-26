@@ -268,17 +268,40 @@ describe('Content Server stack', () => {
         "StepAdjustments": [
           {
             "MetricIntervalLowerBound": 0,
-            "MetricIntervalUpperBound": 6442450944,
+            "MetricIntervalUpperBound": 6 * 1024 * 1024 * 1024,
             "ScalingAdjustment": 4
           },
           {
-            "MetricIntervalLowerBound": 6442450944,
-            "MetricIntervalUpperBound": 19327352832,
+            "MetricIntervalLowerBound": 6 * 1024 * 1024 * 1024,
+            "MetricIntervalUpperBound": 18 * 1024 * 1024 * 1024,
             "ScalingAdjustment": 8
           },
           {
-            "MetricIntervalLowerBound": 19327352832,
+            "MetricIntervalLowerBound": 18 * 1024 * 1024 * 1024,
             "ScalingAdjustment": 16
+          }
+        ]
+      }
+    });
+
+    expect(stack).toHaveResourceLike('AWS::ApplicationAutoScaling::ScalingPolicy', {
+      "PolicyName": "ParentStackContentServerStackContentServerFargateTaskCountTargetNetworkScalingLowerPolicy8B8E8BD5",
+      "PolicyType": "StepScaling",
+      "ScalingTargetId": {
+        "Ref": "ContentServerFargateTaskCountTarget2FDCB83B"
+      },
+      "StepScalingPolicyConfiguration": {
+        "AdjustmentType": "ExactCapacity",
+        "Cooldown": 600,
+        "StepAdjustments": [
+          {
+            "MetricIntervalLowerBound": -3 * 1024 * 1024 * 1024,
+            "MetricIntervalUpperBound": 0,
+            "ScalingAdjustment": 2
+          },
+          {
+            "MetricIntervalUpperBound": -3 * 1024 * 1024 * 1024,
+            "ScalingAdjustment": 1
           }
         ]
       }
@@ -360,7 +383,7 @@ describe('Content Server stack', () => {
           "ReturnData": false
         }
       ],
-      "Threshold": 6442450944
+      "Threshold": 6 * 1024 * 1024 * 1024
     });
 
     expect(stack).toHaveResourceLike('AWS::CloudWatch::Alarm', {
@@ -414,7 +437,7 @@ describe('Content Server stack', () => {
           "ReturnData": false
         }
       ],
-      "Threshold": 6442450944
+      "Threshold": 6 * 1024 * 1024 * 1024
     });
   });
 
