@@ -263,17 +263,17 @@ describe('Content Server stack', () => {
         "Ref": "ContentServerFargateTaskCountTarget2FDCB83B"
       },
       "StepScalingPolicyConfiguration": {
-        "AdjustmentType": "ChangeInCapacity",
+        "AdjustmentType": "ExactCapacity",
         "Cooldown": 600,
         "StepAdjustments": [
           {
             "MetricIntervalLowerBound": 0,
-            "MetricIntervalUpperBound": 234881024,
-            "ScalingAdjustment": 4
+            "MetricIntervalUpperBound": 6442450944,
+            "ScalingAdjustment": 8
           },
           {
-            "MetricIntervalLowerBound": 234881024,
-            "ScalingAdjustment": 8
+            "MetricIntervalLowerBound": 6442450944,
+            "ScalingAdjustment": 16
           }
         ]
       }
@@ -331,8 +331,8 @@ describe('Content Server stack', () => {
               "MetricName": "net_bytes_sent",
               "Namespace": "OpenTuna"
             },
-            "Period": 300,
-            "Stat": "Average"
+            "Period": 60,
+            "Stat": "Sum"
           },
           "ReturnData": false
         },
@@ -349,13 +349,13 @@ describe('Content Server stack', () => {
               "MetricName": "net_bytes_sent",
               "Namespace": "OpenTuna"
             },
-            "Period": 300,
-            "Stat": "Average"
+            "Period": 60,
+            "Stat": "Sum"
           },
           "ReturnData": false
         }
       ],
-      "Threshold": 33554432
+      "Threshold": 6442450944
     });
   });
 

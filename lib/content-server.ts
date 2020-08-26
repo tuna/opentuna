@@ -9,6 +9,7 @@ import * as ssm from '@aws-cdk/aws-ssm';
 import * as iam from '@aws-cdk/aws-iam';
 import * as cloudwatch from '@aws-cdk/aws-cloudwatch';
 import { ITopic } from '@aws-cdk/aws-sns';
+import { AdjustmentType } from '@aws-cdk/aws-autoscaling';
 
 export interface ContentServerProps extends cdk.NestedStackProps {
     readonly vpc: ec2.IVpc;
@@ -151,27 +152,32 @@ export class ContentServerStack extends cdk.NestedStack {
             },
             statistic: cloudwatch.Statistic.SUM,
         });
+        // number of bytes sent every minute
         const sum = new cloudwatch.MathExpression({
             expression: 'eth0 + eth1',
             usingMetrics: {
                 eth0: bytesSentEth0,
                 eth1: bytesSentEth1
-            }
+            },
+            period: cdk.Duration.minutes(1)
         });
+        // each task instance has about 500Mbps bandwidth
+        // 500Mbps * 60s/min / 8b/B = 3750MB/min
         scaling.scaleOnMetric('NetworkScaling', {
             metric: sum,
             scalingSteps: [{
-                upper: 32 * 1024 * 1024, // 32MiB
-                change: 0,
-            }, {
-                lower: 32 * 1024 * 1024, // 32MiB
-                upper: 256 * 1024 * 1024, // 256MiB
+                upper: 6 * 1024 * 1024 * 1024, // 6GiB
                 change: 4,
             }, {
-                lower: 256 * 1024 * 1024, // 256MiB
+                lower: 6 * 1024 * 1024 * 1024, // 6GiB
+                upper: 12 * 1024 * 1024 * 1024, // 12GiB
                 change: 8,
+            }, {
+                lower: 12 * 1024 * 1024 * 1024, // 12GiB
+                change: 16,
             }],
-            cooldown: cdk.Duration.minutes(10)
+            cooldown: cdk.Duration.minutes(10),
+            adjustmentType: AdjustmentType.EXACT_CAPACITY
         });
 
 
