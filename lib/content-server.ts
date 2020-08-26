@@ -110,7 +110,7 @@ export class ContentServerStack extends cdk.NestedStack {
 
         const service = new ecs.FargateService(this, `${usage}Fargate`, {
             cluster: props.ecsCluster,
-            desiredCount: 2,
+            desiredCount: 1,
             platformVersion: ecs.FargatePlatformVersion.VERSION1_4,
             taskDefinition,
         });
@@ -166,14 +166,22 @@ export class ContentServerStack extends cdk.NestedStack {
         scaling.scaleOnMetric('NetworkScaling', {
             metric: sum,
             scalingSteps: [{
+                upper: 3 * 1024 * 1024 * 1024, // 3GiB
+                change: 1,
+            }, {
+                lower: 3 * 1024 * 1024 * 1024, // 3GiB
                 upper: 6 * 1024 * 1024 * 1024, // 6GiB
-                change: 4,
+                change: 2,
             }, {
                 lower: 6 * 1024 * 1024 * 1024, // 6GiB
                 upper: 12 * 1024 * 1024 * 1024, // 12GiB
-                change: 8,
+                change: 4,
             }, {
                 lower: 12 * 1024 * 1024 * 1024, // 12GiB
+                upper: 24 * 1024 * 1024 * 1024, // 24GiB
+                change: 8,
+            }, {
+                lower: 24 * 1024 * 1024 * 1024, // 24GiB
                 change: 16,
             }],
             cooldown: cdk.Duration.minutes(10),

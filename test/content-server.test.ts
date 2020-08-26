@@ -269,10 +269,15 @@ describe('Content Server stack', () => {
           {
             "MetricIntervalLowerBound": 0,
             "MetricIntervalUpperBound": 6442450944,
-            "ScalingAdjustment": 8
+            "ScalingAdjustment": 4
           },
           {
             "MetricIntervalLowerBound": 6442450944,
+            "MetricIntervalUpperBound": 19327352832,
+            "ScalingAdjustment": 8
+          },
+          {
+            "MetricIntervalLowerBound": 19327352832,
             "ScalingAdjustment": 16
           }
         ]
@@ -313,6 +318,60 @@ describe('Content Server stack', () => {
         }
       ],
       "AlarmDescription": "Upper threshold scaling alarm",
+      "Metrics": [
+        {
+          "Expression": "eth0 + eth1",
+          "Id": "expr_1"
+        },
+        {
+          "Id": "eth0",
+          "MetricStat": {
+            "Metric": {
+              "Dimensions": [
+                {
+                  "Name": "interface",
+                  "Value": "eth0"
+                }
+              ],
+              "MetricName": "net_bytes_sent",
+              "Namespace": "OpenTuna"
+            },
+            "Period": 60,
+            "Stat": "Sum"
+          },
+          "ReturnData": false
+        },
+        {
+          "Id": "eth1",
+          "MetricStat": {
+            "Metric": {
+              "Dimensions": [
+                {
+                  "Name": "interface",
+                  "Value": "eth1"
+                }
+              ],
+              "MetricName": "net_bytes_sent",
+              "Namespace": "OpenTuna"
+            },
+            "Period": 60,
+            "Stat": "Sum"
+          },
+          "ReturnData": false
+        }
+      ],
+      "Threshold": 6442450944
+    });
+
+    expect(stack).toHaveResourceLike('AWS::CloudWatch::Alarm', {
+      "ComparisonOperator": "LessThanOrEqualToThreshold",
+      "EvaluationPeriods": 1,
+      "AlarmActions": [
+        {
+          "Ref": "ContentServerFargateTaskCountTargetNetworkScalingLowerPolicyD3C9DE56"
+        }
+      ],
+      "AlarmDescription": "Lower threshold scaling alarm",
       "Metrics": [
         {
           "Expression": "eth0 + eth1",
