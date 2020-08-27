@@ -275,7 +275,7 @@ describe('Content Server stack', () => {
           "Statistic": "Average"
         },
         "ScaleInCooldown": 600,
-        "ScaleOutCooldown": 600,
+        "ScaleOutCooldown": 180,
         "TargetValue": 3 * 1024 * 1024 * 1024
       }
     });

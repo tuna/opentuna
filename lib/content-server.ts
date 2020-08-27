@@ -152,7 +152,7 @@ export class ContentServerStack extends cdk.NestedStack {
             metric: bytesSentEth1,
             targetValue: 3 * 1024 * 1024 * 1024, // 3GiB/min
             scaleInCooldown: cdk.Duration.minutes(10),
-            scaleOutCooldown: cdk.Duration.minutes(10),
+            scaleOutCooldown: cdk.Duration.minutes(3),
         });
 
         cdk.Tag.add(this, 'component', usage);
