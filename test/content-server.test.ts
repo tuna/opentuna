@@ -257,55 +257,29 @@ describe('Content Server stack', () => {
 
   test('Content server auto scaling policy created', () => {
     expect(stack).toHaveResourceLike('AWS::ApplicationAutoScaling::ScalingPolicy', {
-      "PolicyName": "ParentStackContentServerStackContentServerFargateTaskCountTargetNetworkScalingUpperPolicy9729D2C2",
-      "PolicyType": "StepScaling",
+      "PolicyName": "ParentStackContentServerStackContentServerFargateTaskCountTargetNetworkBandwidthScaling2D6CB7AD",
+      "PolicyType": "TargetTrackingScaling",
       "ScalingTargetId": {
         "Ref": "ContentServerFargateTaskCountTarget2FDCB83B"
       },
-      "StepScalingPolicyConfiguration": {
-        "AdjustmentType": "ExactCapacity",
-        "Cooldown": 600,
-        "StepAdjustments": [
-          {
-            "MetricIntervalLowerBound": 0,
-            "MetricIntervalUpperBound": 6 * 1024 * 1024 * 1024,
-            "ScalingAdjustment": 4
-          },
-          {
-            "MetricIntervalLowerBound": 6 * 1024 * 1024 * 1024,
-            "MetricIntervalUpperBound": 18 * 1024 * 1024 * 1024,
-            "ScalingAdjustment": 8
-          },
-          {
-            "MetricIntervalLowerBound": 18 * 1024 * 1024 * 1024,
-            "ScalingAdjustment": 16
-          }
-        ]
+      "TargetTrackingScalingPolicyConfiguration": {
+        "CustomizedMetricSpecification": {
+          "Dimensions": [
+            {
+              "Name": "interface",
+              "Value": "eth1"
+            }
+          ],
+          "MetricName": "net_bytes_sent",
+          "Namespace": "OpenTuna",
+          "Statistic": "Average"
+        },
+        "ScaleInCooldown": 600,
+        "ScaleOutCooldown": 600,
+        "TargetValue": 3 * 1024 * 1024 * 1024
       }
     });
 
-    expect(stack).toHaveResourceLike('AWS::ApplicationAutoScaling::ScalingPolicy', {
-      "PolicyName": "ParentStackContentServerStackContentServerFargateTaskCountTargetNetworkScalingLowerPolicy8B8E8BD5",
-      "PolicyType": "StepScaling",
-      "ScalingTargetId": {
-        "Ref": "ContentServerFargateTaskCountTarget2FDCB83B"
-      },
-      "StepScalingPolicyConfiguration": {
-        "AdjustmentType": "ExactCapacity",
-        "Cooldown": 600,
-        "StepAdjustments": [
-          {
-            "MetricIntervalLowerBound": -3 * 1024 * 1024 * 1024,
-            "MetricIntervalUpperBound": 0,
-            "ScalingAdjustment": 2
-          },
-          {
-            "MetricIntervalUpperBound": -3 * 1024 * 1024 * 1024,
-            "ScalingAdjustment": 1
-          }
-        ]
-      }
-    });
 
     expect(stack).toHaveResourceLike('AWS::ApplicationAutoScaling::ScalableTarget', {
       "MaxCapacity": 16,
@@ -332,113 +306,6 @@ describe('Content Server stack', () => {
       "ServiceNamespace": "ecs"
     });
 
-    expect(stack).toHaveResourceLike('AWS::CloudWatch::Alarm', {
-      "ComparisonOperator": "GreaterThanOrEqualToThreshold",
-      "EvaluationPeriods": 1,
-      "AlarmActions": [
-        {
-          "Ref": "ContentServerFargateTaskCountTargetNetworkScalingUpperPolicyB7F0C8F8"
-        }
-      ],
-      "AlarmDescription": "Upper threshold scaling alarm",
-      "Metrics": [
-        {
-          "Expression": "eth0 + eth1",
-          "Id": "expr_1"
-        },
-        {
-          "Id": "eth0",
-          "MetricStat": {
-            "Metric": {
-              "Dimensions": [
-                {
-                  "Name": "interface",
-                  "Value": "eth0"
-                }
-              ],
-              "MetricName": "net_bytes_sent",
-              "Namespace": "OpenTuna"
-            },
-            "Period": 60,
-            "Stat": "Sum"
-          },
-          "ReturnData": false
-        },
-        {
-          "Id": "eth1",
-          "MetricStat": {
-            "Metric": {
-              "Dimensions": [
-                {
-                  "Name": "interface",
-                  "Value": "eth1"
-                }
-              ],
-              "MetricName": "net_bytes_sent",
-              "Namespace": "OpenTuna"
-            },
-            "Period": 60,
-            "Stat": "Sum"
-          },
-          "ReturnData": false
-        }
-      ],
-      "Threshold": 6 * 1024 * 1024 * 1024
-    });
-
-    expect(stack).toHaveResourceLike('AWS::CloudWatch::Alarm', {
-      "ComparisonOperator": "LessThanOrEqualToThreshold",
-      "EvaluationPeriods": 1,
-      "AlarmActions": [
-        {
-          "Ref": "ContentServerFargateTaskCountTargetNetworkScalingLowerPolicyD3C9DE56"
-        }
-      ],
-      "AlarmDescription": "Lower threshold scaling alarm",
-      "Metrics": [
-        {
-          "Expression": "eth0 + eth1",
-          "Id": "expr_1"
-        },
-        {
-          "Id": "eth0",
-          "MetricStat": {
-            "Metric": {
-              "Dimensions": [
-                {
-                  "Name": "interface",
-                  "Value": "eth0"
-                }
-              ],
-              "MetricName": "net_bytes_sent",
-              "Namespace": "OpenTuna"
-            },
-            "Period": 60,
-            "Stat": "Sum"
-          },
-          "ReturnData": false
-        },
-        {
-          "Id": "eth1",
-          "MetricStat": {
-            "Metric": {
-              "Dimensions": [
-                {
-                  "Name": "interface",
-                  "Value": "eth1"
-                }
-              ],
-              "MetricName": "net_bytes_sent",
-              "Namespace": "OpenTuna"
-            },
-            "Period": 60,
-            "Stat": "Sum"
-          },
-          "ReturnData": false
-        }
-      ],
-      "Threshold": 6 * 1024 * 1024 * 1024
-    });
   });
 
 });

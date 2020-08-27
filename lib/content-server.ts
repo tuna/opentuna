@@ -136,58 +136,24 @@ export class ContentServerStack extends cdk.NestedStack {
             minCapacity: 1,
             maxCapacity: 16
         });
-        const bytesSentEth0 = new cloudwatch.Metric({
-            namespace: 'OpenTuna',
-            metricName: 'net_bytes_sent',
-            dimensions: {
-                interface: "eth0"
-            },
-            statistic: cloudwatch.Statistic.SUM,
-        });
         const bytesSentEth1 = new cloudwatch.Metric({
             namespace: 'OpenTuna',
             metricName: 'net_bytes_sent',
             dimensions: {
                 interface: "eth1"
             },
-            statistic: cloudwatch.Statistic.SUM,
-        });
-        // number of bytes sent every minute
-        const sum = new cloudwatch.MathExpression({
-            expression: 'eth0 + eth1',
-            usingMetrics: {
-                eth0: bytesSentEth0,
-                eth1: bytesSentEth1
-            },
-            period: cdk.Duration.minutes(1)
+            statistic: cloudwatch.Statistic.AVERAGE,
         });
         // each task instance has about 500Mbps bandwidth
         // 500Mbps * 60s/min / 8b/B = 3750MB/min
-        scaling.scaleOnMetric('NetworkScaling', {
-            metric: sum,
-            scalingSteps: [{
-                upper: 3 * 1024 * 1024 * 1024, // 3GiB
-                change: 1,
-            }, {
-                lower: 3 * 1024 * 1024 * 1024, // 3GiB
-                upper: 6 * 1024 * 1024 * 1024, // 6GiB
-                change: 2,
-            }, {
-                lower: 6 * 1024 * 1024 * 1024, // 6GiB
-                upper: 12 * 1024 * 1024 * 1024, // 12GiB
-                change: 4,
-            }, {
-                lower: 12 * 1024 * 1024 * 1024, // 12GiB
-                upper: 24 * 1024 * 1024 * 1024, // 24GiB
-                change: 8,
-            }, {
-                lower: 24 * 1024 * 1024 * 1024, // 24GiB
-                change: 16,
-            }],
-            cooldown: cdk.Duration.minutes(10),
-            adjustmentType: AdjustmentType.EXACT_CAPACITY
+        // must use direct metric because of api limitation
+        // so only eth1 is used
+        scaling.scaleToTrackCustomMetric('NetworkBandwidthScaling', {
+            metric: bytesSentEth1,
+            targetValue: 3 * 1024 * 1024 * 1024, // 3GiB/min
+            scaleInCooldown: cdk.Duration.minutes(10),
+            scaleOutCooldown: cdk.Duration.minutes(10),
         });
-
 
         cdk.Tag.add(this, 'component', usage);
     }
