@@ -8,6 +8,8 @@ import * as path from 'path';
 import * as ssm from '@aws-cdk/aws-ssm';
 import * as iam from '@aws-cdk/aws-iam';
 import * as cloudwatch from '@aws-cdk/aws-cloudwatch';
+import * as events from '@aws-cdk/aws-events';
+import * as targets from '@aws-cdk/aws-events-targets';
 import { ITopic } from '@aws-cdk/aws-sns';
 import { AdjustmentType } from '@aws-cdk/aws-autoscaling';
 
@@ -244,6 +246,17 @@ export class ContentServerStack extends cdk.NestedStack {
                 label: 'Task Count'
             })]
         }));
+
+        // Monitor auto scaling event
+        const rule = new events.Rule(this, 'AutoScaleRule', {
+            description: 'Monitor content server auto scaling',
+            eventPattern: {
+                source: ["aws.application-autoscaling"],
+            },
+            targets: [new targets.SnsTopic(props.notifyTopic, {
+                message: events.RuleTargetInput.fromText(`Service ${events.EventField.fromPath('$.detail.resourceId')} is scaled from ${events.EventField.fromPath('$.detail.oldDesiredCapacity')} to ${events.EventField.fromPath('$.detail.newDesiredCapacity')}`),
+            })]
+        });
 
         cdk.Tag.add(this, 'component', usage);
     }

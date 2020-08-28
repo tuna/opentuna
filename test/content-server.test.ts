@@ -375,4 +375,32 @@ describe('Content Server stack', () => {
     });
   });
 
+  test('Event rule of auto scaling created', () => {
+    expect(stack).toHaveResourceLike('AWS::Events::Rule', {
+      "Description": "Monitor content server auto scaling",
+      "EventPattern": {
+        "source": [
+          "aws.application-autoscaling"
+        ]
+      },
+      "State": "ENABLED",
+      "Targets": [
+        {
+          "Arn": {
+            "Ref": "referencetoParentStackTestTopicCEBA4F88Ref",
+          },
+          "Id": "Target0",
+          "InputTransformer": {
+            "InputPathsMap": {
+              "detail-resourceId": "$.detail.resourceId",
+              "detail-oldDesiredCapacity": "$.detail.oldDesiredCapacity",
+              "detail-newDesiredCapacity": "$.detail.newDesiredCapacity"
+            },
+            "InputTemplate": "\"Service <detail-resourceId> is scaled from <detail-oldDesiredCapacity> to <detail-newDesiredCapacity>\""
+          }
+        }
+      ]
+    });
+  });
+
 });
