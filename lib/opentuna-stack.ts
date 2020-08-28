@@ -215,6 +215,12 @@ export class OpentunaStack extends cdk.Stack {
         {
           errorCode: 503,
           errorCachingMinTtl: 0,
+        },
+        {
+          errorCode: 404,
+          errorCachingMinTtl: 3600,
+          responseCode: 404,
+          responsePagePath: '/404.html',
         }
       ],
     } as cloudfront.CloudFrontWebDistributionProps;
