@@ -130,6 +130,21 @@ export class OpentunaStack extends cdk.Stack {
 
     // CloudWatch dashboard
     const dashboard = new cloudwatch.Dashboard(this, 'Dashboard');
+    dashboard.addWidgets(new cloudwatch.GraphWidget({
+      title: 'ALB Processed Data',
+      left: [externalALB.metricProcessedBytes({
+        label: 'Bytes',
+      })]
+    }), new cloudwatch.GraphWidget({
+      title: 'ALB Connections',
+      left: [externalALB.metricNewConnectionCount({
+        label: 'New',
+      }), externalALB.metricActiveConnectionCount({
+        label: 'Active',
+      }), externalALB.metricRejectedConnectionCount({
+        label: 'Rejected',
+      })]
+    }));
 
     // Tunasync Manager stack
     const tunaManagerStack = new TunaManagerStack(this, 'TunaManagerStack', {
