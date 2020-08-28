@@ -107,7 +107,7 @@ describe('Content Server stack', () => {
       open: true,
     });
     const ecsCluster = new ecs.Cluster(parentStack, `ECSCluster`, {
-        vpc,
+      vpc,
     });
 
     stack = new Tuna.ContentServerStack(parentStack, 'ContentServerStack', {
@@ -173,85 +173,163 @@ describe('Content Server stack', () => {
         }
       ],
       "TaskDefinition": {
-        "Fn::GetAtt": [
-          "ContentServerCustomTaskDefinitionFA01326F",
-          "taskDefinition.taskDefinitionArn"
-        ]
+        "Ref": "ContentServerTaskDefinitonD84A7F1E"
       }
     });
   });
 
-  test('Content server custom task definition created', () => {
-    expect(stack).toHaveResourceLike('Custom::AWS', {
-      "Create": {
-        "parameters": {
-          "containerDefinitions": [
-            {
-              "essential": "TRUE:BOOLEAN",
-              "logConfiguration": {
-                "logDriver": "awslogs",
-                "options": {
-                  "awslogs-group": {
-                    "Ref": "ContentServerLogGroup11BFCDBD"
-                  },
-                  "awslogs-stream-prefix": "ContentServer",
-                  "awslogs-region": "cn-north-1",
-                  "awslogs-datetime-format": "\\[%d/%b/%Y:%H:%M:%S %z\\]"
-                }
+  test('Content server task definition created', () => {
+    expect(stack).toHaveResourceLike('AWS::ECS::TaskDefinition', {
+      "ContainerDefinitions": [
+        {
+          "Essential": true,
+          "LogConfiguration": {
+            "LogDriver": "awslogs",
+            "Options": {
+              "awslogs-group": {
+                "Ref": "ContentServerLogGroup11BFCDBD"
               },
-              "memory": 512,
-              "user": "root",
-              "mountPoints": [
-                {
-                  "containerPath": "/mnt/efs",
-                  "sourceVolume": "efs-volume",
-                  "readOnly": "TRUE:BOOLEAN"
-                }
-              ],
-              "name": "content-server",
-              "portMappings": [
-                {
-                  "containerPort": 80,
-                  "hostPort": 80,
-                  "protocol": "tcp"
-                }
-              ]
+              "awslogs-stream-prefix": "ContentServer",
+              "awslogs-region": "cn-north-1",
+              "awslogs-datetime-format": "\\[%d/%b/%Y:%H:%M:%S %z\\]"
+            }
+          },
+          "MountPoints": [
+            {
+              "ContainerPath": "/mnt/efs",
+              "SourceVolume": "efs-volume",
+              "ReadOnly": true
             }
           ],
-          "cpu": "256",
-          "executionRoleArn": {
-            "Fn::GetAtt": [
-              "ContentServerTaskDefinitonExecutionRole329A7455",
-              "Arn"
-            ]
-          },
-          "memory": "1024",
-          "networkMode": "awsvpc",
-          "requiresCompatibilities": [
-            "FARGATE"
-          ],
-          "taskRoleArn": {
-            "Fn::GetAtt": [
-              "ContentServerTaskDefinitonTaskRole24E35D33",
-              "Arn"
-            ]
-          },
-          "volumes": [
+          "Name": "content-server",
+          "PortMappings": [
             {
-              "name": "efs-volume",
-              "efsVolumeConfiguration": {
-                "fileSystemId": "fs-012345",
-                "rootDirectory": "/data"
-              }
+              "ContainerPort": 80,
+              "Protocol": "tcp"
             }
           ]
         },
-        "physicalResourceId": {
-          "responsePath": "taskDefinition.taskDefinitionArn"
-        },
-        "service": "ECS"
+        {
+          "Essential": false,
+          "Image": "amazon/cloudwatch-agent:latest",
+          "LogConfiguration": {
+            "LogDriver": "awslogs",
+            "Options": {
+              "awslogs-group": {
+                "Ref": "ContentServerCloudWatchAgentLogGroupC48BB829"
+              },
+              "awslogs-stream-prefix": "ContentServer",
+              "awslogs-region": "cn-north-1",
+            }
+          },
+          "Name": "cloudwatch-agent"
+        }
+      ],
+      "Cpu": "256",
+      "ExecutionRoleArn": {
+        "Fn::GetAtt": [
+          "ContentServerTaskDefinitonExecutionRole329A7455",
+          "Arn"
+        ]
       },
+      "Memory": "512",
+      "NetworkMode": "awsvpc",
+      "RequiresCompatibilities": [
+        "FARGATE"
+      ],
+      "TaskRoleArn": {
+        "Fn::GetAtt": [
+          "ContentServerTaskDefinitonTaskRole24E35D33",
+          "Arn"
+        ]
+      },
+      "Volumes": [
+        {
+          "Name": "efs-volume",
+          "EfsVolumeConfiguration": {
+            "FileSystemId": "fs-012345",
+            "RootDirectory": "/data"
+          }
+        }
+      ]
     });
+  });
+
+  test('Content server auto scaling policy created', () => {
+    expect(stack).toHaveResourceLike('AWS::ApplicationAutoScaling::ScalingPolicy', {
+      "PolicyName": "ParentStackContentServerStackContentServerFargateTaskCountTargetNetworkBandwidthScaling2D6CB7AD",
+      "PolicyType": "TargetTrackingScaling",
+      "ScalingTargetId": {
+        "Ref": "ContentServerFargateTaskCountTarget2FDCB83B"
+      },
+      "TargetTrackingScalingPolicyConfiguration": {
+        "CustomizedMetricSpecification": {
+          "Dimensions": [
+            {
+              "Name": "interface",
+              "Value": "eth1"
+            }
+          ],
+          "MetricName": "net_bytes_sent",
+          "Namespace": "OpenTuna",
+          "Statistic": "Average"
+        },
+        "ScaleInCooldown": 600,
+        "ScaleOutCooldown": 180,
+        "TargetValue": 3 * 1024 * 1024 * 1024
+      }
+    });
+
+    expect(stack).toHaveResourceLike('AWS::ApplicationAutoScaling::ScalingPolicy', {
+      "PolicyName": "ParentStackContentServerStackContentServerFargateTaskCountTargetCpuIowaitScaling5705D108",
+      "PolicyType": "TargetTrackingScaling",
+      "ScalingTargetId": {
+        "Ref": "ContentServerFargateTaskCountTarget2FDCB83B"
+      },
+      "TargetTrackingScalingPolicyConfiguration": {
+        "CustomizedMetricSpecification": {
+          "Dimensions": [
+            {
+              "Name": "cpu",
+              "Value": "cpu-total"
+            }
+          ],
+          "MetricName": "cpu_usage_iowait",
+          "Namespace": "OpenTuna",
+          "Statistic": "Average"
+        },
+        "ScaleInCooldown": 600,
+        "ScaleOutCooldown": 180,
+        "TargetValue": 25
+      }
+    });
+
+
+    expect(stack).toHaveResourceLike('AWS::ApplicationAutoScaling::ScalableTarget', {
+      "MaxCapacity": 16,
+      "MinCapacity": 1,
+      "ResourceId": {
+        "Fn::Join": [
+          "",
+          [
+            "service/",
+            {
+              "Ref": "referencetoParentStackECSCluster91DDD157Ref"
+            },
+            "/",
+            {
+              "Fn::GetAtt": [
+                "ContentServerFargateServiceDD089154",
+                "Name"
+              ]
+            }
+          ]
+        ]
+      },
+      "ScalableDimension": "ecs:service:DesiredCount",
+      "ServiceNamespace": "ecs"
+    });
+
   });
 
 });
