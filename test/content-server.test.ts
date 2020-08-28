@@ -280,6 +280,30 @@ describe('Content Server stack', () => {
       }
     });
 
+    expect(stack).toHaveResourceLike('AWS::ApplicationAutoScaling::ScalingPolicy', {
+      "PolicyName": "ParentStackContentServerStackContentServerFargateTaskCountTargetCpuIowaitScaling5705D108",
+      "PolicyType": "TargetTrackingScaling",
+      "ScalingTargetId": {
+        "Ref": "ContentServerFargateTaskCountTarget2FDCB83B"
+      },
+      "TargetTrackingScalingPolicyConfiguration": {
+        "CustomizedMetricSpecification": {
+          "Dimensions": [
+            {
+              "Name": "cpu",
+              "Value": "cpu-total"
+            }
+          ],
+          "MetricName": "cpu_usage_iowait",
+          "Namespace": "OpenTuna",
+          "Statistic": "Average"
+        },
+        "ScaleInCooldown": 600,
+        "ScaleOutCooldown": 180,
+        "TargetValue": 25
+      }
+    });
+
 
     expect(stack).toHaveResourceLike('AWS::ApplicationAutoScaling::ScalableTarget', {
       "MaxCapacity": 16,

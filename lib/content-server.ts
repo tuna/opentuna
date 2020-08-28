@@ -154,6 +154,22 @@ export class ContentServerStack extends cdk.NestedStack {
             scaleInCooldown: cdk.Duration.minutes(10),
             scaleOutCooldown: cdk.Duration.minutes(3),
         });
+        const cpuUsageIowait = new cloudwatch.Metric({
+            namespace: 'OpenTuna',
+            metricName: 'cpu_usage_iowait',
+            dimensions: {
+                cpu: "cpu-total"
+            },
+            statistic: cloudwatch.Statistic.AVERAGE,
+        });
+        // peak iowait% is around 40%
+        scaling.scaleToTrackCustomMetric('CpuIowaitScaling', {
+            metric: cpuUsageIowait,
+            targetValue: 25,
+            scaleInCooldown: cdk.Duration.minutes(10),
+            scaleOutCooldown: cdk.Duration.minutes(3),
+        });
+
 
         cdk.Tag.add(this, 'component', usage);
     }
