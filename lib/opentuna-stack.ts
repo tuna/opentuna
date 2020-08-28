@@ -66,6 +66,9 @@ export class OpentunaStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
+    // CloudWatch dashboard
+    const dashboard = new cloudwatch.Dashboard(this, 'Dashboard');
+
     const tunaManagerSG = new ec2.SecurityGroup(this, "TunaManagerSG", {
       vpc,
       description: "SG of Tuna Manager",
@@ -86,12 +89,33 @@ export class OpentunaStack extends cdk.Stack {
       description: "SG of External ALB",
       allowAllOutbound: false,
     });
+
     const externalALB = new elbv2.ApplicationLoadBalancer(this, "ExternalALB", {
       vpc,
       securityGroup: externalALBSG,
       internetFacing: true,
       http2Enabled: useHTTPS,
     });
+    dashboard.addWidgets(new cloudwatch.GraphWidget({
+      title: 'ALB Processed Data',
+      left: [externalALB.metricProcessedBytes({
+        label: 'Bytes',
+        period: cdk.Duration.minutes(1),
+      })]
+    }), new cloudwatch.GraphWidget({
+      title: 'ALB Connections',
+      left: [externalALB.metricNewConnectionCount({
+        label: 'New',
+        period: cdk.Duration.minutes(1),
+      }), externalALB.metricActiveConnectionCount({
+        label: 'Active',
+        period: cdk.Duration.minutes(1),
+      }), externalALB.metricRejectedConnectionCount({
+        label: 'Rejected',
+        period: cdk.Duration.minutes(1),
+      })]
+    }));
+
     let cert: acm.Certificate | undefined;
     if (useHTTPS) {
       cert = new acm.Certificate(this, 'Certificate', {
@@ -127,24 +151,6 @@ export class OpentunaStack extends cdk.Stack {
         target: r53.RecordTarget.fromAlias(new alias.LoadBalancerTarget(externalALB)),
       });
     }
-
-    // CloudWatch dashboard
-    const dashboard = new cloudwatch.Dashboard(this, 'Dashboard');
-    dashboard.addWidgets(new cloudwatch.GraphWidget({
-      title: 'ALB Processed Data',
-      left: [externalALB.metricProcessedBytes({
-        label: 'Bytes',
-      })]
-    }), new cloudwatch.GraphWidget({
-      title: 'ALB Connections',
-      left: [externalALB.metricNewConnectionCount({
-        label: 'New',
-      }), externalALB.metricActiveConnectionCount({
-        label: 'Active',
-      }), externalALB.metricRejectedConnectionCount({
-        label: 'Rejected',
-      })]
-    }));
 
     // Tunasync Manager stack
     const tunaManagerStack = new TunaManagerStack(this, 'TunaManagerStack', {
