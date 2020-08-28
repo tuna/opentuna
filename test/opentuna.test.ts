@@ -538,6 +538,26 @@ describe('Tuna Manager stack', () => {
         "HttpVersion": "http2",
         "IPV6Enabled": true,
         "PriceClass": "PriceClass_100",
+        "CustomErrorResponses": [
+          {
+            "ErrorCachingMinTTL": 30,
+            "ErrorCode": 500
+          },
+          {
+            "ErrorCachingMinTTL": 0,
+            "ErrorCode": 502
+          },
+          {
+            "ErrorCachingMinTTL": 0,
+            "ErrorCode": 503
+          },
+          {
+            "ErrorCachingMinTTL": 3600,
+            "ErrorCode": 404,
+            "ResponseCode": 404,
+            "ResponsePagePath": "/404.html"
+          }
+        ],
       },
     });
   });
