@@ -341,15 +341,19 @@ describe('Content Server stack', () => {
         "Fn::Join": [
           "",
           [
-            "{\"widgets\":[{\"type\":\"metric\",\"width\":6,\"height\":6,\"x\":0,\"y\":0,\"properties\":{\"view\":\"timeSeries\",\"title\":\"Content Server Network\",\"region\":\"",
+            "{\"widgets\":[{\"type\":\"metric\",\"width\":6,\"height\":6,\"x\":0,\"y\":0,\"properties\":{\"view\":\"timeSeries\",\"title\":\"Content Server Bandwidth\",\"region\":\"",
             {
               "Ref": "AWS::Region"
             },
-            "\",\"metrics\":[[\"OpenTuna\",\"net_bytes_sent\",\"interface\",\"eth1\",{\"label\":\"Sent B/min\",\"period\":60,\"stat\":\"Sum\"}],[\"OpenTuna\",\"net_bytes_recv\",\"interface\",\"eth1\",{\"label\":\"Recv B/min\",\"period\":60,\"stat\":\"Sum\"}]],\"yAxis\":{}}},{\"type\":\"metric\",\"width\":6,\"height\":6,\"x\":6,\"y\":0,\"properties\":{\"view\":\"timeSeries\",\"title\":\"Content Server Cpu\",\"region\":\"",
+            "\",\"metrics\":[[\"OpenTuna\",\"net_bytes_sent\",\"interface\",\"eth1\",{\"label\":\"Sent B/min\",\"period\":60,\"stat\":\"Sum\"}],[\"OpenTuna\",\"net_bytes_recv\",\"interface\",\"eth1\",{\"label\":\"Recv B/min\",\"period\":60,\"stat\":\"Sum\"}]],\"yAxis\":{}}},{\"type\":\"metric\",\"width\":6,\"height\":6,\"x\":6,\"y\":0,\"properties\":{\"view\":\"timeSeries\",\"title\":\"Content Server Packets\",\"region\":\"",
             {
               "Ref": "AWS::Region"
             },
-            "\",\"metrics\":[[\"OpenTuna\",\"cpu_usage_iowait\",\"cpu\",\"cpu-total\",{\"label\":\"iowait%\",\"period\":60}],[\"OpenTuna\",\"cpu_usage_idle\",\"cpu\",\"cpu-total\",{\"label\":\"idle%\",\"period\":60}],[\"OpenTuna\",\"cpu_usage_user\",\"cpu\",\"cpu-total\",{\"label\":\"user%\",\"period\":60}],[\"OpenTuna\",\"cpu_usage_system\",\"cpu\",\"cpu-total\",{\"label\":\"system%\",\"period\":60}]],\"yAxis\":{}}},{\"type\":\"metric\",\"width\":6,\"height\":6,\"x\":12,\"y\":0,\"properties\":{\"view\":\"timeSeries\",\"title\":\"Content Server Task Count\",\"region\":\"",
+            "\",\"metrics\":[[\"OpenTuna\",\"net_packets_sent\",\"interface\",\"eth1\",{\"label\":\"Sent p/min\",\"period\":60,\"stat\":\"Sum\"}],[\"OpenTuna\",\"net_packets_recv\",\"interface\",\"eth1\",{\"label\":\"Recv p/min\",\"period\":60,\"stat\":\"Sum\"}]],\"yAxis\":{}}},{\"type\":\"metric\",\"width\":6,\"height\":6,\"x\":12,\"y\":0,\"properties\":{\"view\":\"timeSeries\",\"title\":\"Content Server Cpu\",\"region\":\"",
+            {
+              "Ref": "AWS::Region"
+            },
+            "\",\"metrics\":[[\"OpenTuna\",\"cpu_usage_iowait\",\"cpu\",\"cpu-total\",{\"label\":\"iowait%\",\"period\":60}],[\"OpenTuna\",\"cpu_usage_idle\",\"cpu\",\"cpu-total\",{\"label\":\"idle%\",\"period\":60}],[\"OpenTuna\",\"cpu_usage_user\",\"cpu\",\"cpu-total\",{\"label\":\"user%\",\"period\":60}],[\"OpenTuna\",\"cpu_usage_system\",\"cpu\",\"cpu-total\",{\"label\":\"system%\",\"period\":60}]],\"yAxis\":{}}},{\"type\":\"metric\",\"width\":6,\"height\":6,\"x\":18,\"y\":0,\"properties\":{\"view\":\"timeSeries\",\"title\":\"Content Server Task Count\",\"region\":\"",
             {
               "Ref": "AWS::Region"
             },

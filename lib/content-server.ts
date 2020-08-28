@@ -185,7 +185,7 @@ export class ContentServerStack extends cdk.NestedStack {
             period: cdk.Duration.minutes(1),
         };
         props.dashboard.addWidgets(new cloudwatch.GraphWidget({
-            title: 'Content Server Network',
+            title: 'Content Server Bandwidth',
             left: [
                 new cloudwatch.Metric({
                     metricName: 'net_bytes_sent',
@@ -195,6 +195,20 @@ export class ContentServerStack extends cdk.NestedStack {
                 new cloudwatch.Metric({
                     metricName: 'net_bytes_recv',
                     label: 'Recv B/min',
+                    ...bytesEth1
+                })
+            ]
+        }), new cloudwatch.GraphWidget({
+            title: 'Content Server Packets',
+            left: [
+                new cloudwatch.Metric({
+                    metricName: 'net_packets_sent',
+                    label: 'Sent p/min',
+                    ...bytesEth1
+                }),
+                new cloudwatch.Metric({
+                    metricName: 'net_packets_recv',
+                    label: 'Recv p/min',
                     ...bytesEth1
                 })
             ]
