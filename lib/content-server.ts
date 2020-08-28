@@ -17,6 +17,7 @@ export interface ContentServerProps extends cdk.NestedStackProps {
     readonly notifyTopic: ITopic;
     readonly ecsCluster: ecs.Cluster;
     readonly listener: elbv2.ApplicationListener;
+    readonly dashboard: cloudwatch.Dashboard;
 }
 
 export class ContentServerStack extends cdk.NestedStack {
@@ -154,13 +155,17 @@ export class ContentServerStack extends cdk.NestedStack {
             scaleInCooldown: cdk.Duration.minutes(10),
             scaleOutCooldown: cdk.Duration.minutes(3),
         });
-        const cpuUsageIowait = new cloudwatch.Metric({
+        const cpuUsage = {
             namespace: 'OpenTuna',
-            metricName: 'cpu_usage_iowait',
             dimensions: {
                 cpu: "cpu-total"
             },
             statistic: cloudwatch.Statistic.AVERAGE,
+            period: cdk.Duration.minutes(1),
+        };
+        const cpuUsageIowait = new cloudwatch.Metric({
+            metricName: 'cpu_usage_iowait',
+            ...cpuUsage
         });
         // peak iowait% is around 40%
         scaling.scaleToTrackCustomMetric('CpuIowaitScaling', {
@@ -170,6 +175,61 @@ export class ContentServerStack extends cdk.NestedStack {
             scaleOutCooldown: cdk.Duration.minutes(3),
         });
 
+        // Add widget for content server
+        const bytesEth1 = {
+            namespace: 'OpenTuna',
+            dimensions: {
+                interface: "eth1"
+            },
+            statistic: cloudwatch.Statistic.SUM,
+            period: cdk.Duration.minutes(1),
+        };
+        props.dashboard.addWidgets(new cloudwatch.GraphWidget({
+            title: 'Content Server Network',
+            left: [
+                new cloudwatch.Metric({
+                    metricName: 'net_bytes_sent',
+                    label: 'Sent B/min',
+                    ...bytesEth1
+                }),
+                new cloudwatch.Metric({
+                    metricName: 'net_bytes_recv',
+                    label: 'Recv B/min',
+                    ...bytesEth1
+                })
+            ]
+        }), new cloudwatch.GraphWidget({
+            title: 'Content Server Cpu',
+            left: [
+                new cloudwatch.Metric({
+                    metricName: 'cpu_usage_iowait',
+                    label: 'iowait%',
+                    ...cpuUsage
+                }),
+                new cloudwatch.Metric({
+                    metricName: 'cpu_usage_idle',
+                    label: 'idle%',
+                    ...cpuUsage
+                }),
+                new cloudwatch.Metric({
+                    metricName: 'cpu_usage_user',
+                    label: 'user%',
+                    ...cpuUsage
+                }),
+                new cloudwatch.Metric({
+                    metricName: 'cpu_usage_system',
+                    label: 'system%',
+                    ...cpuUsage
+                }),
+            ]
+        }), new cloudwatch.GraphWidget({
+            title: 'Content Server Task Count',
+            left: [service.metricCpuUtilization({
+                statistic: cloudwatch.Statistic.SAMPLE_COUNT,
+                period: cdk.Duration.minutes(1),
+                label: 'Task Count'
+            })]
+        }));
 
         cdk.Tag.add(this, 'component', usage);
     }

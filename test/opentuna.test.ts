@@ -618,6 +618,12 @@ describe('Tuna Manager stack', () => {
       "Timeout": 600
     });
   });
+
+  test('cloudwatch dashboard', () => {
+    ({ app, stack } = overrideTunaStackWithContextDomainName(app, stack, vpcId, undefined, 'ap-northeast-1'));
+
+    expect(stack).toHaveResource('AWS::CloudWatch::Dashboard');
+  });
 });
 
 function overrideTunaStackWithContextDomainName(app: cdk.App, stack: cdk.Stack, vpcId: string,

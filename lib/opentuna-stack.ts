@@ -3,13 +3,14 @@ import * as cloudfront from '@aws-cdk/aws-cloudfront';
 import * as route53 from '@aws-cdk/aws-route53';
 import * as route53targets from '@aws-cdk/aws-route53-targets';
 import * as acm from '@aws-cdk/aws-certificatemanager';
-import alias = require('@aws-cdk/aws-route53-targets');
-import ec2 = require('@aws-cdk/aws-ec2');
-import sns = require('@aws-cdk/aws-sns');
-import elbv2 = require('@aws-cdk/aws-elasticloadbalancingv2');
-import ecs = require('@aws-cdk/aws-ecs');
-import s3 = require('@aws-cdk/aws-s3');
-import r53 = require('@aws-cdk/aws-route53');
+import * as cloudwatch from '@aws-cdk/aws-cloudwatch';
+import * as alias from '@aws-cdk/aws-route53-targets';
+import * as ec2 from '@aws-cdk/aws-ec2';
+import * as sns from '@aws-cdk/aws-sns';
+import * as elbv2 from '@aws-cdk/aws-elasticloadbalancingv2';
+import * as ecs from '@aws-cdk/aws-ecs';
+import * as s3 from '@aws-cdk/aws-s3';
+import * as r53 from '@aws-cdk/aws-route53';
 import { TunaManagerStack } from './tuna-manager';
 import { TunaWorkerStack } from './tuna-worker';
 import { ContentServerStack } from './content-server';
@@ -127,6 +128,9 @@ export class OpentunaStack extends cdk.Stack {
       });
     }
 
+    // CloudWatch dashboard
+    const dashboard = new cloudwatch.Dashboard(this, 'Dashboard');
+
     // Tunasync Manager stack
     const tunaManagerStack = new TunaManagerStack(this, 'TunaManagerStack', {
       vpc,
@@ -162,6 +166,7 @@ export class OpentunaStack extends cdk.Stack {
       notifyTopic: props.notifyTopic,
       ecsCluster,
       listener: defaultALBListener,
+      dashboard,
     });
 
     // Web Portal stack
