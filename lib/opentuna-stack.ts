@@ -99,7 +99,7 @@ export class OpentunaStack extends cdk.Stack {
     dashboard.addWidgets(new cloudwatch.GraphWidget({
       title: 'ALB Processed Data',
       left: [externalALB.metricProcessedBytes({
-        label: 'Bytes',
+        label: 'Bytes per minute',
         period: cdk.Duration.minutes(1),
       })]
     }), new cloudwatch.GraphWidget({
@@ -112,6 +112,21 @@ export class OpentunaStack extends cdk.Stack {
         period: cdk.Duration.minutes(1),
       }), externalALB.metricRejectedConnectionCount({
         label: 'Rejected',
+        period: cdk.Duration.minutes(1),
+      })]
+    }), new cloudwatch.GraphWidget({
+      title: 'ALB HTTP Code from Target',
+      left: [externalALB.metricHttpCodeTarget(elbv2.HttpCodeTarget.TARGET_2XX_COUNT, {
+        label: '2XX',
+        period: cdk.Duration.minutes(1),
+      }), externalALB.metricHttpCodeTarget(elbv2.HttpCodeTarget.TARGET_3XX_COUNT{
+        label: '3XX',
+        period: cdk.Duration.minutes(1),
+      }), externalALB.metricHttpCodeTarget(elbv2.HttpCodeTarget.TARGET_4XX_COUNT{
+        label: '4XX',
+        period: cdk.Duration.minutes(1),
+      }), externalALB.metricHttpCodeTarget(elbv2.HttpCodeTarget.TARGET_5XX_COUNT{
+        label: '5XX',
         period: cdk.Duration.minutes(1),
       })]
     }));
