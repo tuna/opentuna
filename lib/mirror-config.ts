@@ -37,7 +37,7 @@ export function getMirrorConfig(stage: string) {
                 retry: 100,
                 provider: 'rsync',
                 upstream: 'rsync://mirrors.bfsu.edu.cn/debian/',
-                rsync_options: [ '"--no-H"' ]
+                rsync_options: ['"--no-H"']
             },
             {
                 name: 'debian-security',
@@ -185,4 +185,16 @@ export function getMirrorConfig(stage: string) {
                 ]
             }];
     }
+}
+
+export function getMirrorTestingConfig(stage: string) {
+    return [{
+        images: ['ubuntu:18.04', 'ubuntu:20.04', 'debian:stable', 'debian:testing'],
+        commands: [
+            'apt update',
+            'apt install -y apt-transport-https ca-certificates',
+            'sed -E -i "s/(deb.debian.org|security.debian.org|archive.ubuntu.com|security.ubuntu.com)/opentuna.cn/" /etc/apt/sources.list',
+            'apt update',
+        ]
+    }];
 }
