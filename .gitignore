@@ -13,3 +13,4 @@ cdk.context.json
 
 # lambda functions in directory `lib`
 !lib/lambda.d/cf-logs-analytics/*.js
+!lib/lambda.d/screenshot/*.js
