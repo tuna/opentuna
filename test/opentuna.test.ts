@@ -622,7 +622,9 @@ describe('Tuna Manager stack', () => {
   test('cloudwatch dashboard', () => {
     ({ app, stack } = overrideTunaStackWithContextDomainName(app, stack, vpcId, undefined, 'ap-northeast-1'));
 
-    expect(stack).toHaveResource('AWS::CloudWatch::Dashboard');
+    expect(stack).toHaveResourceLike('AWS::CloudWatch::Dashboard', {
+      "DashboardName": "OpenTUNA-Dashboard"
+    });
   });
 });
 

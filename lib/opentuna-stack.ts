@@ -67,7 +67,9 @@ export class OpentunaStack extends cdk.Stack {
     });
 
     // CloudWatch dashboard
-    const dashboard = new cloudwatch.Dashboard(this, 'Dashboard');
+    const dashboard = new cloudwatch.Dashboard(this, 'Dashboard', {
+      dashboardName: 'OpenTUNA-Dashboard',
+    });
 
     const tunaManagerSG = new ec2.SecurityGroup(this, "TunaManagerSG", {
       vpc,
