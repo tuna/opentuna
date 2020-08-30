@@ -8,6 +8,8 @@ import * as path from 'path';
 import * as ssm from '@aws-cdk/aws-ssm';
 import * as iam from '@aws-cdk/aws-iam';
 import * as cloudwatch from '@aws-cdk/aws-cloudwatch';
+import * as events from '@aws-cdk/aws-events';
+import * as targets from '@aws-cdk/aws-events-targets';
 import { ITopic } from '@aws-cdk/aws-sns';
 import { AdjustmentType } from '@aws-cdk/aws-autoscaling';
 
@@ -17,6 +19,7 @@ export interface ContentServerProps extends cdk.NestedStackProps {
     readonly notifyTopic: ITopic;
     readonly ecsCluster: ecs.Cluster;
     readonly listener: elbv2.ApplicationListener;
+    readonly dashboard: cloudwatch.Dashboard;
 }
 
 export class ContentServerStack extends cdk.NestedStack {
@@ -154,13 +157,17 @@ export class ContentServerStack extends cdk.NestedStack {
             scaleInCooldown: cdk.Duration.minutes(10),
             scaleOutCooldown: cdk.Duration.minutes(3),
         });
-        const cpuUsageIowait = new cloudwatch.Metric({
+        const cpuUsage = {
             namespace: 'OpenTuna',
-            metricName: 'cpu_usage_iowait',
             dimensions: {
                 cpu: "cpu-total"
             },
             statistic: cloudwatch.Statistic.AVERAGE,
+            period: cdk.Duration.minutes(1),
+        };
+        const cpuUsageIowait = new cloudwatch.Metric({
+            metricName: 'cpu_usage_iowait',
+            ...cpuUsage
         });
         // peak iowait% is around 40%
         scaling.scaleToTrackCustomMetric('CpuIowaitScaling', {
@@ -170,6 +177,86 @@ export class ContentServerStack extends cdk.NestedStack {
             scaleOutCooldown: cdk.Duration.minutes(3),
         });
 
+        // Add widget for content server
+        const bytesEth1 = {
+            namespace: 'OpenTuna',
+            dimensions: {
+                interface: "eth1"
+            },
+            statistic: cloudwatch.Statistic.SUM,
+            period: cdk.Duration.minutes(1),
+        };
+        props.dashboard.addWidgets(new cloudwatch.GraphWidget({
+            title: 'Content Server Bandwidth',
+            left: [
+                new cloudwatch.Metric({
+                    metricName: 'net_bytes_sent',
+                    label: 'Sent B/min',
+                    ...bytesEth1
+                }),
+                new cloudwatch.Metric({
+                    metricName: 'net_bytes_recv',
+                    label: 'Recv B/min',
+                    ...bytesEth1
+                })
+            ]
+        }), new cloudwatch.GraphWidget({
+            title: 'Content Server Packets',
+            left: [
+                new cloudwatch.Metric({
+                    metricName: 'net_packets_sent',
+                    label: 'Sent p/min',
+                    ...bytesEth1
+                }),
+                new cloudwatch.Metric({
+                    metricName: 'net_packets_recv',
+                    label: 'Recv p/min',
+                    ...bytesEth1
+                })
+            ]
+        }), new cloudwatch.GraphWidget({
+            title: 'Content Server Cpu',
+            left: [
+                new cloudwatch.Metric({
+                    metricName: 'cpu_usage_iowait',
+                    label: 'iowait%',
+                    ...cpuUsage
+                }),
+                new cloudwatch.Metric({
+                    metricName: 'cpu_usage_idle',
+                    label: 'idle%',
+                    ...cpuUsage
+                }),
+                new cloudwatch.Metric({
+                    metricName: 'cpu_usage_user',
+                    label: 'user%',
+                    ...cpuUsage
+                }),
+                new cloudwatch.Metric({
+                    metricName: 'cpu_usage_system',
+                    label: 'system%',
+                    ...cpuUsage
+                }),
+            ]
+        }), new cloudwatch.GraphWidget({
+            title: 'Content Server Task Count',
+            left: [service.metricCpuUtilization({
+                statistic: cloudwatch.Statistic.SAMPLE_COUNT,
+                period: cdk.Duration.minutes(1),
+                label: 'Task Count'
+            })]
+        }));
+
+        // Monitor auto scaling event
+        const rule = new events.Rule(this, 'AutoScaleRule', {
+            description: 'Monitor content server auto scaling',
+            eventPattern: {
+                source: ["aws.application-autoscaling"],
+            },
+            targets: [new targets.SnsTopic(props.notifyTopic, {
+                message: events.RuleTargetInput.fromText(`Service ${events.EventField.fromPath('$.detail.resourceId')} is scaled from ${events.EventField.fromPath('$.detail.oldDesiredCapacity')} to ${events.EventField.fromPath('$.detail.newDesiredCapacity')}`),
+            })]
+        });
 
         cdk.Tag.add(this, 'component', usage);
     }

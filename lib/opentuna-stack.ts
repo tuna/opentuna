@@ -3,13 +3,14 @@ import * as cloudfront from '@aws-cdk/aws-cloudfront';
 import * as route53 from '@aws-cdk/aws-route53';
 import * as route53targets from '@aws-cdk/aws-route53-targets';
 import * as acm from '@aws-cdk/aws-certificatemanager';
-import alias = require('@aws-cdk/aws-route53-targets');
-import ec2 = require('@aws-cdk/aws-ec2');
-import sns = require('@aws-cdk/aws-sns');
-import elbv2 = require('@aws-cdk/aws-elasticloadbalancingv2');
-import ecs = require('@aws-cdk/aws-ecs');
-import s3 = require('@aws-cdk/aws-s3');
-import r53 = require('@aws-cdk/aws-route53');
+import * as cloudwatch from '@aws-cdk/aws-cloudwatch';
+import * as alias from '@aws-cdk/aws-route53-targets';
+import * as ec2 from '@aws-cdk/aws-ec2';
+import * as sns from '@aws-cdk/aws-sns';
+import * as elbv2 from '@aws-cdk/aws-elasticloadbalancingv2';
+import * as ecs from '@aws-cdk/aws-ecs';
+import * as s3 from '@aws-cdk/aws-s3';
+import * as r53 from '@aws-cdk/aws-route53';
 import { TunaManagerStack } from './tuna-manager';
 import { TunaWorkerStack } from './tuna-worker';
 import { ContentServerStack } from './content-server';
@@ -65,6 +66,11 @@ export class OpentunaStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
+    // CloudWatch dashboard
+    const dashboard = new cloudwatch.Dashboard(this, 'Dashboard', {
+      dashboardName: 'OpenTUNA-Dashboard',
+    });
+
     const tunaManagerSG = new ec2.SecurityGroup(this, "TunaManagerSG", {
       vpc,
       description: "SG of Tuna Manager",
@@ -85,12 +91,48 @@ export class OpentunaStack extends cdk.Stack {
       description: "SG of External ALB",
       allowAllOutbound: false,
     });
+
     const externalALB = new elbv2.ApplicationLoadBalancer(this, "ExternalALB", {
       vpc,
       securityGroup: externalALBSG,
       internetFacing: true,
       http2Enabled: useHTTPS,
     });
+    dashboard.addWidgets(new cloudwatch.GraphWidget({
+      title: 'ALB Processed Data',
+      left: [externalALB.metricProcessedBytes({
+        label: 'Bytes per minute',
+        period: cdk.Duration.minutes(1),
+      })]
+    }), new cloudwatch.GraphWidget({
+      title: 'ALB Connections',
+      left: [externalALB.metricNewConnectionCount({
+        label: 'New',
+        period: cdk.Duration.minutes(1),
+      }), externalALB.metricActiveConnectionCount({
+        label: 'Active',
+        period: cdk.Duration.minutes(1),
+      }), externalALB.metricRejectedConnectionCount({
+        label: 'Rejected',
+        period: cdk.Duration.minutes(1),
+      })]
+    }), new cloudwatch.GraphWidget({
+      title: 'ALB HTTP Code from Target',
+      left: [externalALB.metricHttpCodeTarget(elbv2.HttpCodeTarget.TARGET_2XX_COUNT, {
+        label: '2XX',
+        period: cdk.Duration.minutes(1),
+      }), externalALB.metricHttpCodeTarget(elbv2.HttpCodeTarget.TARGET_3XX_COUNT, {
+        label: '3XX',
+        period: cdk.Duration.minutes(1),
+      }), externalALB.metricHttpCodeTarget(elbv2.HttpCodeTarget.TARGET_4XX_COUNT, {
+        label: '4XX',
+        period: cdk.Duration.minutes(1),
+      }), externalALB.metricHttpCodeTarget(elbv2.HttpCodeTarget.TARGET_5XX_COUNT, {
+        label: '5XX',
+        period: cdk.Duration.minutes(1),
+      })]
+    }));
+
     let cert: acm.Certificate | undefined;
     if (useHTTPS) {
       cert = new acm.Certificate(this, 'Certificate', {
@@ -162,6 +204,7 @@ export class OpentunaStack extends cdk.Stack {
       notifyTopic: props.notifyTopic,
       ecsCluster,
       listener: defaultALBListener,
+      dashboard,
     });
 
     // Web Portal stack

@@ -2,15 +2,16 @@ import * as cdk from '@aws-cdk/core';
 import * as cxapi from '@aws-cdk/cx-api';
 import * as Tuna from '../lib/content-server';
 import * as mock from './context-provider-mock';
-import ec2 = require('@aws-cdk/aws-ec2');
-import ecs = require('@aws-cdk/aws-ecs');
-import sns = require('@aws-cdk/aws-sns');
-import elbv2 = require('@aws-cdk/aws-elasticloadbalancingv2');
+import * as ec2 from '@aws-cdk/aws-ec2';
+import * as ecs from '@aws-cdk/aws-ecs';
+import * as sns from '@aws-cdk/aws-sns';
+import * as elbv2 from '@aws-cdk/aws-elasticloadbalancingv2';
+import * as cloudwatch from '@aws-cdk/aws-cloudwatch';
 import '@aws-cdk/assert/jest';
 
 describe('Content Server stack', () => {
   let app: cdk.App;
-  let stack: cdk.Stack;
+  let stack: cdk.Stack, parentStack: cdk.Stack;
   const vpcId = 'vpc-123456';
   let previous: (scope: cdk.Construct, options: cdk.GetContextValueOptions) => cdk.GetContextValueResult;
 
@@ -81,7 +82,7 @@ describe('Content Server stack', () => {
 
   beforeEach(() => {
     app = new cdk.App();
-    const parentStack = new cdk.Stack(app, 'ParentStack', {
+    parentStack = new cdk.Stack(app, 'ParentStack', {
       env: {
         region: 'cn-north-1',
         account: '1234567890xx',
@@ -109,13 +110,15 @@ describe('Content Server stack', () => {
     const ecsCluster = new ecs.Cluster(parentStack, `ECSCluster`, {
       vpc,
     });
+    const dashboard = new cloudwatch.Dashboard(parentStack, 'Dashboard');
 
     stack = new Tuna.ContentServerStack(parentStack, 'ContentServerStack', {
       vpc,
       fileSystemId: 'fs-012345',
       notifyTopic: topic,
       listener: defaultALBListener,
-      ecsCluster
+      ecsCluster,
+      dashboard
     });
   });
 
@@ -330,6 +333,74 @@ describe('Content Server stack', () => {
       "ServiceNamespace": "ecs"
     });
 
+  });
+
+  test('Content server widgets in dashboard created', () => {
+    expect(parentStack).toHaveResourceLike('AWS::CloudWatch::Dashboard', {
+      "DashboardBody": {
+        "Fn::Join": [
+          "",
+          [
+            "{\"widgets\":[{\"type\":\"metric\",\"width\":6,\"height\":6,\"x\":0,\"y\":0,\"properties\":{\"view\":\"timeSeries\",\"title\":\"Content Server Bandwidth\",\"region\":\"",
+            {
+              "Ref": "AWS::Region"
+            },
+            "\",\"metrics\":[[\"OpenTuna\",\"net_bytes_sent\",\"interface\",\"eth1\",{\"label\":\"Sent B/min\",\"period\":60,\"stat\":\"Sum\"}],[\"OpenTuna\",\"net_bytes_recv\",\"interface\",\"eth1\",{\"label\":\"Recv B/min\",\"period\":60,\"stat\":\"Sum\"}]],\"yAxis\":{}}},{\"type\":\"metric\",\"width\":6,\"height\":6,\"x\":6,\"y\":0,\"properties\":{\"view\":\"timeSeries\",\"title\":\"Content Server Packets\",\"region\":\"",
+            {
+              "Ref": "AWS::Region"
+            },
+            "\",\"metrics\":[[\"OpenTuna\",\"net_packets_sent\",\"interface\",\"eth1\",{\"label\":\"Sent p/min\",\"period\":60,\"stat\":\"Sum\"}],[\"OpenTuna\",\"net_packets_recv\",\"interface\",\"eth1\",{\"label\":\"Recv p/min\",\"period\":60,\"stat\":\"Sum\"}]],\"yAxis\":{}}},{\"type\":\"metric\",\"width\":6,\"height\":6,\"x\":12,\"y\":0,\"properties\":{\"view\":\"timeSeries\",\"title\":\"Content Server Cpu\",\"region\":\"",
+            {
+              "Ref": "AWS::Region"
+            },
+            "\",\"metrics\":[[\"OpenTuna\",\"cpu_usage_iowait\",\"cpu\",\"cpu-total\",{\"label\":\"iowait%\",\"period\":60}],[\"OpenTuna\",\"cpu_usage_idle\",\"cpu\",\"cpu-total\",{\"label\":\"idle%\",\"period\":60}],[\"OpenTuna\",\"cpu_usage_user\",\"cpu\",\"cpu-total\",{\"label\":\"user%\",\"period\":60}],[\"OpenTuna\",\"cpu_usage_system\",\"cpu\",\"cpu-total\",{\"label\":\"system%\",\"period\":60}]],\"yAxis\":{}}},{\"type\":\"metric\",\"width\":6,\"height\":6,\"x\":18,\"y\":0,\"properties\":{\"view\":\"timeSeries\",\"title\":\"Content Server Task Count\",\"region\":\"",
+            {
+              "Ref": "AWS::Region"
+            },
+            "\",\"metrics\":[[\"AWS/ECS\",\"CPUUtilization\",\"ClusterName\",\"",
+            {
+              "Ref": "ECSCluster7D463CD4"
+            },
+            "\",\"ServiceName\",\"",
+            {
+              "Fn::GetAtt": [
+                "ContentServerStackNestedStackContentServerStackNestedStackResource630D9438",
+                "Outputs.ParentStackContentServerStackContentServerFargateServiceAAFFEA31Name"
+              ]
+            },
+            "\",{\"label\":\"Task Count\",\"period\":60,\"stat\":\"SampleCount\"}]],\"yAxis\":{}}}]}"
+          ]
+        ]
+      }
+    });
+  });
+
+  test('Event rule of auto scaling created', () => {
+    expect(stack).toHaveResourceLike('AWS::Events::Rule', {
+      "Description": "Monitor content server auto scaling",
+      "EventPattern": {
+        "source": [
+          "aws.application-autoscaling"
+        ]
+      },
+      "State": "ENABLED",
+      "Targets": [
+        {
+          "Arn": {
+            "Ref": "referencetoParentStackTestTopicCEBA4F88Ref",
+          },
+          "Id": "Target0",
+          "InputTransformer": {
+            "InputPathsMap": {
+              "detail-resourceId": "$.detail.resourceId",
+              "detail-oldDesiredCapacity": "$.detail.oldDesiredCapacity",
+              "detail-newDesiredCapacity": "$.detail.newDesiredCapacity"
+            },
+            "InputTemplate": "\"Service <detail-resourceId> is scaled from <detail-oldDesiredCapacity> to <detail-newDesiredCapacity>\""
+          }
+        }
+      ]
+    });
   });
 
 });
