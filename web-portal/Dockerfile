@@ -1,8 +1,7 @@
 FROM tunathu/mirror-web:latest
 
-# Setup dependencies
+# Setup timezone and website
 ENV TZ=Asia/Shanghai
-RUN apt-get install -y nginx
 COPY mirror-web ./
 
 # Build with our config
