@@ -1,6 +1,7 @@
 FROM tunathu/mirror-web:latest
 
 # Setup dependencies
+ENV TZ=Asia/Shanghai
 RUN apt-get install -y nginx
 COPY mirror-web ./
 
@@ -14,6 +15,7 @@ RUN jekyll build
 
 FROM nginx:1.18-alpine
 # Setup nginx
+ENV TZ=Asia/Shanghai
 COPY nginx.conf /etc/nginx/conf.d/opentuna.conf
 RUN rm /etc/nginx/conf.d/default.conf
 COPY --from=0 /data/_site /site
