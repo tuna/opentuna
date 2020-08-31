@@ -206,7 +206,7 @@ export function getMirrorTestingConfig(stage: string) {
         ]
     }, {
         name: 'Fedora',
-        images: ['fedora:31', 'fedora:32', 'fedora:33'],
+        images: ['fedora:31', 'fedora:32'],
         commands: [
             "sed -i 's/metalink/#metalink/;s/#baseurl=http:\\/\\/download.example\\/pub\\/fedora\\/linux/baseurl=https:\\/\\/opentuna.cn\\/fedora/' /etc/yum.repos.d/fedora{,-updates,-modular,-updates-modular}.repo",
             'yum makecache',
