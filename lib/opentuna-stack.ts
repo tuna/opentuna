@@ -223,6 +223,7 @@ export class OpentunaStack extends cdk.Stack {
     // Monitor stack
     const monitorStack = new MonitorStack(this, 'MonitorStack', {
       domainName,
+      notifyTopic: props.notifyTopic,
     });
 
     let commonBehaviorConfig = {

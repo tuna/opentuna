@@ -1,4 +1,5 @@
 import * as cdk from '@aws-cdk/core';
+import * as sns from '@aws-cdk/aws-sns';
 import * as cxapi from '@aws-cdk/cx-api';
 import * as Tuna from '../lib/monitor-stack';
 import * as mock from './context-provider-mock';
@@ -88,9 +89,11 @@ describe('Tuna monitor stack', () => {
         account: '1234567890xx',
       },
     });
+    const topic = new sns.Topic(stack, 'SnsTopic');
 
     stack = new Tuna.MonitorStack(parentStack, 'AnalyticsStack', {
       domainName: 'example.com',
+      notifyTopic: topic,
     });
   });
 

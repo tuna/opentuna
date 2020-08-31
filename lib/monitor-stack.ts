@@ -3,9 +3,11 @@ import * as codebuild from '@aws-cdk/aws-codebuild';
 import * as events from '@aws-cdk/aws-events';
 import * as targets from '@aws-cdk/aws-events-targets';
 import { getMirrorTestingConfig } from './mirror-config';
+import * as sns from '@aws-cdk/aws-sns';
 
 export interface MonitorProps extends cdk.NestedStackProps {
-    domainName?: string;
+    readonly notifyTopic: sns.ITopic;
+    readonly domainName?: string;
 }
 
 export class MonitorStack extends cdk.NestedStack {
@@ -35,7 +37,11 @@ export class MonitorStack extends cdk.NestedStack {
                         })
                     });
                     event.addTarget(new targets.CodeBuildProject(project));
+                    project.onBuildFailed(`MonitorProjectFor${image}Failed`, {
+                        target: new targets.SnsTopic(props.notifyTopic)
+                    });
                 }
             }
         }
     }
+}
