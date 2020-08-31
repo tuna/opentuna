@@ -23,7 +23,7 @@ export class MonitorStack extends cdk.NestedStack {
                     schedule: events.Schedule.expression('rate(30 minutes)'),
                 });
                 for (let image of cfg.images) {
-                    const project = new codebuild.Project(this, `MonitorProjectFor${image}`, {
+                    const project = new codebuild.Project(this, `MonitorProjectFor${cfg.name}${image}`, {
                         environment: {
                             buildImage: codebuild.LinuxBuildImage.fromDockerRegistry(image),
                         },
@@ -37,7 +37,7 @@ export class MonitorStack extends cdk.NestedStack {
                         })
                     });
                     event.addTarget(new targets.CodeBuildProject(project));
-                    project.onBuildFailed(`MonitorProjectFor${image}Failed`, {
+                    project.onBuildFailed(`MonitorProjectFor${cfg.name}${image}Failed`, {
                         target: new targets.SnsTopic(props.notifyTopic, {
                             message: events.RuleTargetInput.fromText(`Project ${events.EventField.fromPath('$.detail.project-name')} got ${events.EventField.fromPath('$.detail.build-status')} with image of ${events.EventField.fromPath('$.detail.additional-information.environment.image')}`),
                         })
