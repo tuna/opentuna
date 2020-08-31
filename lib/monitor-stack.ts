@@ -14,27 +14,28 @@ export class MonitorStack extends cdk.NestedStack {
 
 
         const stage = this.node.tryGetContext('stage') || 'prod';
-        for (let cfg of getMirrorTestingConfig(stage)) {
-            // don't exceed the limit of event targets
-            const event = new events.Rule(this, `MonitorRule${cfg.name}`, {
-                schedule: events.Schedule.expression('rate(30 minutes)'),
-            });
-            for (let image of cfg.images) {
-                const project = new codebuild.Project(this, `MonitorProjectFor${image}`, {
-                    environment: {
-                        buildImage: codebuild.LinuxBuildImage.fromDockerRegistry(image),
-                    },
-                    buildSpec: codebuild.BuildSpec.fromObject({
-                        version: 0.2,
-                        phases: {
-                            build: {
-                                commands: cfg.commands,
-                            }
-                        }
-                    })
+        if (props.domainName) {
+            for (let cfg of getMirrorTestingConfig(stage, props.domainName)) {
+                // don't exceed the limit of event targets
+                const event = new events.Rule(this, `MonitorRule${cfg.name}`, {
+                    schedule: events.Schedule.expression('rate(30 minutes)'),
                 });
-                event.addTarget(new targets.CodeBuildProject(project));
+                for (let image of cfg.images) {
+                    const project = new codebuild.Project(this, `MonitorProjectFor${image}`, {
+                        environment: {
+                            buildImage: codebuild.LinuxBuildImage.fromDockerRegistry(image),
+                        },
+                        buildSpec: codebuild.BuildSpec.fromObject({
+                            version: 0.2,
+                            phases: {
+                                build: {
+                                    commands: cfg.commands,
+                                }
+                            }
+                        })
+                    });
+                    event.addTarget(new targets.CodeBuildProject(project));
+                }
             }
         }
     }
-}

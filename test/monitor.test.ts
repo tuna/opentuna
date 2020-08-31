@@ -102,7 +102,7 @@ describe('Tuna monitor stack', () => {
   });
 
   test('code build projects created', () => {
-    for (let cfg of getMirrorTestingConfig('staging')) {
+    for (let cfg of getMirrorTestingConfig('staging', 'example.com')) {
       for (let image of cfg.images) {
         expect(stack).toHaveResourceLike('AWS::CodeBuild::Project', {
           "Artifacts": {
