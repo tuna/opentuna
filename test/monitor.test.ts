@@ -89,7 +89,7 @@ describe('Tuna monitor stack', () => {
         account: '1234567890xx',
       },
     });
-    const topic = new sns.Topic(stack, 'SnsTopic');
+    const topic = new sns.Topic(parentStack, 'SnsTopic');
 
     stack = new Tuna.MonitorStack(parentStack, 'AnalyticsStack', {
       domainName: 'example.com',
@@ -104,7 +104,7 @@ describe('Tuna monitor stack', () => {
     });
   });
 
-  test('code build projects created', () => {
+  test('code build projects and event rules created', () => {
     for (let cfg of getMirrorTestingConfig('staging', 'example.com')) {
       for (let image of cfg.images) {
         expect(stack).toHaveResourceLike('AWS::CodeBuild::Project', {
@@ -118,6 +118,39 @@ describe('Tuna monitor stack', () => {
             "PrivilegedMode": false,
             "Type": "LINUX_CONTAINER"
           },
+        });
+
+        expect(stack).toHaveResourceLike('AWS::Events::Rule', {
+          "EventPattern": {
+            "source": [
+              "aws.codebuild"
+            ],
+            "detail": {
+              "build-status": [
+                "FAILED"
+              ]
+            },
+            "detail-type": [
+              "CodeBuild Build State Change"
+            ]
+          },
+          "State": "ENABLED",
+          "Targets": [
+            {
+              "Arn": {
+                "Ref": "referencetoParentStackSnsTopic08E282D6Ref"
+              },
+              "Id": "Target0",
+              "InputTransformer": {
+                "InputPathsMap": {
+                  "detail-project-name": "$.detail.project-name",
+                  "detail-build-status": "$.detail.build-status",
+                  "detail-additional-information-environment-image": "$.detail.additional-information.environment.image"
+                },
+                "InputTemplate": "\"Project <detail-project-name> got <detail-build-status> with image of <detail-additional-information-environment-image>\""
+              }
+            }
+          ]
         });
       }
     }

@@ -38,7 +38,9 @@ export class MonitorStack extends cdk.NestedStack {
                     });
                     event.addTarget(new targets.CodeBuildProject(project));
                     project.onBuildFailed(`MonitorProjectFor${image}Failed`, {
-                        target: new targets.SnsTopic(props.notifyTopic)
+                        target: new targets.SnsTopic(props.notifyTopic, {
+                            message: events.RuleTargetInput.fromText(`Project ${events.EventField.fromPath('$.detail.project-name')} got ${events.EventField.fromPath('$.detail.build-status')} with image of ${events.EventField.fromPath('$.detail.additional-information.environment.image')}`),
+                        })
                     });
                 }
             }
