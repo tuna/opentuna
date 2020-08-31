@@ -12,12 +12,13 @@ export class MonitorStack extends cdk.NestedStack {
     constructor(scope: cdk.Construct, id: string, props: MonitorProps) {
         super(scope, id, props);
 
-        const event = new events.Rule(this, 'MonitorRule', {
-            schedule: events.Schedule.expression('rate(30 minutes)'),
-        });
 
         const stage = this.node.tryGetContext('stage') || 'prod';
         for (let cfg of getMirrorTestingConfig(stage)) {
+            // don't exceed the limit of event targets
+            const event = new events.Rule(this, `MonitorRule${cfg.name}`, {
+                schedule: events.Schedule.expression('rate(30 minutes)'),
+            });
             for (let image of cfg.images) {
                 const project = new codebuild.Project(this, `MonitorProjectFor${image}`, {
                     environment: {

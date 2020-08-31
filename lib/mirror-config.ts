@@ -189,12 +189,20 @@ export function getMirrorConfig(stage: string) {
 
 export function getMirrorTestingConfig(stage: string) {
     return [{
+        name: 'UbuntuDebian',
         images: ['ubuntu:18.04', 'ubuntu:20.04', 'debian:stable', 'debian:testing'],
         commands: [
             'apt update',
             'apt install -y apt-transport-https ca-certificates',
             'sed -E -i "s/(deb.debian.org|security.debian.org|archive.ubuntu.com|security.ubuntu.com)/opentuna.cn/" /etc/apt/sources.list',
             'apt update',
+        ]
+    }, {
+        name: 'CentOS',
+        images: ['centos:8', 'centos:7', 'centos:6'],
+        commands: [
+            "sed -i 's/mirrorlist/#mirrorlist/;s/#baseurl=http:\\/\\/mirror.centos.org/baseurl=https:\\/\\/opentuna.cn/' /etc/yum.repos.d/CentOS-*.repo",
+            'yum update -y',
         ]
     }];
 }
