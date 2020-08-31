@@ -211,5 +211,12 @@ export function getMirrorTestingConfig(stage: string) {
             "sed -i 's/metalink/#metalink/;s/#baseurl=http:\\/\\/download.example\\/pub\\/fedora\\/linux/baseurl=https:\\/\\/opentuna.cn\\/fedora/' /etc/yum.repos.d/fedora{,-updates,-modular,-updates-modular}.repo",
             'yum makecache',
         ]
+    }, {
+        name: 'Alpine',
+        images: ['alpine:3.9', 'alpine:3.11', 'alpine:3.12'],
+        commands: [
+            "sed -i 's/dl-cdn.alpinelinux.org/opentuna.cn/g' /etc/apk/repositories",
+            'apk update',
+        ]
     }];
 }
