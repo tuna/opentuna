@@ -202,7 +202,14 @@ export function getMirrorTestingConfig(stage: string) {
         images: ['centos:8', 'centos:7', 'centos:6'],
         commands: [
             "sed -i 's/mirrorlist/#mirrorlist/;s/#baseurl=http:\\/\\/mirror.centos.org/baseurl=https:\\/\\/opentuna.cn/' /etc/yum.repos.d/CentOS-*.repo",
-            'yum update -y',
+            'yum makecache',
+        ]
+    }, {
+        name: 'Fedora',
+        images: ['fedora:31', 'fedora:32', 'fedora:33'],
+        commands: [
+            "sed -i 's/metalink/#metalink/;s/#baseurl=http:\\/\\/download.example\\/pub\\/fedora\\/linux/baseurl=https:\\/\\/opentuna.cn\\/fedora/' /etc/yum.repos.d/fedora{,-updates,-modular,-updates-modular}.repo",
+            'yum makecache',
         ]
     }];
 }
