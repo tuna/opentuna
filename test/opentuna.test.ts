@@ -81,7 +81,14 @@ describe('Tuna Manager stack', () => {
   beforeEach(() => {
     app = new cdk.App();
 
-    const commonStack = new cdk.Stack(app, 'CommonStack');
+    const env = {
+      region: 'cn-northwest-1',
+      account: '1234567890xx',
+    }
+
+    const commonStack = new cdk.Stack(app, 'CommonStack', {
+      env,
+    });
     const topic = new sns.Topic(commonStack, 'Test Topic');
 
     stack = new Tuna.OpentunaStack(app, 'OpenTunaStack', {
@@ -89,6 +96,7 @@ describe('Tuna Manager stack', () => {
       fileSystemId: 'fs-012345',
       fileSystemSGId: 'sg-012345',
       notifyTopic: topic,
+      env,
     });
   });
 
@@ -419,6 +427,32 @@ describe('Tuna Manager stack', () => {
         }
       ],
       "SslPolicy": "ELBSecurityPolicy-2016-08"
+    });
+  });
+
+  test('public access alb is expected', () => {
+    const iamCertId = 'iam-cert-id';
+    ({ app, stack } = overrideTunaStackWithContextDomainName(app, stack, vpcId, iamCertId));
+
+    expect(stack).toHaveResourceLike('AWS::ElasticLoadBalancingV2::LoadBalancer', {
+      "LoadBalancerAttributes": [
+        {
+          "Key": "access_logs.s3.enabled",
+          "Value": "true"
+        },
+        {
+          "Key": "access_logs.s3.bucket",
+          "Value": {
+            "Ref": "OpentunaLogsA361D92E"
+          }
+        },
+        {
+          "Key": "access_logs.s3.prefix",
+          "Value": "alb-logs"
+        }
+      ],
+      "Scheme": "internet-facing",
+      "Type": "application",
     });
   });
 

@@ -306,7 +306,11 @@ export class OpentunaStack extends cdk.Stack {
         priceClass: cloudfront.PriceClass.PRICE_CLASS_ALL,
       });
     }
-    const OpentunaLogsBucket = new s3.Bucket(this, "OpentunaLogs");
+    const logsBucket = new s3.Bucket(this, "OpentunaLogs");
+
+    // ALB logs
+    externalALB.logAccessLogs(logsBucket, 'alb-logs');
+
     const cloudfrontLogPrefix = "new/";
     // nested stack for log analysis
     const OpentunaAnalyticsStack = new AnalyticsStack(this, 'OpentunaAnalyticsStack', {
@@ -314,12 +318,12 @@ export class OpentunaStack extends cdk.Stack {
       newKeyPrefix: cloudfrontLogPrefix,
       gzKeyPrefix: "partitioned-gz/",
       parquetKeyPrefix: "partitioned-parquet/",
-      logBucket: OpentunaLogsBucket,
+      logBucket: logsBucket,
       notifyTopic: props.notifyTopic
     });
     cloudfrontProps = Object.assign(cloudfrontProps, {
       loggingConfig: {
-        bucket: OpentunaLogsBucket,
+        bucket: logsBucket,
         includeCookies: true,
         prefix: cloudfrontLogPrefix
       }
