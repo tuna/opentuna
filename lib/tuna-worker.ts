@@ -13,7 +13,6 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as crypto from 'crypto';
 import { getMirrorConfig } from './mirror-config';
-import { Aws } from '@aws-cdk/core';
 
 export interface TunaWorkerProps extends cdk.NestedStackProps {
     readonly vpc: ec2.IVpc;
@@ -22,6 +21,7 @@ export interface TunaWorkerProps extends cdk.NestedStackProps {
     readonly managerUrl: string;
     readonly tunaWorkerSG: ec2.ISecurityGroup;
     readonly assetBucket: s3.IBucket;
+    readonly rubygemsBucket: s3.IBucket;
 }
 
 export class TunaWorkerStack extends cdk.NestedStack {
@@ -51,9 +51,6 @@ export class TunaWorkerStack extends cdk.NestedStack {
         const namespace = `OpenTuna`;
         const metricName = 'procstat_lookup_pid_count';
         const dimensionName = 'AutoScalingGroupName';
-
-        // setup s3 bucket for rubygems
-        const rubygemsBucket = new s3.Bucket(this, 'RubygemsBucket');
 
         const tunaScriptPath = '/tunasync-scripts';
         const confProps = {
@@ -112,7 +109,7 @@ export class TunaWorkerStack extends cdk.NestedStack {
             tunaScriptPath,
             tunasyncWorkerConf: props.assetBucket.s3UrlForObject(`${confPrefix}${tunasyncWorkerConfFile}`),
             cloudwatchAgentConf: props.assetBucket.s3UrlForObject(`${confPrefix}${cloudwatchAgentConfFile}`),
-            rubygemsBucket: rubygemsBucket.bucketName,
+            rubygemsBucket: props.rubygemsBucket.bucketName,
             rubygemsScript: props.assetBucket.s3UrlForObject(`${confPrefix}${rubyGemsScriptFile}`),
         };
 
@@ -143,7 +140,7 @@ export class TunaWorkerStack extends cdk.NestedStack {
         });
         tunaWorkerASG.node.addDependency(confFileDeployment);
         tunaWorkerASG.addSecurityGroup(props.tunaWorkerSG);
-        rubygemsBucket.grantReadWrite(tunaWorkerASG.role);
+        props.rubygemsBucket.grantReadWrite(tunaWorkerASG.role);
 
         // create CloudWatch custom metrics and alarm for Tunasync worker process
         const runningTunaWorkerProcessMetric = new cloudwatch.Metric({

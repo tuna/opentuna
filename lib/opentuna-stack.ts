@@ -66,6 +66,8 @@ export class OpentunaStack extends cdk.Stack {
     const assetBucket = new s3.Bucket(this, `OpenTunaAssets`, {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
+    // setup bucket for rubygems
+    const rubygemsBucket = new s3.Bucket(this, 'RubygemsBucket');
 
     // CloudWatch dashboard
     const dashboard = new cloudwatch.Dashboard(this, 'Dashboard', {
@@ -189,6 +191,7 @@ export class OpentunaStack extends cdk.Stack {
       timeout: cdk.Duration.minutes(10),
       tunaWorkerSG,
       assetBucket,
+      rubygemsBucket,
     });
 
     tunaManagerALBSG.connections.allowFrom(tunaWorkerSG, ec2.Port.tcp(tunaManagerStack.managerPort), 'Access from tuna worker');
@@ -251,6 +254,13 @@ export class OpentunaStack extends cdk.Stack {
           pathPattern: '/jobs',
           defaultTtl: cdk.Duration.minutes(5),
         }],
+      }, {
+        s3OriginSource: {
+          s3BucketSource: rubygemsBucket
+        },
+        behaviors: [{
+          pathPattern: '/rubygems/*',
+        }]
       }],
       defaultRootObject: '',
       errorConfigurations: [
