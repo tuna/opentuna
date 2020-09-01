@@ -1,16 +1,17 @@
-import autoscaling = require('@aws-cdk/aws-autoscaling');
-import cdk = require('@aws-cdk/core');
-import cloudwatch = require('@aws-cdk/aws-cloudwatch');
-import cw_actions = require('@aws-cdk/aws-cloudwatch-actions');
-import ec2 = require('@aws-cdk/aws-ec2');
-import fs = require('fs');
-import iam = require('@aws-cdk/aws-iam');
-import path = require('path');
-import s3 = require('@aws-cdk/aws-s3');
-import s3deploy = require('@aws-cdk/aws-s3-deployment');
-import sns = require('@aws-cdk/aws-sns');
-import region_info = require('@aws-cdk/region-info');
-import Mustache = require('mustache');
+import * as autoscaling from '@aws-cdk/aws-autoscaling';
+import * as cdk from '@aws-cdk/core';
+import * as cloudwatch from '@aws-cdk/aws-cloudwatch';
+import * as cw_actions from '@aws-cdk/aws-cloudwatch-actions';
+import * as ec2 from '@aws-cdk/aws-ec2';
+import * as iam from '@aws-cdk/aws-iam';
+import * as s3 from '@aws-cdk/aws-s3';
+import * as s3deploy from '@aws-cdk/aws-s3-deployment';
+import * as sns from '@aws-cdk/aws-sns';
+import * as region_info from '@aws-cdk/region-info';
+import * as Mustache from 'mustache';
+import * as path from 'path';
+import * as fs from 'fs';
+import * as crypto from 'crypto';
 import { getMirrorConfig } from './mirror-config';
 
 export interface TunaWorkerProps extends cdk.NestedStackProps {
@@ -21,6 +22,7 @@ export interface TunaWorkerProps extends cdk.NestedStackProps {
     readonly tunaWorkerSG: ec2.ISecurityGroup;
     readonly assetBucket: s3.IBucket;
 }
+
 export class TunaWorkerStack extends cdk.NestedStack {
 
     readonly workerPort = 80;
@@ -69,14 +71,14 @@ export class TunaWorkerStack extends cdk.NestedStack {
             fs.readFileSync(path.join(__dirname, './tuna-worker-tunasync.conf'), 'utf-8'),
             confProps).replace('$TUNASCRIPT_PATH', tunaScriptPath);
         const tunasyncWorkerConfFile =
-            `tuna-worker-${require('crypto').createHash('md5').update(tunasyncWorkerConf).digest('hex')}.conf`;
+            `tuna-worker-${md5Hash(tunasyncWorkerConf)}.conf`;
         fs.writeFileSync(`${tmpOutput}/${tunasyncWorkerConfFile}`, tunasyncWorkerConf);
 
         const cloudwatchAgentConf = Mustache.render(
             fs.readFileSync(path.join(__dirname, './tuna-worker-cloudwatch-agent.txt'), 'utf-8'),
             confProps);
         const cloudwatchAgentConfFile =
-            `amazon-cloudwatch-agent-${require('crypto').createHash('md5').update(cloudwatchAgentConf).digest('hex')}.conf`;
+            `amazon-cloudwatch-agent-${md5Hash(cloudwatchAgentConf)}.conf`;
         fs.writeFileSync(`${tmpOutput}/${cloudwatchAgentConfFile}`, cloudwatchAgentConf);
 
         const confPrefix = 'tunasync/worker/';
@@ -154,16 +156,21 @@ export class TunaWorkerStack extends cdk.NestedStack {
     }
 }
 
-var deleteFolderRecursive = function(path: fs.PathLike) {
-    if( fs.existsSync(path) ) {
-      fs.readdirSync(path).forEach(function(file,index){
-        var curPath = path + "/" + file;
-        if(fs.lstatSync(curPath).isDirectory()) { // recurse
-          deleteFolderRecursive(curPath);
-        } else { // delete file
-          fs.unlinkSync(curPath);
-        }
-      });
-      fs.rmdirSync(path);
+var deleteFolderRecursive = function (path: fs.PathLike) {
+    if (fs.existsSync(path)) {
+        fs.readdirSync(path).forEach(function (file, index) {
+            var curPath = path + "/" + file;
+            if (fs.lstatSync(curPath).isDirectory()) { // recurse
+                deleteFolderRecursive(curPath);
+            } else { // delete file
+                fs.unlinkSync(curPath);
+            }
+        });
+        fs.rmdirSync(path);
     }
-  };
+};
+
+
+var md5Hash = function (content: string) {
+    return crypto.createHash('md5').update(content).digest('hex');
+}
