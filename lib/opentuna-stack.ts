@@ -16,7 +16,8 @@ import { TunaWorkerStack } from './tuna-worker';
 import { ContentServerStack } from './content-server';
 import { WebPortalStack } from './web-portal';
 import { CloudFrontInvalidate } from './cloudfront-invalidate';
-import { AnalyticsStack } from './analytics-stack'
+import { AnalyticsStack } from './analytics-stack';
+import { MonitorStack } from './monitor-stack';
 
 export interface OpenTunaStackProps extends cdk.StackProps {
   readonly vpcId: string;
@@ -218,6 +219,12 @@ export class OpentunaStack extends cdk.Stack {
       fileSystemSGId: props.fileSystemSGId,
     });
     tunaManagerSG.connections.allowFrom(externalALBSG, ec2.Port.tcp(80), 'Allow external ALB to access tuna manager');
+
+    // Monitor stack
+    const monitorStack = new MonitorStack(this, 'MonitorStack', {
+      domainName,
+      notifyTopic: props.notifyTopic,
+    });
 
     let commonBehaviorConfig = {
       // special handling for HTTPS forwarding
