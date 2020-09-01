@@ -8,6 +8,24 @@ export function getMirrorConfig(stage: string) {
                 upstream: 'rsync://mirrors.bfsu.edu.cn/alpine/'
             },
             {
+                name: 'archlinux',
+                interval: 720,
+                provider: 'rsync',
+                upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/archlinux/'
+            },
+            {
+                name: 'archlinuxcn',
+                interval: 720,
+                provider: 'rsync',
+                upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/archlinuxcn/'
+            },
+            {
+                name: 'archlinuxarm',
+                interval: 720,
+                provider: 'rsync',
+                upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/archlinuxarm/'
+            },
+            {
                 name: 'elrepo',
                 interval: 720,
                 provider: 'rsync',
