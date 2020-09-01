@@ -39,7 +39,15 @@ export class MonitorStack extends cdk.NestedStack {
                     event.addTarget(new targets.CodeBuildProject(project));
                     project.onBuildFailed(`MonitorProjectFor${cfg.name}${image}Failed`, {
                         target: new targets.SnsTopic(props.notifyTopic, {
-                            message: events.RuleTargetInput.fromText(`Project ${events.EventField.fromPath('$.detail.project-name')} got ${events.EventField.fromPath('$.detail.build-status')} with image of ${events.EventField.fromPath('$.detail.additional-information.environment.image')}`),
+                            message: events.RuleTargetInput.fromObject({
+                                type: 'repo-sanity',
+                                sanityTarget: cfg.name,
+                                sanityProjectImage: image,
+                                sanityProjectName: events.EventField.fromPath('$.detail.project-name'),
+                                sanityBuildStatus: events.EventField.fromPath('$.detail.build-status'),
+                                account: events.EventField.account,
+                                sanityBuildId: events.EventField.fromPath('$.detail.build-id'),
+                            }),
                         })
                     });
                 }
