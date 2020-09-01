@@ -13,6 +13,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as crypto from 'crypto';
 import { getMirrorConfig } from './mirror-config';
+import { Aws } from '@aws-cdk/core';
 
 export interface TunaWorkerProps extends cdk.NestedStackProps {
     readonly vpc: ec2.IVpc;
@@ -51,6 +52,9 @@ export class TunaWorkerStack extends cdk.NestedStack {
         const metricName = 'procstat_lookup_pid_count';
         const dimensionName = 'AutoScalingGroupName';
 
+        // setup s3 bucket for rubygems
+        const rubygemsBucket = new s3.Bucket(this, 'RubygemsBucket');
+
         const tunaScriptPath = '/tunasync-scripts';
         const confProps = {
             repoRoot: '/mnt/efs/opentuna',
@@ -59,6 +63,7 @@ export class TunaWorkerStack extends cdk.NestedStack {
             namespace,
             dimensionName,
             mirrors: getMirrorConfig(stage),
+            region: stack.region,
         };
 
         // TODO replace cdk.out by outdir variable
@@ -81,6 +86,13 @@ export class TunaWorkerStack extends cdk.NestedStack {
             `amazon-cloudwatch-agent-${md5Hash(cloudwatchAgentConf)}.conf`;
         fs.writeFileSync(`${tmpOutput}/${cloudwatchAgentConfFile}`, cloudwatchAgentConf);
 
+        const rubygemsScript = Mustache.render(
+            fs.readFileSync(path.join(__dirname, './tuna-worker-rubygems-s3.sh'), 'utf-8'),
+            confProps);
+        const rubyGemsScriptFile =
+            `rubygems-s3-${md5Hash(rubygemsScript)}.conf`;
+        fs.writeFileSync(`${tmpOutput}/${rubyGemsScriptFile}`, rubygemsScript);
+
         const confPrefix = 'tunasync/worker/';
         const confFileDeployment = new s3deploy.BucketDeployment(this, 'WorkerConfFileDeployments', {
             sources: [s3deploy.Source.asset(tmpOutput)],
@@ -100,6 +112,8 @@ export class TunaWorkerStack extends cdk.NestedStack {
             tunaScriptPath,
             tunasyncWorkerConf: props.assetBucket.s3UrlForObject(`${confPrefix}${tunasyncWorkerConfFile}`),
             cloudwatchAgentConf: props.assetBucket.s3UrlForObject(`${confPrefix}${cloudwatchAgentConfFile}`),
+            rubygemsBucket: rubygemsBucket.bucketName,
+            rubygemsScript: props.assetBucket.s3UrlForObject(`${confPrefix}${rubyGemsScriptFile}`),
         };
 
         const rawUserData = Mustache.render(userdata, newProps);
@@ -129,6 +143,7 @@ export class TunaWorkerStack extends cdk.NestedStack {
         });
         tunaWorkerASG.node.addDependency(confFileDeployment);
         tunaWorkerASG.addSecurityGroup(props.tunaWorkerSG);
+        rubygemsBucket.grantReadWrite(tunaWorkerASG.role);
 
         // create CloudWatch custom metrics and alarm for Tunasync worker process
         const runningTunaWorkerProcessMetric = new cloudwatch.Metric({

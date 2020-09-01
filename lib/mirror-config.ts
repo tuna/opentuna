@@ -180,27 +180,23 @@ export function getMirrorConfig(stage: string) {
     } else {
         return [
             {
+                name: 'rubygems',
+                interval: 60,
+                provider: 'command',
+                upstream: 'https://rubygems.org/',
+                command: '$TUNASCRIPT_PATH/rubygems-s3.sh',
+                docker_image: 'tunathu/rubygems-mirror-s3',
+                docker_volumes: ['"/tunasync-scripts/rubygems-s3.sh:/tunasync-scripts/rubygems-s3.sh:ro"'],
+                envs: [
+                    'S3_BUCKET = "++RUBYGEMS_BUCKET++"',
+                ],
+            },
+            {
                 name: 'elrepo',
                 interval: 720,
                 provider: 'rsync',
                 retry: 10,
                 upstream: 'rsync://ftp.yz.yamagata-u.ac.jp/pub/linux/RPMS/elrepo/'
-            },
-            {
-                name: 'pypi',
-                /**
-                 * For unified cloudwatch agent to ingest multiple line logs,
-                 * https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch-Agent-Configuration-File-Details.html#CloudWatch-Agent-Configuration-File-Logssection
-                 */
-                logStartPattern: '^\\\\\\\\d{4}-\\\\\\\\d{2}-\\\\\\\\d{2}\\\\\\\\s\\\\\\\\d{2}:\\\\\\\\d{2}:\\\\\\\\d{2},\\\\\\\\d{3}',
-                timeFormat: '%Y-%m-%d %H:%M:%S',
-                provider: 'command',
-                upstream: 'https://pypi.python.org/',
-                command: '$TUNASCRIPT_PATH/pypi.sh',
-                interval: 5,
-                envs: [
-                    'INIT = "0"',
-                ]
             }];
     }
 }
