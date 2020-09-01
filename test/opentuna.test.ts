@@ -538,6 +538,50 @@ describe('Tuna Manager stack', () => {
 
     expect(stack).toHaveResourceLike('AWS::CloudFront::Distribution', {
       "DistributionConfig": {
+        "CacheBehaviors": [
+          {
+            "AllowedMethods": [
+              "GET",
+              "HEAD"
+            ],
+            "CachedMethods": [
+              "GET",
+              "HEAD"
+            ],
+            "Compress": true,
+            "DefaultTTL": 300,
+            "ForwardedValues": {
+              "Headers": [
+                "Host",
+                "CloudFront-Forwarded-Proto"
+              ],
+              "QueryString": true
+            },
+            "PathPattern": "/jobs",
+            "TargetOriginId": "origin1",
+            "ViewerProtocolPolicy": "redirect-to-https"
+          },
+          {
+            "AllowedMethods": [
+              "GET",
+              "HEAD"
+            ],
+            "CachedMethods": [
+              "GET",
+              "HEAD"
+            ],
+            "Compress": true,
+            "ForwardedValues": {
+              "Cookies": {
+                "Forward": "none"
+              },
+              "QueryString": false
+            },
+            "PathPattern": "/rubygems/*",
+            "TargetOriginId": "origin2",
+            "ViewerProtocolPolicy": "redirect-to-https"
+          }
+        ],
         "Origins": [
           {
             "ConnectionAttempts": 3,
@@ -554,6 +598,18 @@ describe('Tuna Manager stack', () => {
             },
             "DomainName": "ap-northeast-1.tuna.example.com",
             "Id": "origin1"
+          },
+          {
+            "ConnectionAttempts": 3,
+            "ConnectionTimeout": 10,
+            "DomainName": {
+              "Fn::GetAtt": [
+                "RubygemsBucketEFD2E331",
+                "RegionalDomainName"
+              ]
+            },
+            "Id": "origin2",
+            "S3OriginConfig": {}
           }
         ],
         "Aliases": [
