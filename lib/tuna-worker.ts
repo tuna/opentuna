@@ -87,7 +87,7 @@ export class TunaWorkerStack extends cdk.NestedStack {
             fs.readFileSync(path.join(__dirname, './tuna-worker-rubygems-s3.sh'), 'utf-8'),
             confProps);
         const rubyGemsScriptFile =
-            `rubygems-s3-${md5Hash(rubygemsScript)}.conf`;
+            `rubygems-s3-${md5Hash(rubygemsScript)}.sh`;
         fs.writeFileSync(`${tmpOutput}/${rubyGemsScriptFile}`, rubygemsScript);
 
         const confPrefix = 'tunasync/worker/';
