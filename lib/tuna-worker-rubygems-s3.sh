@@ -15,4 +15,4 @@ cat >"$HOME/.gem/.mirrorrc" << EOF
   skiperror: true
 EOF
 
-timeout -s INT 7200 rake mirror:update
+timeout -s INT 7200 bundle exec gem mirror
