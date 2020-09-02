@@ -5,7 +5,7 @@ cd /rubygems-mirror-s3
 mkdir -p $HOME/.gem
 cat >"$HOME/.gem/.mirrorrc" << EOF
 ---
-- from: https://rubygems.org
+- from: https://mirrors.tuna.tsinghua.edu.cn/rubygems
   to: /rubygems
   region: {{&region}}
   bucket: $S3_BUCKET
