@@ -609,7 +609,19 @@ describe('Tuna Manager stack', () => {
               ]
             },
             "Id": "origin2",
-            "S3OriginConfig": {}
+            "S3OriginConfig": {
+              "OriginAccessIdentity": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "origin-access-identity/cloudfront/",
+                    {
+                      "Ref": "TunaRepoOAI564965FF"
+                    }
+                  ]
+                ]
+              }
+            }
           }
         ],
         "Aliases": [
@@ -649,6 +661,62 @@ describe('Tuna Manager stack', () => {
           }
         ],
       },
+    });
+
+    // permission for CloudFront to access tuna repo bucket
+    expect(stack).toHaveResourceLike('AWS::CloudFront::CloudFrontOriginAccessIdentity', {
+      "CloudFrontOriginAccessIdentityConfig": {
+        "Comment": "Allows CloudFront to reach the bucket"
+      }
+    });
+
+    expect(stack).toHaveResourceLike('AWS::S3::BucketPolicy', {
+      "Bucket": {
+        "Ref": "TunaRepoBucket3AE7AD79"
+      },
+      "PolicyDocument": {
+        "Statement": [
+          {
+            "Action": [
+              "s3:GetObject*",
+              "s3:GetBucket*",
+              "s3:List*"
+            ],
+            "Effect": "Allow",
+            "Principal": {
+              "CanonicalUser": {
+                "Fn::GetAtt": [
+                  "TunaRepoOAI564965FF",
+                  "S3CanonicalUserId"
+                ]
+              }
+            },
+            "Resource": [
+              {
+                "Fn::GetAtt": [
+                  "TunaRepoBucket3AE7AD79",
+                  "Arn"
+                ]
+              },
+              {
+                "Fn::Join": [
+                  "",
+                  [
+                    {
+                      "Fn::GetAtt": [
+                        "TunaRepoBucket3AE7AD79",
+                        "Arn"
+                      ]
+                    },
+                    "/*"
+                  ]
+                ]
+              }
+            ]
+          }
+        ],
+        "Version": "2012-10-17"
+      }
     });
   });
 

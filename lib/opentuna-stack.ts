@@ -237,6 +237,10 @@ export class OpentunaStack extends cdk.Stack {
       },
     };
 
+    // origin access identity for s3 bucket
+    const oai = new cloudfront.OriginAccessIdentity(this, 'TunaRepoOAI');
+    tunaRepoBucket.grantRead(oai);
+
     // CloudFront as cdn
     let cloudfrontProps = {
       originConfigs: [{
@@ -257,6 +261,7 @@ export class OpentunaStack extends cdk.Stack {
       }, {
         s3OriginSource: {
           s3BucketSource: tunaRepoBucket,
+          originAccessIdentity: oai,
         },
         behaviors: [{
           pathPattern: '/rubygems/*',
