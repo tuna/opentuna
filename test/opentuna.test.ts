@@ -576,13 +576,12 @@ describe('Tuna Manager stack', () => {
             "ForwardedValues": {
               "Headers": [
                 "Host",
-                "CloudFront-Forwarded-Proto"
               ],
               "QueryString": true
             },
             "PathPattern": "/jobs",
             "TargetOriginId": "origin1",
-            "ViewerProtocolPolicy": "redirect-to-https"
+            "ViewerProtocolPolicy": "allow-all"
           },
           {
             "AllowedMethods": [
@@ -603,7 +602,7 @@ describe('Tuna Manager stack', () => {
             },
             "PathPattern": "/rubygems/gems/*",
             "TargetOriginId": "origin2",
-            "ViewerProtocolPolicy": "redirect-to-https"
+            "ViewerProtocolPolicy": "allow-all"
           },
           {
             "AllowedMethods": [
@@ -624,7 +623,7 @@ describe('Tuna Manager stack', () => {
             },
             "PathPattern": "/rubygems/*",
             "TargetOriginId": "origin2",
-            "ViewerProtocolPolicy": "redirect-to-https"
+            "ViewerProtocolPolicy": "allow-all"
           }
         ],
         "Origins": [
@@ -635,7 +634,7 @@ describe('Tuna Manager stack', () => {
               "HTTPPort": 80,
               "HTTPSPort": 443,
               "OriginKeepaliveTimeout": 5,
-              "OriginProtocolPolicy": "https-only",
+              "OriginProtocolPolicy": "match-viewer",
               "OriginReadTimeout": 30,
               "OriginSSLProtocols": [
                 "TLSv1.2"

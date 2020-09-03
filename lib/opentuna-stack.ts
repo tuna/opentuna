@@ -232,9 +232,9 @@ export class OpentunaStack extends cdk.Stack {
     });
 
     let commonBehaviorConfig = {
-      // special handling for HTTPS forwarding
+      // special handling for redirections
       forwardedValues: {
-        headers: ['Host', 'CloudFront-Forwarded-Proto'],
+        headers: ['Host'],
         queryString: true,
       },
     };
@@ -248,6 +248,7 @@ export class OpentunaStack extends cdk.Stack {
       originConfigs: [{
         customOriginSource: {
           domainName: useHTTPS ? `${stack.region}.${domainName}` : externalALB.loadBalancerDnsName,
+          originProtocolPolicy: cloudfront.OriginProtocolPolicy.MATCH_VIEWER
         },
         behaviors: [{
           ...commonBehaviorConfig,
@@ -301,7 +302,7 @@ export class OpentunaStack extends cdk.Stack {
       // when https is enabled
       cloudfrontProps = {
         httpVersion: cloudfront.HttpVersion.HTTP2,
-        viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.ALLOW_ALL,
         ...cloudfrontProps
       };
 
