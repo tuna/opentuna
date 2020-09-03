@@ -163,7 +163,7 @@ export function getMirrorConfig(stage: string) {
                 provider: 'command',
                 upstream: 'https://mirrors.tuna.tsinghua.edu.cn/rubygems/',
                 command: '$TUNASCRIPT_PATH/rubygems-s3.sh',
-                docker_image: 'tunathu/rubygems-mirror-s3:release-v1.4.4',
+                docker_image: 'tunathu/rubygems-mirror-s3:release-v1.4.5',
                 docker_volumes: ['"/tunasync-scripts/rubygems-s3.sh:/tunasync-scripts/rubygems-s3.sh:ro"'],
                 envs: [
                     'S3_BUCKET = "++TUNA_REPO_BUCKET++"',

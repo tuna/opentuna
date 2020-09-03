@@ -571,6 +571,28 @@ describe('Tuna Manager stack', () => {
               "HEAD"
             ],
             "Compress": true,
+            "DefaultTTL": 604800,
+            "ForwardedValues": {
+              "Cookies": {
+                "Forward": "none"
+              },
+              "QueryString": false
+            },
+            "PathPattern": "/rubygems/gems/*",
+            "TargetOriginId": "origin2",
+            "ViewerProtocolPolicy": "redirect-to-https"
+          },
+          {
+            "AllowedMethods": [
+              "GET",
+              "HEAD"
+            ],
+            "CachedMethods": [
+              "GET",
+              "HEAD"
+            ],
+            "Compress": true,
+              "DefaultTTL": 3600,
             "ForwardedValues": {
               "Cookies": {
                 "Forward": "none"

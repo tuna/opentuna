@@ -264,7 +264,13 @@ export class OpentunaStack extends cdk.Stack {
           originAccessIdentity: oai,
         },
         behaviors: [{
+          pathPattern: '/rubygems/gems/*',
+          // 1w cache for gem specs
+          defaultTtl: cdk.Duration.days(7),
+        }, {
           pathPattern: '/rubygems/*',
+          // 1h cache for index files
+          defaultTtl: cdk.Duration.minutes(60),
         }]
       }],
       defaultRootObject: '',
