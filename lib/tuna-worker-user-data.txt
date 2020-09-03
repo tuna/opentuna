@@ -47,7 +47,7 @@ Content-Disposition: attachment; filename="userdata.txt"
 #!/bin/bash -xe
 HOSTNAME=`hostname`
 MANAGERURL="{{&managerUrl}}"
-RUBYGEMS_BUCKET="{{&rubygemsBucket}}"
+TUNA_REPO_BUCKET="{{&tunaRepoBucket}}"
 mkdir -p /etc/tunasync/
 
 export AWS_DEFAULT_REGION={{&region}}
@@ -56,7 +56,7 @@ export AWS_DEFAULT_REGION={{&region}}
 aws s3 cp {{&tunasyncWorkerConf}} /etc/tunasync/worker.conf
 sed -i "s|++HOSTNAME++|$HOSTNAME|g" /etc/tunasync/worker.conf
 sed -i "s|++MANAGERURL++|$MANAGERURL|g" /etc/tunasync/worker.conf
-sed -i "s|++RUBYGEMS_BUCKET++|$RUBYGEMS_BUCKET|g" /etc/tunasync/worker.conf
+sed -i "s|++TUNA_REPO_BUCKET++|$TUNA_REPO_BUCKET|g" /etc/tunasync/worker.conf
 
 # create tunasync service
 cat > /usr/lib/systemd/system/tunasync.service << EOF

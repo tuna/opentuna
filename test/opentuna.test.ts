@@ -604,7 +604,7 @@ describe('Tuna Manager stack', () => {
             "ConnectionTimeout": 10,
             "DomainName": {
               "Fn::GetAtt": [
-                "RubygemsBucketEFD2E331",
+                "TunaRepoBucket3AE7AD79",
                 "RegionalDomainName"
               ]
             },

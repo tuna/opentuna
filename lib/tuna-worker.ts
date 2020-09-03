@@ -21,7 +21,7 @@ export interface TunaWorkerProps extends cdk.NestedStackProps {
     readonly managerUrl: string;
     readonly tunaWorkerSG: ec2.ISecurityGroup;
     readonly assetBucket: s3.IBucket;
-    readonly rubygemsBucket: s3.IBucket;
+    readonly tunaRepoBucket: s3.IBucket;
 }
 
 export class TunaWorkerStack extends cdk.NestedStack {
@@ -109,7 +109,7 @@ export class TunaWorkerStack extends cdk.NestedStack {
             tunaScriptPath,
             tunasyncWorkerConf: props.assetBucket.s3UrlForObject(`${confPrefix}${tunasyncWorkerConfFile}`),
             cloudwatchAgentConf: props.assetBucket.s3UrlForObject(`${confPrefix}${cloudwatchAgentConfFile}`),
-            rubygemsBucket: props.rubygemsBucket.bucketName,
+            tunaRepoBucket: props.tunaRepoBucket.bucketName,
             rubygemsScript: props.assetBucket.s3UrlForObject(`${confPrefix}${rubyGemsScriptFile}`),
         };
 
@@ -140,7 +140,7 @@ export class TunaWorkerStack extends cdk.NestedStack {
         });
         tunaWorkerASG.node.addDependency(confFileDeployment);
         tunaWorkerASG.addSecurityGroup(props.tunaWorkerSG);
-        props.rubygemsBucket.grantReadWrite(tunaWorkerASG.role);
+        props.tunaRepoBucket.grantReadWrite(tunaWorkerASG.role);
 
         // create CloudWatch custom metrics and alarm for Tunasync worker process
         const runningTunaWorkerProcessMetric = new cloudwatch.Metric({

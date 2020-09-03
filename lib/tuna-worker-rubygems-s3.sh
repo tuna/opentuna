@@ -9,6 +9,7 @@ cat >"$HOME/.gem/.mirrorrc" << EOF
   to: /rubygems
   region: {{&region}}
   bucket: $S3_BUCKET
+  acl: private
   parallelism: 10
   retries: 2
   delete: true

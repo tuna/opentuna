@@ -67,7 +67,7 @@ export class OpentunaStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
     // setup bucket for rubygems
-    const rubygemsBucket = new s3.Bucket(this, 'RubygemsBucket');
+    const tunaRepoBucket = new s3.Bucket(this, 'TunaRepoBucket');
 
     // CloudWatch dashboard
     const dashboard = new cloudwatch.Dashboard(this, 'Dashboard', {
@@ -191,7 +191,7 @@ export class OpentunaStack extends cdk.Stack {
       timeout: cdk.Duration.minutes(10),
       tunaWorkerSG,
       assetBucket,
-      rubygemsBucket,
+      tunaRepoBucket,
     });
 
     tunaManagerALBSG.connections.allowFrom(tunaWorkerSG, ec2.Port.tcp(tunaManagerStack.managerPort), 'Access from tuna worker');
@@ -256,7 +256,7 @@ export class OpentunaStack extends cdk.Stack {
         }],
       }, {
         s3OriginSource: {
-          s3BucketSource: rubygemsBucket
+          s3BucketSource: tunaRepoBucket,
         },
         behaviors: [{
           pathPattern: '/rubygems/*',
