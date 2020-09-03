@@ -1,0 +1,19 @@
+#!/bin/sh
+
+cd /rubygems-mirror-s3
+
+mkdir -p $HOME/.gem
+cat >"$HOME/.gem/.mirrorrc" << EOF
+---
+- from: https://mirrors.tuna.tsinghua.edu.cn/rubygems
+  to: /rubygems
+  region: {{&region}}
+  bucket: $S3_BUCKET
+  acl: private
+  parallelism: 10
+  retries: 2
+  delete: true
+  skiperror: true
+EOF
+
+timeout -s INT 7200 bundle exec gem mirror

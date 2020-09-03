@@ -66,6 +66,8 @@ export class OpentunaStack extends cdk.Stack {
     const assetBucket = new s3.Bucket(this, `OpenTunaAssets`, {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
+    // setup bucket for rubygems
+    const tunaRepoBucket = new s3.Bucket(this, 'TunaRepoBucket');
 
     // CloudWatch dashboard
     const dashboard = new cloudwatch.Dashboard(this, 'Dashboard', {
@@ -189,6 +191,7 @@ export class OpentunaStack extends cdk.Stack {
       timeout: cdk.Duration.minutes(10),
       tunaWorkerSG,
       assetBucket,
+      tunaRepoBucket,
     });
 
     tunaManagerALBSG.connections.allowFrom(tunaWorkerSG, ec2.Port.tcp(tunaManagerStack.managerPort), 'Access from tuna worker');
@@ -234,6 +237,10 @@ export class OpentunaStack extends cdk.Stack {
       },
     };
 
+    // origin access identity for s3 bucket
+    const oai = new cloudfront.OriginAccessIdentity(this, 'TunaRepoOAI');
+    tunaRepoBucket.grantRead(oai);
+
     // CloudFront as cdn
     let cloudfrontProps = {
       originConfigs: [{
@@ -251,6 +258,20 @@ export class OpentunaStack extends cdk.Stack {
           pathPattern: '/jobs',
           defaultTtl: cdk.Duration.minutes(5),
         }],
+      }, {
+        s3OriginSource: {
+          s3BucketSource: tunaRepoBucket,
+          originAccessIdentity: oai,
+        },
+        behaviors: [{
+          pathPattern: '/rubygems/gems/*',
+          // 1w cache for gem specs
+          defaultTtl: cdk.Duration.days(7),
+        }, {
+          pathPattern: '/rubygems/*',
+          // 1h cache for index files
+          defaultTtl: cdk.Duration.minutes(60),
+        }]
       }],
       defaultRootObject: '',
       errorConfigurations: [

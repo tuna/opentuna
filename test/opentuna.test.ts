@@ -538,6 +538,72 @@ describe('Tuna Manager stack', () => {
 
     expect(stack).toHaveResourceLike('AWS::CloudFront::Distribution', {
       "DistributionConfig": {
+        "CacheBehaviors": [
+          {
+            "AllowedMethods": [
+              "GET",
+              "HEAD"
+            ],
+            "CachedMethods": [
+              "GET",
+              "HEAD"
+            ],
+            "Compress": true,
+            "DefaultTTL": 300,
+            "ForwardedValues": {
+              "Headers": [
+                "Host",
+                "CloudFront-Forwarded-Proto"
+              ],
+              "QueryString": true
+            },
+            "PathPattern": "/jobs",
+            "TargetOriginId": "origin1",
+            "ViewerProtocolPolicy": "redirect-to-https"
+          },
+          {
+            "AllowedMethods": [
+              "GET",
+              "HEAD"
+            ],
+            "CachedMethods": [
+              "GET",
+              "HEAD"
+            ],
+            "Compress": true,
+            "DefaultTTL": 604800,
+            "ForwardedValues": {
+              "Cookies": {
+                "Forward": "none"
+              },
+              "QueryString": false
+            },
+            "PathPattern": "/rubygems/gems/*",
+            "TargetOriginId": "origin2",
+            "ViewerProtocolPolicy": "redirect-to-https"
+          },
+          {
+            "AllowedMethods": [
+              "GET",
+              "HEAD"
+            ],
+            "CachedMethods": [
+              "GET",
+              "HEAD"
+            ],
+            "Compress": true,
+              "DefaultTTL": 3600,
+            "ForwardedValues": {
+              "Cookies": {
+                "Forward": "none"
+              },
+              "QueryString": false
+            },
+            "PathPattern": "/rubygems/*",
+            "TargetOriginId": "origin2",
+            "ViewerProtocolPolicy": "redirect-to-https"
+          }
+        ],
         "Origins": [
           {
             "ConnectionAttempts": 3,
@@ -554,6 +620,30 @@ describe('Tuna Manager stack', () => {
             },
             "DomainName": "ap-northeast-1.tuna.example.com",
             "Id": "origin1"
+          },
+          {
+            "ConnectionAttempts": 3,
+            "ConnectionTimeout": 10,
+            "DomainName": {
+              "Fn::GetAtt": [
+                "TunaRepoBucket3AE7AD79",
+                "RegionalDomainName"
+              ]
+            },
+            "Id": "origin2",
+            "S3OriginConfig": {
+              "OriginAccessIdentity": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "origin-access-identity/cloudfront/",
+                    {
+                      "Ref": "TunaRepoOAI564965FF"
+                    }
+                  ]
+                ]
+              }
+            }
           }
         ],
         "Aliases": [
@@ -593,6 +683,62 @@ describe('Tuna Manager stack', () => {
           }
         ],
       },
+    });
+
+    // permission for CloudFront to access tuna repo bucket
+    expect(stack).toHaveResourceLike('AWS::CloudFront::CloudFrontOriginAccessIdentity', {
+      "CloudFrontOriginAccessIdentityConfig": {
+        "Comment": "Allows CloudFront to reach the bucket"
+      }
+    });
+
+    expect(stack).toHaveResourceLike('AWS::S3::BucketPolicy', {
+      "Bucket": {
+        "Ref": "TunaRepoBucket3AE7AD79"
+      },
+      "PolicyDocument": {
+        "Statement": [
+          {
+            "Action": [
+              "s3:GetObject*",
+              "s3:GetBucket*",
+              "s3:List*"
+            ],
+            "Effect": "Allow",
+            "Principal": {
+              "CanonicalUser": {
+                "Fn::GetAtt": [
+                  "TunaRepoOAI564965FF",
+                  "S3CanonicalUserId"
+                ]
+              }
+            },
+            "Resource": [
+              {
+                "Fn::GetAtt": [
+                  "TunaRepoBucket3AE7AD79",
+                  "Arn"
+                ]
+              },
+              {
+                "Fn::Join": [
+                  "",
+                  [
+                    {
+                      "Fn::GetAtt": [
+                        "TunaRepoBucket3AE7AD79",
+                        "Arn"
+                      ]
+                    },
+                    "/*"
+                  ]
+                ]
+              }
+            ]
+          }
+        ],
+        "Version": "2012-10-17"
+      }
     });
   });
 

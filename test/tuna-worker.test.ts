@@ -98,6 +98,7 @@ describe('Tunasync worker stack', () => {
       vpcId,
     });
     const bucket = new s3.Bucket(parentStack, 'AssetBucket');
+    const tunaRepoBucket = new s3.Bucket(parentStack, 'TunaRepoBucket');
 
     const tunaWorkerSG = new ec2.SecurityGroup(parentStack, "TunaWorkerSG", {
       vpc,
@@ -112,12 +113,13 @@ describe('Tunasync worker stack', () => {
       managerUrl: 'http://tunasync-manager:80',
       tunaWorkerSG,
       assetBucket: bucket,
+      tunaRepoBucket,
     });
   });
 
   test('Tunasync worker auto scaling group created', () => {
     expect(stack).toHaveResourceLike('AWS::AutoScaling::AutoScalingGroup', {
-      "Properties":{
+      "Properties": {
         "MaxSize": "1",
         "MinSize": "1",
         "Cooldown": "30",
@@ -166,7 +168,7 @@ describe('Tunasync worker stack', () => {
     });
     // verify tuna-worker.conf
     const confFilePath = path.join(__dirname, `../cdk.out/tuna-worker-conf-files`);
-    const tunaWorkers = fs.readdirSync(confFilePath, { withFileTypes: true, }).filter( (file: fs.Dirent) => file.name.match(/tuna-worker-.*\.conf/gi));
+    const tunaWorkers = fs.readdirSync(confFilePath, { withFileTypes: true, }).filter((file: fs.Dirent) => file.name.match(/tuna-worker-.*\.conf/gi));
     expect(tunaWorkers).toHaveLength(1);
 
     const TOML = require('@iarna/toml');
@@ -176,8 +178,8 @@ describe('Tunasync worker stack', () => {
     expect(tunaConf.server.hostname).toEqual('++HOSTNAME++');
     expect(tunaConf.mirrors[8].name).toEqual('debian');
     expect(tunaConf.mirrors[8].rsync_options).toEqual(['--no-H']);
-    
-    const cloudwatchAgents = fs.readdirSync(confFilePath, { withFileTypes: true, }).filter( (file: fs.Dirent) => file.name.match(/amazon-cloudwatch-agent-.*\.conf/gi));
+
+    const cloudwatchAgents = fs.readdirSync(confFilePath, { withFileTypes: true, }).filter((file: fs.Dirent) => file.name.match(/amazon-cloudwatch-agent-.*\.conf/gi));
     expect(cloudwatchAgents).toHaveLength(1);
     const cloudwatchAgentConf = fs.readFileSync(`${confFilePath}/${cloudwatchAgents[0].name}`, 'utf-8');
     expect(cloudwatchAgentConf).toContain(' "ImageId": "${aws:ImageId}",');
@@ -185,13 +187,17 @@ describe('Tunasync worker stack', () => {
 
   test('Tunasync worker launch configuration', () => {
     const confFilePath = path.join(__dirname, `../cdk.out/tuna-worker-conf-files`);
-    const tunaWorkers = fs.readdirSync(confFilePath, { withFileTypes: true, }).filter( (file: fs.Dirent) => file.name.match(/tuna-worker-.*\.conf/gi));
+    const tunaWorkers = fs.readdirSync(confFilePath, { withFileTypes: true, }).filter((file: fs.Dirent) => file.name.match(/tuna-worker-.*\.conf/gi));
     expect(tunaWorkers).toHaveLength(1);
     const tunasyncConfFilename = tunaWorkers[0].name;
 
-    const cloudwatchAgents = fs.readdirSync(confFilePath, { withFileTypes: true, }).filter( (file: fs.Dirent) => file.name.match(/amazon-cloudwatch-agent-.*\.conf/gi));
+    const cloudwatchAgents = fs.readdirSync(confFilePath, { withFileTypes: true, }).filter((file: fs.Dirent) => file.name.match(/amazon-cloudwatch-agent-.*\.conf/gi));
     expect(cloudwatchAgents).toHaveLength(1);
     const cloudAgentConfFilename = cloudwatchAgents[0].name;
+
+    const rubygemsScript = fs.readdirSync(confFilePath, { withFileTypes: true, }).filter((file: fs.Dirent) => file.name.match(/rubygems-s3-.*\.sh/gi));
+    expect(rubygemsScript).toHaveLength(1);
+    const rubygemsScriptFilename = rubygemsScript[0].name;
 
     expect(stack).toHaveResourceLike('AWS::AutoScaling::LaunchConfiguration', {
       "InstanceType": "c5.xlarge",
@@ -212,11 +218,19 @@ describe('Tunasync worker stack', () => {
           "Fn::Join": [
             "",
             [
-              "Content-Type: multipart/mixed; boundary=\"//\"\nMIME-Version: 1.0\n\n--//\nContent-Type: text/cloud-config; charset=\"us-ascii\"\nMIME-Version: 1.0\nContent-Transfer-Encoding: 7bit\nContent-Disposition: attachment; filename=\"cloud-config.txt\"\n\n#cloud-config\nrepo_update: true\nrepo_upgrade: all\npackages:\n - nfs-utils\n - amazon-efs-utils\n - python3-pip\n - git\n - awscli\n\n# run commands\nruncmd:\n - file_system_id_1=fs-012345\n - efs_mount_point_1=/mnt/efs/opentuna\n - mkdir -p \"${efs_mount_point_1}\"\n - test -f \"/sbin/mount.efs\" && echo \"${file_system_id_1}:/ ${efs_mount_point_1} efs tls,_netdev\" >> /etc/fstab || echo \"${file_system_id_1}.efs.cn-north-1.amazonaws.com.cn:/ ${efs_mount_point_1} nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport,_netdev 0 0\" >> /etc/fstab\n - test -f \"/sbin/mount.efs\" && echo -e \"\\n[client-info]\\nsource=liw\" >> /etc/amazon/efs/efs-utils.conf\n - mount -a -t efs,nfs4 defaults\n - tunaversion=v0.6.6\n - tunafile=\"${efs_mount_point_1}/tunasync/install/tunasync-linux-bin-${tunaversion}.tar.bz2\"\n - (test -f ${tunafile} && tar -xf ${tunafile} -C /usr/local/bin/) || (wget -c https://github.com/tuna/tunasync/releases/download/${tunaversion}/tunasync-linux-bin.tar.bz2 -O - | tar xjf -  -C /usr/local/bin/)\n - export PIP_DEFAULT_TIMEOUT=20; pip3 install -i https://pypi.tuna.tsinghua.edu.cn/simple 'bandersnatch<4.0' || pip3 install -i https://pypi.douban.com/simple 'bandersnatch<4.0'\n - tunascript_bin=\"${efs_mount_point_1}/tunasync/install/tunasync-scripts.tar.gz\"\n - tunascriptpath=/tunasync-scripts\n - mkdir -p ${tunascriptpath}\n - (test -f ${tunascript_bin} && tar -xf ${tunascript_bin} -C ${tunascriptpath}) || (git clone https://github.com/tuna/tunasync-scripts.git ${tunascriptpath})\n - rpm -i https://s3.cn-north-1.amazonaws.com.cn/amazoncloudwatch-agent-cn-north-1/amazon_linux/amd64/latest/amazon-cloudwatch-agent.rpm\n\ncloud_final_modules:\n- [scripts-user, always]\n--//\nContent-Type: text/x-shellscript; charset=\"us-ascii\"\nMIME-Version: 1.0\nContent-Transfer-Encoding: 7bit\nContent-Disposition: attachment; filename=\"userdata.txt\"\n\n#!/bin/bash -xe\nHOSTNAME=`hostname`\nMANAGERURL=\"http://tunasync-manager:80\"\nmkdir -p /etc/tunasync/\n\nexport AWS_DEFAULT_REGION=cn-north-1\n\n# create tunasync work config\naws s3 cp s3://",
+              "Content-Type: multipart/mixed; boundary=\"//\"\nMIME-Version: 1.0\n\n--//\nContent-Type: text/cloud-config; charset=\"us-ascii\"\nMIME-Version: 1.0\nContent-Transfer-Encoding: 7bit\nContent-Disposition: attachment; filename=\"cloud-config.txt\"\n\n#cloud-config\nrepo_update: true\nrepo_upgrade: all\npackages:\n - nfs-utils\n - amazon-efs-utils\n - python3-pip\n - git\n - awscli\n - docker\n\n# run commands\nruncmd:\n - file_system_id_1=fs-012345\n - efs_mount_point_1=/mnt/efs/opentuna\n - mkdir -p \"${efs_mount_point_1}\"\n - test -f \"/sbin/mount.efs\" && echo \"${file_system_id_1}:/ ${efs_mount_point_1} efs tls,_netdev\" >> /etc/fstab || echo \"${file_system_id_1}.efs.cn-north-1.amazonaws.com.cn:/ ${efs_mount_point_1} nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport,_netdev 0 0\" >> /etc/fstab\n - test -f \"/sbin/mount.efs\" && echo -e \"\\n[client-info]\\nsource=liw\" >> /etc/amazon/efs/efs-utils.conf\n - mount -a -t efs,nfs4 defaults\n - tunaversion=v0.6.6\n - tunafile=\"${efs_mount_point_1}/tunasync/install/tunasync-linux-bin-${tunaversion}.tar.bz2\"\n - (test -f ${tunafile} && tar -xf ${tunafile} -C /usr/local/bin/) || (wget -c https://github.com/tuna/tunasync/releases/download/${tunaversion}/tunasync-linux-bin.tar.bz2 -O - | tar xjf -  -C /usr/local/bin/)\n - export PIP_DEFAULT_TIMEOUT=20; pip3 install -i https://pypi.tuna.tsinghua.edu.cn/simple 'bandersnatch<4.0' || pip3 install -i https://pypi.douban.com/simple 'bandersnatch<4.0'\n - tunascript_bin=\"${efs_mount_point_1}/tunasync/install/tunasync-scripts.tar.gz\"\n - tunascriptpath=/tunasync-scripts\n - mkdir -p ${tunascriptpath}\n - (test -f ${tunascript_bin} && tar -xf ${tunascript_bin} -C ${tunascriptpath}) || (git clone https://github.com/tuna/tunasync-scripts.git ${tunascriptpath})\n - rpm -i https://s3.cn-north-1.amazonaws.com.cn/amazoncloudwatch-agent-cn-north-1/amazon_linux/amd64/latest/amazon-cloudwatch-agent.rpm\n\ncloud_final_modules:\n- [scripts-user, always]\n--//\nContent-Type: text/x-shellscript; charset=\"us-ascii\"\nMIME-Version: 1.0\nContent-Transfer-Encoding: 7bit\nContent-Disposition: attachment; filename=\"userdata.txt\"\n\n#!/bin/bash -xe\nHOSTNAME=`hostname`\nMANAGERURL=\"http://tunasync-manager:80\"\nTUNA_REPO_BUCKET=\"",
+              {
+                "Ref": "referencetoParentStackTunaRepoBucketBFDC0FF9Ref"
+              },
+              "\"\nmkdir -p /etc/tunasync/\n\nexport AWS_DEFAULT_REGION=cn-north-1\n\n# create tunasync work config\naws s3 cp s3://",
               {
                 "Ref": "referencetoParentStackAssetBucket9670BCE7Ref"
               },
-              `/tunasync/worker/${tunasyncConfFilename} /etc/tunasync/worker.conf\nsed -i \"s|++HOSTNAME++|$HOSTNAME|g\" /etc/tunasync/worker.conf\nsed -i \"s|++MANAGERURL++|$MANAGERURL|g\" /etc/tunasync/worker.conf\n\n# create tunasync service\ncat > /usr/lib/systemd/system/tunasync.service << EOF\n[Unit]\nDescription=Tunasync Worker daemon\n\n[Service]\nExecStart=/usr/local/bin/tunasync worker -config /etc/tunasync/worker.conf\nExecReload=/bin/kill -HUP \\$MAINPID\nType=simple\nKillMode=control-group\nRestart=on-failure\nRestartSec=20s\nStandardOutput=syslog\nStandardError=syslog\nSyslogIdentifier=tunasync\n\n[Install]\nWantedBy=multi-user.target\nEOF\n\ncat > /etc/rsyslog.d/tunasync.conf << EOF\nif \\$programname == 'tunasync' then /var/log/tunasync.log\n& stop\nEOF\n\n# start tunasync service\nsystemctl daemon-reload\nsystemctl restart rsyslog\nsystemctl enable tunasync.service\nsystemctl start tunasync.service\n\n# configure conf json of CloudWatch agent\nmkdir -p /opt/aws/amazon-cloudwatch-agent/etc/\naws s3 cp s3://`,
+              `/tunasync/worker/${tunasyncConfFilename} /etc/tunasync/worker.conf\nsed -i \"s|++HOSTNAME++|$HOSTNAME|g\" /etc/tunasync/worker.conf\nsed -i \"s|++MANAGERURL++|$MANAGERURL|g\" /etc/tunasync/worker.conf\nsed -i \"s|++TUNA_REPO_BUCKET++|$TUNA_REPO_BUCKET|g\" /etc/tunasync/worker.conf\n\n# create tunasync service\ncat > /usr/lib/systemd/system/tunasync.service << EOF\n[Unit]\nDescription=Tunasync Worker daemon\n\n[Service]\nExecStart=/usr/local/bin/tunasync worker -config /etc/tunasync/worker.conf\nExecReload=/bin/kill -HUP \\$MAINPID\nType=simple\nKillMode=control-group\nRestart=on-failure\nRestartSec=20s\nStandardOutput=syslog\nStandardError=syslog\nSyslogIdentifier=tunasync\n\n[Install]\nWantedBy=multi-user.target\nEOF\n\ncat > /etc/rsyslog.d/tunasync.conf << EOF\nif \\$programname == 'tunasync' then /var/log/tunasync.log\n& stop\nEOF\n\n# setup rubygems script\naws s3 cp s3://`,
+              {
+                "Ref": "referencetoParentStackAssetBucket9670BCE7Ref"
+              },
+              `/tunasync/worker/${rubygemsScriptFilename} /tunasync-scripts/rubygems-s3.sh\nchmod +x /tunasync-scripts/rubygems-s3.sh\n\n# start tunasync service\nsystemctl daemon-reload\nsystemctl restart rsyslog\nsystemctl enable tunasync.service\nsystemctl start tunasync.service\nsystemctl enable docker.service\nsystemctl start docker.service\n\n# configure conf json of CloudWatch agent\nmkdir -p /opt/aws/amazon-cloudwatch-agent/etc/\naws s3 cp s3://`,
               {
                 "Ref": "referencetoParentStackAssetBucket9670BCE7Ref"
               },
@@ -292,32 +306,32 @@ describe('Tunasync worker stack', () => {
   test('Tunasync worker process running alarm', () => {
     expect(stack).toHaveResourceLike('AWS::CloudWatch::Alarm', {
       "ComparisonOperator": "LessThanThreshold",
-        "EvaluationPeriods": 3,
-        "ActionsEnabled": true,
-        "AlarmActions": [
-          {
-            "Ref": "referencetoParentStackTestTopicCEBA4F88Ref"
+      "EvaluationPeriods": 3,
+      "ActionsEnabled": true,
+      "AlarmActions": [
+        {
+          "Ref": "referencetoParentStackTestTopicCEBA4F88Ref"
+        }
+      ],
+      "Dimensions": [
+        {
+          "Name": "AutoScalingGroupName",
+          "Value": {
+            "Ref": "TunaWorkerASG0CF9EDEF"
           }
-        ],
-        "Dimensions": [
-          {
-            "Name": "AutoScalingGroupName",
-            "Value": {
-              "Ref": "TunaWorkerASG0CF9EDEF"
-            }
-          }
-        ],
-        "MetricName": "procstat_lookup_pid_count",
-        "Namespace": "OpenTuna",
-        "OKActions": [
-          {
-            "Ref": "referencetoParentStackTestTopicCEBA4F88Ref"
-          }
-        ],
-        "Period": 60,
-        "Statistic": "Sum",
-        "Threshold": 1,
-        "TreatMissingData": "breaching"
+        }
+      ],
+      "MetricName": "procstat_lookup_pid_count",
+      "Namespace": "OpenTuna",
+      "OKActions": [
+        {
+          "Ref": "referencetoParentStackTestTopicCEBA4F88Ref"
+        }
+      ],
+      "Period": 60,
+      "Statistic": "Sum",
+      "Threshold": 1,
+      "TreatMissingData": "breaching"
     });
   });
 

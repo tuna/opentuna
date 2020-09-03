@@ -24,6 +24,7 @@ It consits of below independent [stacks][cfn-stack],
   - issue SSL certificate from ACM(only for using Route53 as DNS resolver)
   - create DNS record in R53 for ALB and CloudFront(only for using Route53 as DNS resolver)
   - invalidate CloudFront cache when content updates
+  - S3 buckets for S3-backed repos e.g. rubygems
   - Tunasync Manager stack
     - auto scaling group for [tunasync][tunasync] manager
     - intranet application load balancer for manager's API
