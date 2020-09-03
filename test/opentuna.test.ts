@@ -428,6 +428,29 @@ describe('Tuna Manager stack', () => {
       ],
       "SslPolicy": "ELBSecurityPolicy-2016-08"
     });
+
+    expect(stack).toHaveResource('AWS::ElasticLoadBalancingV2::ListenerRule', {
+      "Actions": [
+        {
+          "TargetGroupArn": {
+            "Ref": "ExternalALBDefaultPort80ContentServerGroup4C4C350F"
+          },
+          "Type": "forward"
+        }
+      ],
+      "Conditions": [
+        {
+          "Field": "path-pattern",
+          "Values": [
+            "/debian/*"
+          ]
+        }
+      ],
+      "ListenerArn": {
+        "Ref": "ExternalALBDefaultPort806952D605"
+      },
+      "Priority": 10
+    });
   });
 
   test('public access alb is expected', () => {
@@ -592,7 +615,7 @@ describe('Tuna Manager stack', () => {
               "HEAD"
             ],
             "Compress": true,
-              "DefaultTTL": 3600,
+            "DefaultTTL": 3600,
             "ForwardedValues": {
               "Cookies": {
                 "Forward": "none"

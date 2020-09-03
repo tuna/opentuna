@@ -152,9 +152,10 @@ export class OpentunaStack extends cdk.Stack {
       certificates: cert ? [cert] : undefined,
       sslPolicy: useHTTPS ? elbv2.SslPolicy.RECOMMENDED : undefined,
     });
+    let httpOnlyALBListener: elbv2.ApplicationListener | undefined;
     if (useHTTPS) {
       // redirect HTTP to HTTPS
-      externalALB.addListener(`DefaultPort-80`, {
+      httpOnlyALBListener = externalALB.addListener(`DefaultPort-80`, {
         protocol: elbv2.ApplicationProtocol.HTTP,
         port: 80,
         open: true,
@@ -208,6 +209,7 @@ export class OpentunaStack extends cdk.Stack {
       notifyTopic: props.notifyTopic,
       ecsCluster,
       listener: defaultALBListener,
+      httpOnlyListener: httpOnlyALBListener,
       dashboard,
     });
 
