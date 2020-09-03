@@ -145,9 +145,10 @@ describe('Tuna monitor stack', () => {
                 "InputPathsMap": {
                   "detail-project-name": "$.detail.project-name",
                   "detail-build-status": "$.detail.build-status",
-                  "detail-additional-information-environment-image": "$.detail.additional-information.environment.image"
+                  "account": "$.account",
+                  "detail-build-id": "$.detail.build-id"
                 },
-                "InputTemplate": "\"Project <detail-project-name> got <detail-build-status> with image of <detail-additional-information-environment-image>\""
+                "InputTemplate": "{\"type\":\"repo-sanity\",\"sanityTarget\":\"elrepo\",\"sanityProjectImage\":\"centos:7\",\"sanityProjectName\":<detail-project-name>,\"sanityBuildStatus\":<detail-build-status>,\"account\":<account>,\"sanityBuildId\":<detail-build-id>}"
               }
             }
           ]
