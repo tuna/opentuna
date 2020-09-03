@@ -152,9 +152,10 @@ export class OpentunaStack extends cdk.Stack {
       certificates: cert ? [cert] : undefined,
       sslPolicy: useHTTPS ? elbv2.SslPolicy.RECOMMENDED : undefined,
     });
+    let httpOnlyALBListener: elbv2.ApplicationListener | undefined;
     if (useHTTPS) {
       // redirect HTTP to HTTPS
-      externalALB.addListener(`DefaultPort-80`, {
+      httpOnlyALBListener = externalALB.addListener(`DefaultPort-80`, {
         protocol: elbv2.ApplicationProtocol.HTTP,
         port: 80,
         open: true,
@@ -208,6 +209,7 @@ export class OpentunaStack extends cdk.Stack {
       notifyTopic: props.notifyTopic,
       ecsCluster,
       listener: defaultALBListener,
+      httpOnlyListener: httpOnlyALBListener,
       dashboard,
     });
 
@@ -230,9 +232,9 @@ export class OpentunaStack extends cdk.Stack {
     });
 
     let commonBehaviorConfig = {
-      // special handling for HTTPS forwarding
+      // special handling for redirections
       forwardedValues: {
-        headers: ['Host', 'CloudFront-Forwarded-Proto'],
+        headers: ['Host'],
         queryString: true,
       },
     };
@@ -246,6 +248,7 @@ export class OpentunaStack extends cdk.Stack {
       originConfigs: [{
         customOriginSource: {
           domainName: useHTTPS ? `${stack.region}.${domainName}` : externalALB.loadBalancerDnsName,
+          originProtocolPolicy: cloudfront.OriginProtocolPolicy.MATCH_VIEWER
         },
         behaviors: [{
           ...commonBehaviorConfig,
@@ -299,7 +302,7 @@ export class OpentunaStack extends cdk.Stack {
       // when https is enabled
       cloudfrontProps = {
         httpVersion: cloudfront.HttpVersion.HTTP2,
-        viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.ALLOW_ALL,
         ...cloudfrontProps
       };
 

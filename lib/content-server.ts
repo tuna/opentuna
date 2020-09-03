@@ -11,7 +11,6 @@ import * as cloudwatch from '@aws-cdk/aws-cloudwatch';
 import * as events from '@aws-cdk/aws-events';
 import * as targets from '@aws-cdk/aws-events-targets';
 import { ITopic } from '@aws-cdk/aws-sns';
-import { AdjustmentType } from '@aws-cdk/aws-autoscaling';
 
 export interface ContentServerProps extends cdk.NestedStackProps {
     readonly vpc: ec2.IVpc;
@@ -19,6 +18,7 @@ export interface ContentServerProps extends cdk.NestedStackProps {
     readonly notifyTopic: ITopic;
     readonly ecsCluster: ecs.Cluster;
     readonly listener: elbv2.ApplicationListener;
+    readonly httpOnlyListener?: elbv2.ApplicationListener;
     readonly dashboard: cloudwatch.Dashboard;
 }
 
@@ -133,6 +133,21 @@ export class ContentServerStack extends cdk.NestedStack {
                 timeout: cdk.Duration.seconds(15),
             },
         });
+
+        // allow /debian to be accessed by HTTP, bypassing HTTPS redirection
+        if (props.httpOnlyListener) {
+            props.httpOnlyListener.addTargets('ContentServer', {
+                port: httpPort,
+                protocol: elbv2.ApplicationProtocol.HTTP,
+                targets: [service],
+                pathPattern: '/debian/*',
+                priority: 10,
+                healthCheck: {
+                    enabled: true,
+                    timeout: cdk.Duration.seconds(15),
+                },
+            });
+        }
 
         // auto scaling
         const scaling = service.autoScaleTaskCount({

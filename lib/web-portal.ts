@@ -113,20 +113,6 @@ export class WebPortalStack extends cdk.NestedStack {
                 "/static/status/isoinfo.json",
             ])],
         })
-        // special handling for https
-        props.externalALBListener.addAction(`${usage}RedirectHTTPSAction`, {
-            action: elbv2.ListenerAction.redirect({
-                protocol: "HTTPS",
-                path: "/jobs",
-                port: "443",
-            }),
-            priority: 4,
-            conditions: [elbv2.ListenerCondition.pathPatterns([
-                "/static/tunasync.json",
-            ]), elbv2.ListenerCondition.httpHeader("CloudFront-Forwarded-Proto", [
-                "HTTPS"
-            ])],
-        })
 
         // route /jobs to tuna manager
         // there is no easy way to do this yet
