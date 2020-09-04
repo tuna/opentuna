@@ -71,7 +71,7 @@ export class TunaWorkerStack extends cdk.NestedStack {
         });
         const tunasyncWorkerConf = Mustache.render(
             fs.readFileSync(path.join(__dirname, './tuna-worker-tunasync.conf'), 'utf-8'),
-            confProps).replace('$TUNASCRIPT_PATH', tunaScriptPath);
+            confProps).replace(/\$TUNASCRIPT_PATH/g, tunaScriptPath);
         const tunasyncWorkerConfFile =
             `tuna-worker-${md5Hash(tunasyncWorkerConf)}.conf`;
         fs.writeFileSync(`${tmpOutput}/${tunasyncWorkerConfFile}`, tunasyncWorkerConf);
