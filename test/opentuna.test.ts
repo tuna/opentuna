@@ -442,14 +442,16 @@ describe('Tuna Manager stack', () => {
         {
           "Field": "path-pattern",
           "Values": [
-            "/debian/*"
+            "/debian/*",
+            "/debian-security/*",
+            "/ubuntu/*",
           ]
         }
       ],
       "ListenerArn": {
         "Ref": "ExternalALBDefaultPort806952D605"
       },
-      "Priority": 10
+      "Priority": 20
     });
   });
 
@@ -580,6 +582,48 @@ describe('Tuna Manager stack', () => {
               "QueryString": true
             },
             "PathPattern": "/debian/*",
+            "TargetOriginId": "origin1",
+            "ViewerProtocolPolicy": "allow-all"
+          },
+          {
+            "AllowedMethods": [
+              "GET",
+              "HEAD"
+            ],
+            "CachedMethods": [
+              "GET",
+              "HEAD"
+            ],
+            "Compress": true,
+            "DefaultTTL": 86400,
+            "ForwardedValues": {
+              "Headers": [
+                "Host",
+              ],
+              "QueryString": true
+            },
+            "PathPattern": "/debian-security/*",
+            "TargetOriginId": "origin1",
+            "ViewerProtocolPolicy": "allow-all"
+          },
+          {
+            "AllowedMethods": [
+              "GET",
+              "HEAD"
+            ],
+            "CachedMethods": [
+              "GET",
+              "HEAD"
+            ],
+            "Compress": true,
+            "DefaultTTL": 86400,
+            "ForwardedValues": {
+              "Headers": [
+                "Host",
+              ],
+              "QueryString": true
+            },
+            "PathPattern": "/ubuntu/*",
             "TargetOriginId": "origin1",
             "ViewerProtocolPolicy": "allow-all"
           },
