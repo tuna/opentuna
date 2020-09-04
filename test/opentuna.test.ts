@@ -572,6 +572,27 @@ describe('Tuna Manager stack', () => {
               "HEAD"
             ],
             "Compress": true,
+            "DefaultTTL": 86400,
+            "ForwardedValues": {
+              "Headers": [
+                "Host",
+              ],
+              "QueryString": true
+            },
+            "PathPattern": "/debian/*",
+            "TargetOriginId": "origin1",
+            "ViewerProtocolPolicy": "allow-all"
+          },
+          {
+            "AllowedMethods": [
+              "GET",
+              "HEAD"
+            ],
+            "CachedMethods": [
+              "GET",
+              "HEAD"
+            ],
+            "Compress": true,
             "DefaultTTL": 300,
             "ForwardedValues": {
               "Headers": [
@@ -581,7 +602,7 @@ describe('Tuna Manager stack', () => {
             },
             "PathPattern": "/jobs",
             "TargetOriginId": "origin1",
-            "ViewerProtocolPolicy": "allow-all"
+            "ViewerProtocolPolicy": "redirect-to-https"
           },
           {
             "AllowedMethods": [
@@ -602,7 +623,7 @@ describe('Tuna Manager stack', () => {
             },
             "PathPattern": "/rubygems/gems/*",
             "TargetOriginId": "origin2",
-            "ViewerProtocolPolicy": "allow-all"
+            "ViewerProtocolPolicy": "redirect-to-https"
           },
           {
             "AllowedMethods": [
@@ -623,7 +644,7 @@ describe('Tuna Manager stack', () => {
             },
             "PathPattern": "/rubygems/*",
             "TargetOriginId": "origin2",
-            "ViewerProtocolPolicy": "allow-all"
+            "ViewerProtocolPolicy": "redirect-to-https"
           }
         ],
         "Origins": [

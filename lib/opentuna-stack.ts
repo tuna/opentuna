@@ -18,6 +18,7 @@ import { WebPortalStack } from './web-portal';
 import { CloudFrontInvalidate } from './cloudfront-invalidate';
 import { AnalyticsStack } from './analytics-stack';
 import { MonitorStack } from './monitor-stack';
+import { assert } from 'console';
 
 export interface OpenTunaStackProps extends cdk.StackProps {
   readonly vpcId: string;
@@ -257,6 +258,11 @@ export class OpentunaStack extends cdk.Stack {
           defaultTtl: cdk.Duration.days(1),
         }, {
           ...commonBehaviorConfig,
+          pathPattern: '/debian/*',
+          // default 1 day cache
+          defaultTtl: cdk.Duration.days(1),
+        }, {
+          ...commonBehaviorConfig,
           // 5min cache for tunasync status
           pathPattern: '/jobs',
           defaultTtl: cdk.Duration.minutes(5),
@@ -302,7 +308,7 @@ export class OpentunaStack extends cdk.Stack {
       // when https is enabled
       cloudfrontProps = {
         httpVersion: cloudfront.HttpVersion.HTTP2,
-        viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.ALLOW_ALL,
+        viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         ...cloudfrontProps
       };
 
@@ -360,6 +366,18 @@ export class OpentunaStack extends cdk.Stack {
       }
     });
     const distribution = new cloudfront.CloudFrontWebDistribution(this, 'CloudFrontDist', cloudfrontProps);
+
+    // HACK: override /debian/* viewer protocol policy to allow-all
+    // see https://github.com/aws/aws-cdk/issues/7086
+    let dist = distribution.node.defaultChild as cloudfront.CfnDistribution;
+    let conf = dist.distributionConfig as cloudfront.CfnDistribution.DistributionConfigProperty;
+    let cacheBehaviors = conf.cacheBehaviors as cloudfront.CfnDistribution.CacheBehaviorProperty[];
+    let behavior = cacheBehaviors[0];
+    assert(behavior.pathPattern == '/debian/*');
+    cacheBehaviors[0] = {
+      ...cacheBehaviors[0],
+      viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.ALLOW_ALL,
+    } as cloudfront.CfnDistribution.CacheBehaviorProperty;
 
     if (domainZone) {
       new route53.ARecord(this, 'ARecord', {
