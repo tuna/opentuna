@@ -134,14 +134,18 @@ export class ContentServerStack extends cdk.NestedStack {
             },
         });
 
-        // allow /debian to be accessed by HTTP, bypassing HTTPS redirection
+        // allow /debian, /debian-security and /ubuntu to be accessed by HTTP, bypassing HTTPS redirection
         if (props.httpOnlyListener) {
             props.httpOnlyListener.addTargets('ContentServer', {
                 port: httpPort,
                 protocol: elbv2.ApplicationProtocol.HTTP,
                 targets: [service],
-                pathPattern: '/debian/*',
-                priority: 10,
+                pathPatterns: [
+                    '/debian/*',
+                    '/debian-security/*',
+                    '/ubuntu/*',
+                ],
+                priority: 20,
                 healthCheck: {
                     enabled: true,
                     timeout: cdk.Duration.seconds(15),

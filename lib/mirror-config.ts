@@ -223,8 +223,6 @@ export function getMirrorTestingConfig(stage: string, domainName: string) {
             name: 'UbuntuDebian',
             images: ['ubuntu:18.04', 'ubuntu:20.04', 'debian:stable', 'debian:testing'],
             commands: [
-                'apt update',
-                'apt install -y apt-transport-https ca-certificates',
                 `sed -E -i "s/(deb.debian.org|security.debian.org|archive.ubuntu.com|security.ubuntu.com)/${domainName}/" /etc/apt/sources.list`,
                 'apt update',
             ]

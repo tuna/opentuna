@@ -238,6 +238,8 @@ export class OpentunaStack extends cdk.Stack {
         headers: ['Host'],
         queryString: true,
       },
+      // default 1 day cache
+      defaultTtl: cdk.Duration.days(1),
     };
 
     // origin access identity for s3 bucket
@@ -254,13 +256,15 @@ export class OpentunaStack extends cdk.Stack {
         behaviors: [{
           ...commonBehaviorConfig,
           isDefaultBehavior: true,
-          // default 1 day cache
-          defaultTtl: cdk.Duration.days(1),
         }, {
           ...commonBehaviorConfig,
           pathPattern: '/debian/*',
-          // default 1 day cache
-          defaultTtl: cdk.Duration.days(1),
+        }, {
+          ...commonBehaviorConfig,
+          pathPattern: '/debian-security/*',
+        }, {
+          ...commonBehaviorConfig,
+          pathPattern: '/ubuntu/*',
         }, {
           ...commonBehaviorConfig,
           // 5min cache for tunasync status
@@ -374,10 +378,14 @@ export class OpentunaStack extends cdk.Stack {
     let cacheBehaviors = conf.cacheBehaviors as cloudfront.CfnDistribution.CacheBehaviorProperty[];
     let behavior = cacheBehaviors[0];
     assert(behavior.pathPattern == '/debian/*');
-    cacheBehaviors[0] = {
-      ...cacheBehaviors[0],
-      viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.ALLOW_ALL,
-    } as cloudfront.CfnDistribution.CacheBehaviorProperty;
+    for (let i = 0; i < cacheBehaviors.length; i++) {
+      if (['/debian/*', '/debian-security/*', '/ubuntu/*'].indexOf(cacheBehaviors[i].pathPattern) != -1) {
+        cacheBehaviors[i] = {
+          ...cacheBehaviors[i],
+          viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.ALLOW_ALL,
+        } as cloudfront.CfnDistribution.CacheBehaviorProperty;
+      }
+    }
 
     if (domainZone) {
       new route53.ARecord(this, 'ARecord', {
