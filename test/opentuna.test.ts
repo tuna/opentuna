@@ -843,11 +843,12 @@ describe('Tuna Manager stack', () => {
         "Ref": "CloudFrontDistCFDistribution179E93F8"
       },
       "DistributionPaths": [
-        "/help/*",
-        "/news/*",
-        "/status/*",
+        "/help*",
+        "/news*",
+        "/status*",
+        "/static*",
         "/*.html",
-        "/"
+        "/",
       ],
     });
 

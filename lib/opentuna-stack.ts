@@ -399,7 +399,7 @@ export class OpentunaStack extends cdk.Stack {
     // invalidate cloudfront when web-portal changes
     new CloudFrontInvalidate(this, 'CloudFrontInvalidate', {
       distribution: distribution,
-      distributionPaths: ['/help/*', '/news/*', '/status/*', '/*.html', '/'],
+      distributionPaths: ['/help*', '/news*', '/status*', '/static*', '/*.html', '/'],
       updateKey: webPortalStack.dockerImageHash,
     });
   }
