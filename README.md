@@ -96,7 +96,7 @@ npx cdk deploy OpenTunaStack -c vpcId=<existing vpc Id>
 npx cdk deploy OpenTunaStack -c vpcId=<existing vpc Id> -c slackHookUrl=<webhook url>
 
 # or deploy with existing EFS filesystem
-npx cdk deploy OpenTunaStack -c vpcId=<existing vpc Id> -c fileSystemId=<existing filesystem id>
+npx cdk deploy OpenTunaStack -c vpcId=<existing vpc Id> -c fileSystemId=<existing filesystem id> -c fileSystemSGId=<existing sg id of the given file system>
 
 # deploy with domain name and use Route53 as DNS resolver
 npx cdk deploy OpenTunaStack -c vpcId=<existing vpc Id> -c domainName=<domain name of site> -c domainZone=<public hosted zone of your domain in Route53>
