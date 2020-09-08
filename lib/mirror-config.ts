@@ -251,6 +251,7 @@ export function getMirrorTestingConfig(stage: string, domainName: string) {
             name: 'elrepo',
             images: ['centos:7'],
             commands: [
+                `sed -i 's/mirrorlist/#mirrorlist/;s/#baseurl=http:\\/\\/mirror.centos.org/baseurl=https:\\/\\/${domainName}/' /etc/yum.repos.d/CentOS-*.repo`,
                 'rpm --import https://www.elrepo.org/RPM-GPG-KEY-elrepo.org',
                 'yum install -y https://www.elrepo.org/elrepo-release-7.el7.elrepo.noarch.rpm',
                 `sed -i 's/mirrorlist/#mirrorlist/;s/elrepo.org\\/linux/${domainName}\\/elrepo/' /etc/yum.repos.d/elrepo.repo`,
