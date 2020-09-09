@@ -164,7 +164,7 @@ export class TunaWorkerStack extends cdk.NestedStack {
         tunaWorkerAlarm.addAlarmAction(new cw_actions.SnsAction(props.notifyTopic));
         tunaWorkerAlarm.addOkAction(new cw_actions.SnsAction(props.notifyTopic));
 
-        cdk.Tag.add(this, 'component', usage);
+        cdk.Tags.of(this).add('component', usage);
     }
 }
 

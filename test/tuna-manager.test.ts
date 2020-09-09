@@ -256,6 +256,10 @@ describe('Tuna Manager stack', () => {
     expect(stack).toHaveResource('AWS::ElasticLoadBalancingV2::LoadBalancer', {
       "LoadBalancerAttributes": [
         {
+          "Key": "deletion_protection.enabled",
+          "Value": "false"
+        },
+        {
           "Key": "routing.http2.enabled",
           "Value": "false"
         }

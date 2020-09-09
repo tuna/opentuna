@@ -43,4 +43,4 @@ new OpentunaStack(app, `${appPrefix}Stack${suffix}`, {
     notifyTopic: commonStack.notifyTopic,
 });
 
-cdk.Tag.add(app, 'app', `${appPrefix}${suffix}`);
+cdk.Tags.of(app).add('app', `${appPrefix}${suffix}`);

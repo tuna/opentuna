@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 import 'source-map-support/register';
 import * as cdk from '@aws-cdk/core';
-import ec2 = require("@aws-cdk/aws-ec2");
 import { NetworkStack } from '../lib/network-stack';
 
 const app = new cdk.App();
@@ -18,4 +17,4 @@ new NetworkStack(app, `${appPrefix}NetworkStack${suffix}`, {
     env,
 });
 
-cdk.Tag.add(app, 'app', `${appPrefix}${suffix}`);
+cdk.Tags.of(app).add('app', `${appPrefix}${suffix}`);

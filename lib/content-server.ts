@@ -277,6 +277,6 @@ export class ContentServerStack extends cdk.NestedStack {
             })]
         });
 
-        cdk.Tag.add(this, 'component', usage);
+        cdk.Tags.of(this).add('component', usage);
     }
 }

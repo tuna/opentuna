@@ -14,7 +14,7 @@ describe('Network stack', () => {
         account: '1234567890xx',
       }
     });
-    cdk.Tag.add(app, 'app', `OpenTuna`);
+    cdk.Tags.of(app).add('app', `OpenTuna`);
   });
 
   test('VPC created with expected cidr and tags', () => {

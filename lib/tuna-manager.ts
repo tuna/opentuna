@@ -84,6 +84,6 @@ export class TunaManagerStack extends cdk.NestedStack {
             deregistrationDelay: cdk.Duration.seconds(10),
         });
 
-        cdk.Tag.add(this, 'component', usage);
+        cdk.Tags.of(this).add('component', usage);
     }
 }

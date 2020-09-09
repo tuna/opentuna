@@ -14,7 +14,7 @@ describe('Tuna Common stack', () => {
         account: '1234567890xx',
       },
     });
-    cdk.Tag.add(app, 'app', `OpenTuna`);
+    cdk.Tags.of(app).add('app', `OpenTuna`);
   });
 
   test('SNS Topic created', () => {
