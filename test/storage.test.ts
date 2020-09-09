@@ -17,7 +17,7 @@ describe('Storage stack', () => {
       },
       vpcId: 'vpc-id',
     });
-    cdk.Tag.add(app, 'app', `OpenTuna`);
+    cdk.Tags.of(app).add('app', `OpenTuna`);
   });
 
   test('EFS file system created with expected properties', () => {

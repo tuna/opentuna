@@ -164,6 +164,6 @@ export class WebPortalStack extends cdk.NestedStack {
         });
         rule.addTarget(new events_targets.LambdaFunction(func));
 
-        cdk.Tag.add(this, 'component', usage);
+        cdk.Tags.of(this).add('component', usage);
     }
 }

@@ -214,7 +214,7 @@ describe('Tuna Manager stack', () => {
   });
 
   test('Asset bucket created', () => {
-    cdk.Tag.add(app, 'app', `OpenTuna`);
+    cdk.Tags.of(app).add('app', `OpenTuna`);
     expect(stack).toHaveResourceLike('AWS::S3::Bucket', {
       "Properties": {
         "Tags": [
@@ -461,6 +461,10 @@ describe('Tuna Manager stack', () => {
 
     expect(stack).toHaveResourceLike('AWS::ElasticLoadBalancingV2::LoadBalancer', {
       "LoadBalancerAttributes": [
+        {
+          "Key": "deletion_protection.enabled",
+          "Value": "false"
+        },
         {
           "Key": "access_logs.s3.enabled",
           "Value": "true"

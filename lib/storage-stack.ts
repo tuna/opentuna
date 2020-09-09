@@ -1,6 +1,6 @@
 import * as cdk from '@aws-cdk/core';
-import ec2 = require("@aws-cdk/aws-ec2");
-import efs = require("@aws-cdk/aws-efs");
+import * as ec2 from '@aws-cdk/aws-ec2';
+import * as efs from '@aws-cdk/aws-efs';
 
 export interface StorageStackProps extends cdk.StackProps {
   readonly vpcId: string;
@@ -30,7 +30,7 @@ export class StorageStack extends cdk.Stack {
     this.fileSystem.connections.allowDefaultPortFrom(ec2.Peer.ipv4(vpc.vpcCidrBlock),
       'allow connect from vpc');
 
-    cdk.Tag.add(this, 'component', 'storage');
+    cdk.Tags.of(this).add('component', 'storage');
 
     new cdk.CfnOutput(this, 'FileSystemId', {
       value: `${this.fileSystem.fileSystemId}`,

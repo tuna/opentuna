@@ -49,6 +49,6 @@ export class CommonStack extends cdk.Stack {
             this.notifyTopic.addSubscription(new sns_sub.LambdaSubscription(slackSubscription));
         }
 
-        cdk.Tag.add(this, 'component', 'common');
+        cdk.Tags.of(this).add('component', 'common');
     }
 }
