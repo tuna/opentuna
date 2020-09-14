@@ -106,6 +106,14 @@ export function getMirrorConfig(stage: string) {
                 upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/kubernetes/'
             },
             {
+                name: 'linuxmint',
+                interval: 1440,
+                provider: 'two-stage-rsync',
+                stage1_profile: 'debian',
+                upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/linuxmint/',
+                rsync_options: ['"--delete-excluded"']
+            },
+            {
                 name: 'mariadb',
                 interval: 720,
                 provider: 'rsync',
