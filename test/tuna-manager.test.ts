@@ -1,9 +1,10 @@
 import * as cdk from '@aws-cdk/core';
 import * as cxapi from '@aws-cdk/cx-api';
+import * as s3 from '@aws-cdk/aws-s3';
+import * as ec2 from '@aws-cdk/aws-ec2';
+import * as sns from '@aws-cdk/aws-sns';
 import * as Tuna from '../lib/tuna-manager';
 import * as mock from './context-provider-mock';
-import ec2 = require('@aws-cdk/aws-ec2');
-import sns = require('@aws-cdk/aws-sns');
 import '@aws-cdk/assert/jest';
 
 describe('Tuna Manager stack', () => {
@@ -89,6 +90,7 @@ describe('Tuna Manager stack', () => {
     const vpc = ec2.Vpc.fromLookup(parentStack, `VPC`, {
       vpcId,
     });
+    const bucket = new s3.Bucket(parentStack, 'AssetBucket');
 
     const tunaManagerSG = new ec2.SecurityGroup(parentStack, "TunaManagerSG", {
       vpc,
@@ -107,6 +109,7 @@ describe('Tuna Manager stack', () => {
       notifyTopic: topic,
       tunaManagerSG,
       tunaManagerALBSG,
+      assetBucket: bucket,
     });
   });
 

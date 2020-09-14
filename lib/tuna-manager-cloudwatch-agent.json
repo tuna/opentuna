@@ -1,0 +1,42 @@
+{
+        "metrics": {
+                "namespace": "{{&namespace}}",
+                "append_dimensions": {
+                        "ImageId": "${aws:ImageId}",
+                        "InstanceId": "${aws:InstanceId}",
+                        "InstanceType": "${aws:InstanceType}",
+                        "{{&dimensionName}}": "${aws:AutoScalingGroupName}"
+                },
+                "aggregation_dimensions": [
+                        [
+                                "{{&dimensionName}}"
+                        ]
+                ],
+                "metrics_collected": {
+                        "procstat": [
+                                {
+                                        "exe": "tunasync",
+                                        "measurement": [
+                                                "pid_count"
+                                        ]
+                                }
+                        ]
+                }
+        },
+        "logs": {
+                "logs_collected": {
+                        "files": {
+                                "collect_list": [
+                                        {
+                                                "file_path": "/var/log/tunasync.log",
+                                                "log_group_name": "{{&logPrefix}}/manager",
+                                                "log_stream_name": "{instance_id}_{hostname}",
+                                                "timestamp_format": "%H: %M: %S%y%b%-d",
+                                                "timezone": "UTC"
+                                        }
+                                ]
+                        }
+                },
+                "log_stream_name": "open-mirror-default-stream-name"
+        }
+}
