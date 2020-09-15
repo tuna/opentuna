@@ -11,8 +11,8 @@ import * as region_info from '@aws-cdk/region-info';
 import * as Mustache from 'mustache';
 import * as path from 'path';
 import * as fs from 'fs';
-import * as crypto from 'crypto';
 import { getMirrorConfig } from './mirror-config';
+import { deleteFolderRecursive, md5Hash } from './utils';
 
 export interface TunaWorkerProps extends cdk.NestedStackProps {
     readonly vpc: ec2.IVpc;
@@ -166,23 +166,4 @@ export class TunaWorkerStack extends cdk.NestedStack {
 
         cdk.Tags.of(this).add('component', usage);
     }
-}
-
-var deleteFolderRecursive = function (path: fs.PathLike) {
-    if (fs.existsSync(path)) {
-        fs.readdirSync(path).forEach(function (file, index) {
-            var curPath = path + "/" + file;
-            if (fs.lstatSync(curPath).isDirectory()) { // recurse
-                deleteFolderRecursive(curPath);
-            } else { // delete file
-                fs.unlinkSync(curPath);
-            }
-        });
-        fs.rmdirSync(path);
-    }
-};
-
-
-var md5Hash = function (content: string) {
-    return crypto.createHash('md5').update(content).digest('hex');
 }

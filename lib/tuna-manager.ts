@@ -1,13 +1,16 @@
-import autoscaling = require('@aws-cdk/aws-autoscaling');
-import cdk = require('@aws-cdk/core');
-import ec2 = require('@aws-cdk/aws-ec2');
-import elbv2 = require('@aws-cdk/aws-elasticloadbalancingv2');
-import fs = require('fs');
-import iam = require('@aws-cdk/aws-iam');
-import path = require('path');
-import region_info = require('@aws-cdk/region-info');
+import * as autoscaling from '@aws-cdk/aws-autoscaling';
+import * as cdk from '@aws-cdk/core';
+import * as ec2 from '@aws-cdk/aws-ec2';
+import * as elbv2 from '@aws-cdk/aws-elasticloadbalancingv2';
+import * as iam from '@aws-cdk/aws-iam';
+import * as region_info from '@aws-cdk/region-info';
+import * as s3 from '@aws-cdk/aws-s3';
+import * as s3deploy from '@aws-cdk/aws-s3-deployment';
 import { ITopic } from '@aws-cdk/aws-sns';
-import Mustache = require('mustache');
+import * as path from 'path';
+import * as fs from 'fs';
+import * as Mustache from 'mustache';
+import { md5Hash, deleteFolderRecursive } from './utils';
 
 export interface TunaManagerProps extends cdk.NestedStackProps {
     readonly vpc: ec2.IVpc;
@@ -15,6 +18,7 @@ export interface TunaManagerProps extends cdk.NestedStackProps {
     readonly notifyTopic: ITopic;
     readonly tunaManagerSG: ec2.ISecurityGroup;
     readonly tunaManagerALBSG: ec2.ISecurityGroup;
+    readonly assetBucket: s3.IBucket;
 }
 export class TunaManagerStack extends cdk.NestedStack {
 
@@ -27,6 +31,7 @@ export class TunaManagerStack extends cdk.NestedStack {
         super(scope, id, props);
 
         const stack = cdk.Stack.of(this);
+        const stage = this.node.tryGetContext('stage') || 'prod';
         const regionInfo = region_info.RegionInfo.get(stack.region);
         const usage = 'TunaManager';
 
@@ -35,15 +40,48 @@ export class TunaManagerStack extends cdk.NestedStack {
                 new iam.ServicePrincipal('ec2.amazonaws.com')),
             managedPolicies: [
                 iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonSSMManagedInstanceCore'),
+                iam.ManagedPolicy.fromAwsManagedPolicyName('CloudWatchAgentServerPolicy'),
             ]
+        });
+
+        const confProps = {
+            namespace: "OpenTuna",
+            dimensionName: "procstat_lookup_pid_count",
+            logPrefix: `/opentuna/${stage}/tunasync`,
+        };
+
+        // TODO replace cdk.out by outdir variable
+        const tmpOutput = path.join(__dirname, `../cdk.out/tuna-manager-conf-files`);
+        deleteFolderRecursive(tmpOutput);
+        fs.mkdirSync(tmpOutput, {
+            recursive: true
+        });
+        const cloudwatchAgentConf = Mustache.render(
+            fs.readFileSync(path.join(__dirname, './tuna-manager-cloudwatch-agent.json'), 'utf-8'),
+            confProps);
+        const cloudwatchAgentConfFile =
+            `amazon-cloudwatch-agent-${md5Hash(cloudwatchAgentConf)}.conf`;
+        fs.writeFileSync(`${tmpOutput}/${cloudwatchAgentConfFile}`, cloudwatchAgentConf);
+
+        const confPrefix = 'tunasync/manager/';
+        const confFileDeployment = new s3deploy.BucketDeployment(this, 'ManagerConfFileDeployments', {
+            sources: [s3deploy.Source.asset(tmpOutput)],
+            destinationBucket: props.assetBucket,
+            destinationKeyPrefix: confPrefix, // optional prefix in destination bucket
+            prune: false,
+            retainOnDelete: false,
         });
 
         const userdata = fs.readFileSync(path.join(__dirname, './tuna-manager-user-data.txt'), 'utf-8');
         const newProps = {
             fileSystemId: props.fileSystemId,
             regionEndpoint: `efs.${stack.region}.${regionInfo.domainSuffix}`,
+            s3RegionEndpoint: `s3.${stack.region}.${regionInfo.domainSuffix}`,
+            region: stack.region,
             port: this.managerPort,
+            cloudwatchAgentConf: props.assetBucket.s3UrlForObject(`${confPrefix}${cloudwatchAgentConfFile}`),
         }
+        props.assetBucket.grantRead(ec2Role, `${confPrefix}*`);
 
         const tunaManagerASG = new autoscaling.AutoScalingGroup(this, `${usage}ASG`, {
             instanceType: ec2.InstanceType.of(ec2.InstanceClass.C5, ec2.InstanceSize.LARGE),

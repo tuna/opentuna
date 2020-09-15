@@ -182,6 +182,7 @@ export class OpentunaStack extends cdk.Stack {
       tunaManagerSG,
       tunaManagerALBSG,
       timeout: cdk.Duration.minutes(10),
+      assetBucket,
     });
 
     // Tunasync Worker stack
