@@ -171,6 +171,7 @@ export function getMirrorConfig(stage: string) {
             },
             {
                 name: 'ubuntu',
+                interval: 720,
                 provider: 'two-stage-rsync',
                 stage1_profile: 'debian',
                 upstream: 'rsync://archive.ubuntu.com/ubuntu/',
