@@ -176,12 +176,12 @@ describe('Tunasync worker stack', () => {
     expect(tunaConf.global.log_dir).toEqual('/mnt/efs/opentuna/log/{{.Name}}');
     expect(tunaConf.manager.api_base).toEqual('++MANAGERURL++');
     expect(tunaConf.server.hostname).toEqual('++HOSTNAME++');
-    expect(tunaConf.mirrors[8].name).toEqual('debian');
-    expect(tunaConf.mirrors[8].rsync_options).toEqual(['--no-H']);
-    expect(tunaConf.mirrors[23].name).toEqual('pypi');
-    expect(tunaConf.mirrors[23].command).toEqual('/tunasync-scripts/pypi.sh');
-    expect(tunaConf.mirrors[24].name).toEqual('rubygems');
-    expect(tunaConf.mirrors[24].command).toEqual('/tunasync-scripts/rubygems-s3.sh');
+    const debian = tunaConf.mirrors.find((m: { name: string }) => m.name === 'debian');
+    expect(debian.rsync_options).toEqual(['--no-H']);
+    const pypi = tunaConf.mirrors.find((m: { name: string }) => m.name === 'pypi');
+    expect(pypi.command).toEqual('/tunasync-scripts/pypi.sh');
+    const rubygems = tunaConf.mirrors.find((m: { name: string }) => m.name === 'rubygems');
+    expect(rubygems.command).toEqual('/tunasync-scripts/rubygems-s3.sh');
 
     const cloudwatchAgents = fs.readdirSync(confFilePath, { withFileTypes: true, }).filter((file: fs.Dirent) => file.name.match(/amazon-cloudwatch-agent-.*\.conf/gi));
     expect(cloudwatchAgents).toHaveLength(1);
