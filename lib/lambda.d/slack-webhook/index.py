@@ -53,6 +53,30 @@ def handler(event, context):
                         Check build {message.get('sanityBuildId')} for detail info."""),
                 "icon_emoji": icon_emoji,
             }
+        elif msgType == 'pipeline':
+            stage = message.get("stage")
+            if stage == 'approval':
+                slackMsg = {
+                    "channel": channel,
+                    "username": 'Pipeline',
+                    "text": textwrap.dedent(f"""\
+                            OpenTUNA pipeline '{message.get('stateMachineName')}' is going to next stage '{message.get('nextStage')}' on commit '{message.get('commit')}',
+
+                            <{message.get('approveAction')}|Click to Approve>
+                            <{message.get('rejectAction')}|Click to Reject>
+                            """),
+                    "icon_emoji": ":question:",
+                }
+            else:
+                buildRT = message.get('result')
+                slackMsg = {
+                    "channel": channel,
+                    "username": 'Pipeline',
+                    "text": textwrap.dedent(f"""\
+                            OpenTUNA pipeline stage '{message.get('stage')}' on commit '{message.get('commit')} is {buildRT}.',
+                            """),
+                    "icon_emoji": ":thumbsup:" if buildRT == "succeeded" else ":thumbsdown:",
+                }
         else:
             print(f"Ignore non-alarm message.")
         

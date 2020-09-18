@@ -20,6 +20,8 @@ const commonStack = new CommonStack(app, `${appPrefix}CommonStack${suffix}`, {
     env,
 });
 
+// workaround for CDK StringParameter.valueFromLookup
+// see https://github.com/aws/aws-cdk/issues/8699 for detail
 const uatJsonFile = app.node.tryGetContext('UATConf') || `../cdk.out/uat.json`;
 const uat: Stage = JSON.parse(fs.readFileSync(path.join(__dirname, uatJsonFile), 'utf-8'));
 const prodJsonFile = app.node.tryGetContext('ProdConf') || `../cdk.out/prod.json`;

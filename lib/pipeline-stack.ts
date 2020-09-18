@@ -8,7 +8,6 @@ import * as path from 'path';
 import * as s3 from '@aws-cdk/aws-s3';
 import * as sfn from '@aws-cdk/aws-stepfunctions';
 import * as sns from '@aws-cdk/aws-sns';
-import * as ssm from '@aws-cdk/aws-ssm';
 import * as tasks from '@aws-cdk/aws-stepfunctions-tasks';
 import * as targets from '@aws-cdk/aws-events-targets';
 
@@ -54,12 +53,13 @@ export class PipelineStack extends cdk.Stack {
       comment: 'next stage deployment is stopped.',
     });
 
+    const sourceBranch = this.node.tryGetContext('sourceBranch') ?? 'master';
     const buildAndTestProject = new codebuild.Project(this, 'OpenTUNABuild', {
       source: codebuild.Source.gitHub({
         owner: this.node.tryGetContext('sourceOwner') ?? 'tuna',
         repo: this.node.tryGetContext('sourceRepo') ?? 'opentuna',
         cloneDepth: 1,
-        branchOrRef: this.node.tryGetContext('sourceBranch') ?? 'master',
+        branchOrRef: sourceBranch,
       }),
       environment: {
         buildImage: codebuild.LinuxBuildImage.fromDockerRegistry('node:12-buster'),
@@ -105,7 +105,7 @@ export class PipelineStack extends cdk.Stack {
     });
 
     // TODO: pass the commit when trigger the pipeline stepfunctions
-    const commitVersion = 'master';
+    const commitVersion = sourceBranch;
 
     const codeBuildTestTask = new tasks.CodeBuildStartBuild(stack, 'Build & Test', {
       project: buildAndTestProject,
@@ -155,17 +155,19 @@ export class PipelineStack extends cdk.Stack {
     });
     props.topic.grantPublish(approverNotificationFn);
 
-    const nextStage = 'prod';
+    const nextStage = props.prod.name;
+    const approvalTimeoutInMinutes = this.node.tryGetContext('approvalTimeoutInMinutes') ?? 60 * 24 * 3;
     const approvalTask = new tasks.LambdaInvoke(this, 'Notify approvers', {
       lambdaFunction: approverNotificationFn,
       integrationPattern: sfn.IntegrationPattern.WAIT_FOR_TASK_TOKEN,
-      timeout: cdk.Duration.minutes(this.node.tryGetContext('approvalTimeoutInMinutes') ?? 60 * 24 * 3),
+      timeout: cdk.Duration.minutes(approvalTimeoutInMinutes),
       payload: sfn.TaskInput.fromObject({
         ExecutionContext: sfn.TaskInput.fromJsonPathAt('$$').value,
         ActionEndpoint: pipelineApi.url,
         SNSTopicArn: props.topic.topicArn,
-        Commit: commitVersion, // TODO: replaced by master
+        Commit: commitVersion, // TODO: replaced by commit given executation pipelines
         Stage: nextStage,
+        Timeout: approvalTimeoutInMinutes,
       }),
     }).addCatch(failure, {
       errors: ['CustomError']
@@ -283,7 +285,7 @@ export class PipelineStack extends cdk.Stack {
         message: events.RuleTargetInput.fromObject({
           type: 'pipeline',
           stage: stage.name,
-          version: sourceVersion,
+          commit: sourceVersion,
           result: 'failed',
         }),
       }),
@@ -293,7 +295,7 @@ export class PipelineStack extends cdk.Stack {
         message: events.RuleTargetInput.fromObject({
           type: 'pipeline',
           stage: stage.name,
-          version: sourceVersion,
+          commit: sourceVersion,
           result: 'succeeded',
         }),
       }),
