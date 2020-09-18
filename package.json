@@ -11,6 +11,7 @@
     "test": "jest",
     "cdk": "cdk",
     "init": "npx cdk bootstrap && npm i",
+    "install-deps": "npm ci && npm i --prefix lib/lambda.pipelines.d/approver-actions && npm i --prefix lib/lambda.pipelines.d/approver-notification",
     "deploy-network": "npx cdk deploy OpenTunaNetworkStack --app 'npx ts-node bin/opentuna-network.ts'",
     "deploy-pipeline": "mkdir -p cdk.out && aws ssm get-parameter --name /opentuna/pipeline/stage/uat --query 'Parameter.Value' --output text >cdk.out/uat.json && aws ssm get-parameter --name /opentuna/pipeline/stage/prod --query 'Parameter.Value' --output text >cdk.out/prod.json && npx cdk deploy OpenTunaPipelineStack --app 'npx ts-node bin/opentuna-pipeline.ts'",
     "deploy-pipeline-cross-account-setup": "npx cdk deploy PipelineCrossAccountDeploymentSetupStack --app 'npx ts-node bin/opentuna-pipeline-setup.ts'"

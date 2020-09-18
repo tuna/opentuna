@@ -32,5 +32,6 @@ By default the parameter name is `/opentuna/pipeline/stage/uat` and `/opentuna/p
 
 ## How to deploy it
 ```sh
+npm run install-deps
 npm run deploy-pipeline
 ```
