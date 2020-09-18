@@ -54,15 +54,19 @@ def handler(event, context):
                 "icon_emoji": icon_emoji,
             }
         elif msgType == 'pipeline':
-            stage = message.get("stage")
-            if stage == 'approval':
+            state = message.get("state")
+            if state == 'approval':
                 slackMsg = {
                     "channel": channel,
                     "username": 'Pipeline',
                     "text": textwrap.dedent(f"""\
-                            OpenTUNA pipeline '{message.get('stateMachineName')}' is going to next stage '{message.get('nextStage')}' on commit '{message.get('commit')}',
+                            OpenTUNA pipeline '{message.get('stateMachineName')}' is going to next stage '{message.get('nextStage')}' on commit '{message.get('commit')}'.
+                            
+                            Check stage '{message.get('stage')}' via https://{message.get('domain')},
 
                             <{message.get('approveAction')}|Click to Approve>
+                            
+
                             <{message.get('rejectAction')}|Click to Reject>
                             """),
                     "icon_emoji": ":question:",
@@ -73,7 +77,7 @@ def handler(event, context):
                     "channel": channel,
                     "username": 'Pipeline',
                     "text": textwrap.dedent(f"""\
-                            OpenTUNA pipeline stage '{message.get('stage')}' on commit '{message.get('commit')} is {buildRT}.',
+                            OpenTUNA pipeline stage '{message.get('stage')}' on commit '{message.get('commit')}' is {buildRT}.,
                             """),
                     "icon_emoji": ":thumbsup:" if buildRT == "succeeded" else ":thumbsdown:",
                 }

@@ -30,8 +30,10 @@ export interface PipelineApprovalNotificationEvent {
     ActionEndpoint: string,
     SNSTopicArn: string,
     Commit: string,
-    Stage: string,
+    NextStage: string,
     Timeout: number,
+    Stage: string,
+    Domain: string,
 }
 
 const sns = new SNS();
@@ -47,13 +49,15 @@ export const pipelineApproverNotification: PipelineApprovalNotificationHandler =
         timeout: event.Timeout,
         commit: event.Commit,
         type: 'pipeline',
-        stage: 'approval',
-        nextStage: event.Stage,
+        state: 'approval',
+        nextStage: event.NextStage,
+        stage: event.Stage,
+        domain: event.Domain,
     }
 
     var params = {
         Message: JSON.stringify(approvalEvent),
-        Subject: `Pls approve OpenTUNA stage "${event.Stage}" on commit "${event.Commit}". The approval will be timeout in ${event.Timeout} minutes.".`.slice(0, 95).concat('...'),
+        Subject: `Pls approve OpenTUNA to next stage "${event.NextStage}" on commit "${event.Commit}". The approval will be timeout in ${event.Timeout} minutes.".`.slice(0, 95).concat('...'),
         TopicArn: event.SNSTopicArn,
     };
 

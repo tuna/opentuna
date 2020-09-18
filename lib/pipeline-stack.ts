@@ -166,8 +166,10 @@ export class PipelineStack extends cdk.Stack {
         ActionEndpoint: pipelineApi.url,
         SNSTopicArn: props.topic.topicArn,
         Commit: commitVersion, // TODO: replaced by commit given executation pipelines
-        Stage: nextStage,
+        NextStage: nextStage,
         Timeout: approvalTimeoutInMinutes,
+        Stage: props.uat.name,
+        Domain: props.uat.deployContexts.domainName,
       }),
     }).addCatch(failure, {
       errors: ['CustomError']
