@@ -47,6 +47,7 @@ It consits of below independent [stacks][cfn-stack],
   - Monitor stack
     - create several CodeBuild projects to verify integrity of index files
     - run projects periodically and report upon failure
+- [Pipeline stack](pipeline.md)
 
 ## Prerequisites
 - VPC with both public and private subnets crossing two AZs at least and NAT gateway. You can [deploy the network stack](#deploy-network-stackoptional) if you don't have a VPC sastfied the requirements.
