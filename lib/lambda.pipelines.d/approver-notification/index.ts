@@ -53,7 +53,7 @@ export const pipelineApproverNotification: PipelineApprovalNotificationHandler =
 
     var params = {
         Message: JSON.stringify(approvalEvent),
-        Subject: `Pls approve the deployment of OpenTUNA stage "${event.Stage}" on commit "${event.Commit}\nThe approval will be timeout in ${event.Timeout} minutes.".`,
+        Subject: `Pls approve OpenTUNA stage "${event.Stage}" on commit "${event.Commit}". The approval will be timeout in ${event.Timeout} minutes.".`.slice(0, 95).concat('...'),
         TopicArn: event.SNSTopicArn,
     };
 
