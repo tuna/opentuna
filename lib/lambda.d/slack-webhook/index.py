@@ -59,14 +59,17 @@ def handler(event, context):
                 slackMsg = {
                     "channel": channel,
                     "username": 'Pipeline',
+                    
                     "text": textwrap.dedent(f"""\
                             OpenTUNA pipeline '{message.get('stateMachineName')}' is going to next stage '{message.get('nextStage')}' on commit '{message.get('commit')}'.
-                            
+
                             Check stage '{message.get('stage')}' via https://{message.get('domain')},
+
+                            NOTE: below actions are one-time actions and the operation can NOT be revoked. 
+                            Also below actions will be expired in {message.get('timeout')} minutes.
 
                             <{message.get('approveAction')}|Click to Approve>
                             
-
                             <{message.get('rejectAction')}|Click to Reject>
                             """),
                     "icon_emoji": ":question:",

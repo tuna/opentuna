@@ -6,12 +6,18 @@ const stepfunctions = new aws.StepFunctions();
 export const pipelineApprovalAction: APIGatewayProxyHandlerV2 = async (event, _context, callback) => {
     console.info(`Receiving pipeline approval action event ${JSON.stringify(event, null, 2)}.`);
 
-    const action = event.queryStringParameters!.action;
-    const taskToken = event.queryStringParameters!.taskToken;
-    const statemachineName = event.queryStringParameters!.sm;
-    const executionName = event.queryStringParameters!.ex;
+    // workaround to disable slack link auto preview
+    // https://slack.com/help/articles/204399343-Share-links-and-set-preview-preferences
+    if (event.requestContext.http.userAgent.indexOf('Slackbot') > -1) {
+        return {
+            statusCode: 401,
+            body: `This url does not support Slack LinkExpanding.`,
+        };
+    }
 
     var message = {};
+
+    const action = event.queryStringParameters?.action;
 
     if (action === "approve") {
         message = { "Status": "Approved" };
@@ -24,6 +30,10 @@ export const pipelineApprovalAction: APIGatewayProxyHandlerV2 = async (event, _c
             body: `Failed to process the request. Unrecognized Action "${action}".`,
         };
     }
+
+    const taskToken = event.queryStringParameters!.taskToken;
+    const statemachineName = event.queryStringParameters!.sm;
+    const executionName = event.queryStringParameters!.ex;
 
     try {
         await stepfunctions.sendTaskSuccess({
