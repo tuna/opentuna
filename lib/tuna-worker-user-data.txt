@@ -17,6 +17,7 @@ packages:
  - git
  - awscli
  - docker
+ - amazon-cloudwatch-agent
 
 # run commands
 runcmd:
@@ -34,7 +35,6 @@ runcmd:
  - tunascriptpath={{&tunaScriptPath}}
  - mkdir -p ${tunascriptpath}
  - (test -f ${tunascript_bin} && tar -xf ${tunascript_bin} -C ${tunascriptpath}) || (git clone https://github.com/tuna/tunasync-scripts.git ${tunascriptpath})
- - rpm -i https://{{&s3RegionEndpoint}}/amazoncloudwatch-agent-{{&region}}/amazon_linux/amd64/latest/amazon-cloudwatch-agent.rpm
 
 cloud_final_modules:
 - [scripts-user, always]

@@ -76,7 +76,6 @@ export class TunaManagerStack extends cdk.NestedStack {
         const newProps = {
             fileSystemId: props.fileSystemId,
             regionEndpoint: `efs.${stack.region}.${regionInfo.domainSuffix}`,
-            s3RegionEndpoint: `s3.${stack.region}.${regionInfo.domainSuffix}`,
             region: stack.region,
             port: this.managerPort,
             cloudwatchAgentConf: props.assetBucket.s3UrlForObject(`${confPrefix}${cloudwatchAgentConfFile}`),
