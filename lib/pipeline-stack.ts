@@ -1,3 +1,4 @@
+import * as api from '@aws-cdk/aws-apigateway';
 import * as apiv2 from '@aws-cdk/aws-apigatewayv2';
 import * as cdk from '@aws-cdk/core';
 import * as codebuild from '@aws-cdk/aws-codebuild';
@@ -203,6 +204,97 @@ export class PipelineStack extends cdk.Stack {
         }, stack),
       ]
     }));
+
+    // create restful API endpoint to start pipeline
+    const pipelineRestApi = new api.RestApi(this, 'PipelineRestApi', {
+      deployOptions: {
+        stageName: 'pipeline',
+        loggingLevel: api.MethodLoggingLevel.INFO,
+        dataTraceEnabled: true,
+        metricsEnabled: true,
+      },
+      endpointConfiguration: {
+        types: [ api.EndpointType.REGIONAL, ],
+      },
+    });
+    const stateRole = new iam.Role(this, 'StateRole', {
+      assumedBy: new iam.ServicePrincipal('apigateway.amazonaws.com'),
+    });
+    stateRole.attachInlinePolicy(new iam.Policy(this, 'StatePolicy', {
+      statements: [
+        new iam.PolicyStatement({
+          actions: ['states:StartExecution'],
+          effect: iam.Effect.ALLOW,
+          resources: [pipeline.stateMachineArn],
+        }),
+      ],
+    }));
+
+    const errorResponses = [
+      {
+        selectionPattern: '400',
+        statusCode: '400',
+        responseTemplates: {
+          'application/json': `{
+            "error": "Bad input!"
+          }`,
+        },
+      },
+      {
+        selectionPattern: '5\\d{2}',
+        statusCode: '500',
+        responseTemplates: {
+          'application/json': `{
+            "error": "Internal Service Error!"
+          }`,
+        },
+      },
+    ];
+
+    const integrationResponses = [
+      {
+        statusCode: '200',
+        responseTemplates: {
+          'application/json': `{
+            "executionArn": "integration.response.body.executionArn",
+            "startDate": "integration.response.body.startDate"
+          }`,
+        },
+      },
+      ...errorResponses,
+    ];
+
+    const pipelineStepFunctionsIntegration = new api.AwsIntegration({
+      service: 'states',
+      action: 'StartExecution',
+      options: {
+        credentialsRole: stateRole,
+        integrationResponses,
+        passthroughBehavior: api.PassthroughBehavior.WHEN_NO_TEMPLATES,
+        requestTemplates: {
+          'application/json': `{
+              "input": "{}",
+              "stateMachineArn": "${pipeline.stateMachineArn}"
+            }`,
+        },
+      },
+    });
+    const startPath = 'start';
+    pipelineRestApi.root.addResource(startPath).addMethod('POST',
+      pipelineStepFunctionsIntegration, {
+      methodResponses: [
+        { statusCode: '200' },
+        { statusCode: '400' },
+        { statusCode: '500' }
+      ]
+    },
+    );
+
+    new cdk.CfnOutput(this, 'PipelineAPI', {
+      value: pipelineRestApi.urlForPath(`/${startPath}`),
+      exportName: 'startUrl',
+      description: 'endpoint of starting OpenTUNA pipeline',
+    });
 
     cdk.Tags.of(this).add('component', 'pipeline');
   }
