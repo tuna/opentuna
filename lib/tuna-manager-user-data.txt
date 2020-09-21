@@ -13,6 +13,7 @@ repo_upgrade: all
 packages:
  - nfs-utils
  - amazon-efs-utils
+ - amazon-cloudwatch-agent
 
 # run commands
 runcmd:
@@ -25,7 +26,6 @@ runcmd:
  - tunaversion=v0.6.7
  - tunafile="${efs_mount_point_1}/tunasync/install/tunasync-linux-amd64-bin-${tunaversion}.tar.gz"
  - (test -f ${tunafile} && tar -xf ${tunafile} -C /usr/local/bin/) || (wget -c https://github.com/tuna/tunasync/releases/download/${tunaversion}/tunasync-linux-amd64-bin.tar.gz -O - | tar xzf - -C /usr/local/bin/)
- - rpm -i https://{{&s3RegionEndpoint}}/amazoncloudwatch-agent-{{&region}}/amazon_linux/amd64/latest/amazon-cloudwatch-agent.rpm
 
 cloud_final_modules:
 - [scripts-user, always]
