@@ -184,13 +184,14 @@ export class OpentunaStack extends cdk.Stack {
       timeout: cdk.Duration.minutes(10),
       assetBucket,
     });
+    const managerUrl = `http://${tunaManagerStack.managerALB.loadBalancerDnsName}:${tunaManagerStack.managerPort}`;
 
     // Tunasync Worker stack
     const tunaWorkerStack = new TunaWorkerStack(this, 'TunaWorkerStack', {
       vpc,
       fileSystemId: props.fileSystemId,
       notifyTopic: props.notifyTopic,
-      managerUrl: `http://${tunaManagerStack.managerALB.loadBalancerDnsName}:${tunaManagerStack.managerPort}`,
+      managerUrl,
       timeout: cdk.Duration.minutes(10),
       tunaWorkerSG,
       assetBucket,
@@ -229,8 +230,11 @@ export class OpentunaStack extends cdk.Stack {
 
     // Monitor stack
     const monitorStack = new MonitorStack(this, 'MonitorStack', {
+      vpc,
       domainName,
       notifyTopic: props.notifyTopic,
+      tunaManagerUrl: managerUrl,
+      tunaManagerALBSG,
     });
 
     let commonBehaviorConfig = {
