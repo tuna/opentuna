@@ -3,6 +3,7 @@ import * as sns from '@aws-cdk/aws-sns';
 import * as cxapi from '@aws-cdk/cx-api';
 import * as Tuna from '../lib/monitor-stack';
 import * as mock from './context-provider-mock';
+import * as ec2 from '@aws-cdk/aws-ec2';
 import '@aws-cdk/assert/jest';
 import { getMirrorTestingConfig } from '../lib/mirror-config';
 
@@ -90,10 +91,21 @@ describe('Tuna monitor stack', () => {
       },
     });
     const topic = new sns.Topic(parentStack, 'SnsTopic');
+    const vpc = ec2.Vpc.fromLookup(parentStack, `VPC`, {
+      vpcId,
+    });
+    const tunaManagerALBSG = new ec2.SecurityGroup(parentStack, "TunaManagerALBSG", {
+      vpc,
+      description: "SG of Tuna Manager ALB",
+      allowAllOutbound: true,
+    });
 
     stack = new Tuna.MonitorStack(parentStack, 'AnalyticsStack', {
+      vpc,
       domainName: 'example.com',
       notifyTopic: topic,
+      tunaManagerUrl: 'manager.example.com',
+      tunaManagerALBSG,
     });
   });
 
@@ -120,6 +132,7 @@ describe('Tuna monitor stack', () => {
           },
         });
 
+        // sns notify event
         expect(stack).toHaveResourceLike('AWS::Events::Rule', {
           "EventPattern": {
             "source": [
@@ -148,13 +161,94 @@ describe('Tuna monitor stack', () => {
                   "account": "$.account",
                   "detail-build-id": "$.detail.build-id"
                 },
-                "InputTemplate": "{\"type\":\"repo-sanity\",\"sanityTarget\":\"elrepo\",\"sanityProjectImage\":\"centos:7\",\"sanityProjectName\":<detail-project-name>,\"sanityBuildStatus\":<detail-build-status>,\"account\":<account>,\"sanityBuildId\":<detail-build-id>}"
+                "InputTemplate": `{\"type\":\"repo-sanity\",\"sanityTarget\":\"${cfg.name}\",\"sanityProjectImage\":\"${image}\",\"sanityProjectName\":<detail-project-name>,\"sanityBuildStatus\":<detail-build-status>,\"account\":<account>,\"sanityBuildId\":<detail-build-id>}`
               }
+            }
+          ]
+        });
+
+        // lambda trigger event
+        expect(stack).toHaveResourceLike('AWS::Events::Rule', {
+          "EventPattern": {
+            "source": [
+              "aws.codebuild"
+            ],
+            "detail": {
+              "build-status": [
+                "FAILED"
+              ]
+            },
+            "detail-type": [
+              "CodeBuild Build State Change"
+            ]
+          },
+          "State": "ENABLED",
+          "Targets": [
+            {
+              "Arn": {
+                "Fn::GetAtt": [
+                  "TunasyncHandler32F624BF",
+                  "Arn"
+                ]
+              },
+              "Id": "Target0",
+              "Input": `{\"name\":\"${cfg.name}\",\"repo\":\"${cfg.repo}\",\"image\":\"${image}\"}`
             }
           ]
         });
       }
     }
+  });
+
+  test('tunasync handler lambda created', () => {
+    expect(stack).toHaveResourceLike('AWS::Lambda::Function', {
+      "Handler": "index.handler",
+      "Role": {
+        "Fn::GetAtt": [
+          "TunasyncHandlerServiceRole27B629C3",
+          "Arn"
+        ]
+      },
+      "Runtime": "python3.8",
+      "Environment": {
+        "Variables": {
+          "TUNASYNC_MANAGER_URL": "manager.example.com"
+        }
+      },
+      "VpcConfig": {
+        "SecurityGroupIds": [
+          {
+            "Fn::GetAtt": [
+              "TunasyncActionSG2C3146ED",
+              "GroupId"
+            ]
+          }
+        ],
+        "SubnetIds": [
+          "subnet-0a6dab6bc063ea432",
+          "subnet-08dd359da55a6160b",
+          "subnet-0d300d086b989eefc"
+        ]
+      }
+    });
+
+    // permit eventbridge to invoke lambda
+    expect(stack).toHaveResourceLike('AWS::Lambda::Permission', {
+      "Action": "lambda:InvokeFunction",
+      "FunctionName": {
+        "Fn::GetAtt": [
+          "TunasyncHandler32F624BF",
+          "Arn"
+        ]
+      },
+      "Principal": "events.amazonaws.com",
+      "SourceArn": {
+        "Fn::GetAtt": [
+          "MonitorProjectForELRepocentos7MonitorProjectForELRepocentos7FailedLambdaD7E8BD28",
+          "Arn"
+        ]
+      }
+    });
   });
 
 });
