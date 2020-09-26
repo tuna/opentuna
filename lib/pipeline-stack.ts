@@ -273,14 +273,14 @@ export class PipelineStack extends cdk.Stack {
         passthroughBehavior: api.PassthroughBehavior.WHEN_NO_TEMPLATES,
         requestTemplates: {
           'application/json': `{
-              "input": "{}",
+              "input": "{ \\\"commit\\\": \\\"$input.params('commit')\\\" }",
               "stateMachineArn": "${pipeline.stateMachineArn}"
             }`,
         },
       },
     });
     const startPath = 'start';
-    pipelineRestApi.root.addResource(startPath).addMethod('POST',
+    pipelineRestApi.root.addResource(startPath).addMethod('PUT',
       pipelineStepFunctionsIntegration, {
       methodResponses: [
         { statusCode: '200' },

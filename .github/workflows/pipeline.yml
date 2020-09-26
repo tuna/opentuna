@@ -1,0 +1,23 @@
+name: CD pipeline
+
+on:
+  # Trigger the workflow on push for the master branch
+  push:
+    branches:
+      - master
+      - pipeline
+
+jobs:
+  trigger-job:
+    name: Pipeline Trigger
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Trigger pipeline on AWS
+      id: trigger-pipeline
+      env:
+        COMMIT: ${{ github.sha }}
+        TRIGGER_URL: ${{ secrets.PIPELINE_TRIGGER_URL }}
+      run: |
+        # Trigger pipeline state machine
+        if [ $(curl -LI -s -o /dev/null -w '%{http_code}\n' -X PUT $TRIGGER_URL?commit=$COMMIT) != "200" ]; then exit 1; fi
