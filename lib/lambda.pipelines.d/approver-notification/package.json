@@ -1,0 +1,21 @@
+{
+  "name": "opentuna-pipeline-approver-notification",
+  "version": "1.0.0",
+  "description": "Lambda fn sends notification to approvers for OpenTUNA pipeline.",
+  "main": "index.js",
+  "scripts": {
+    "build": "./node_modules/typescript/bin/tsc",
+    "watch": "./node_modules/typescript/bin/tsc -w",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "aws-sdk": "^2.754.0",
+    "source-map-support": "^0.5.19"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.62",
+    "ts-loader": "^5.3.3",
+    "typescript": "^3.9.7"
+  },
+  "license": "MIT-0"
+}

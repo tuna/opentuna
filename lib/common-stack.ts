@@ -44,6 +44,7 @@ export class CommonStack extends cdk.Stack {
                 code: lambda.Code.fromAsset(path.join(__dirname, './lambda.d/slack-webhook')),
                 environment: {
                     SLACK_WEBHOOK_URL: slackHookUrl,
+                    CHANNEL: this.node.tryGetContext('slackChannel'),
                 },
             });
             this.notifyTopic.addSubscription(new sns_sub.LambdaSubscription(slackSubscription));

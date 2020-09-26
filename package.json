@@ -10,8 +10,11 @@
     "watch": "tsc -w",
     "test": "jest",
     "cdk": "cdk",
-    "init": "npx cdk bootstrap && npm i",
-    "deploy-network": "npx cdk deploy OpenTunaNetworkStack --app 'npx ts-node bin/opentuna-network.ts'"
+    "init": "npx cdk bootstrap --app 'npx ts-node bin/opentuna-network.ts' && npm run install-deps",
+    "install-deps": "npm ci && npm i --prefix lib/lambda.pipelines.d/approver-actions && npm i --prefix lib/lambda.pipelines.d/approver-notification",
+    "deploy-network": "npx cdk deploy OpenTunaNetworkStack --app 'npx ts-node bin/opentuna-network.ts'",
+    "deploy-pipeline": "mkdir -p cdk.out && aws ssm get-parameter --name /opentuna/pipeline/stage/uat --query 'Parameter.Value' --output text >cdk.out/uat.json && aws ssm get-parameter --name /opentuna/pipeline/stage/prod --query 'Parameter.Value' --output text >cdk.out/prod.json && npx cdk deploy OpenTunaPipelineStack --app 'npx ts-node bin/opentuna-pipeline.ts'",
+    "deploy-pipeline-cross-account-setup": "npx cdk deploy PipelineCrossAccountDeploymentSetupStack --app 'npx ts-node bin/opentuna-pipeline-setup.ts'"
   },
   "devDependencies": {
     "@aws-cdk/assert": "1.62.0",
@@ -26,6 +29,7 @@
     "typescript": "~3.7.2"
   },
   "dependencies": {
+    "@aws-cdk/aws-apigatewayv2": "^1.62.0",
     "@aws-cdk/aws-autoscaling": "^1.62.0",
     "@aws-cdk/aws-certificatemanager": "^1.62.0",
     "@aws-cdk/aws-cloudwatch-actions": "^1.62.0",
@@ -39,10 +43,12 @@
     "@aws-cdk/aws-glue": "^1.62.0",
     "@aws-cdk/aws-lambda": "^1.62.0",
     "@aws-cdk/aws-lambda-event-sources": "^1.62.0",
+    "@aws-cdk/aws-lambda-nodejs": "^1.62.0",
     "@aws-cdk/aws-route53": "^1.62.0",
     "@aws-cdk/aws-route53-targets": "^1.62.0",
     "@aws-cdk/aws-s3-deployment": "^1.62.0",
     "@aws-cdk/aws-ssm": "^1.62.0",
+    "@aws-cdk/aws-stepfunctions-tasks": "^1.62.0",
     "@aws-cdk/core": "1.62.0",
     "mustache": "^4.0.1",
     "source-map-support": "^0.5.16"
