@@ -63,7 +63,7 @@ export class PipelineStack extends cdk.Stack {
         branchOrRef: sourceBranch,
       }),
       environment: {
-        buildImage: codebuild.LinuxBuildImage.fromDockerRegistry('node:12-buster'),
+        buildImage: codebuild.LinuxBuildImage.AMAZON_LINUX_2_3,
         privileged: true,
       },
       cache: codebuild.Cache.bucket(pipelineBucket, {
@@ -78,6 +78,9 @@ export class PipelineStack extends cdk.Stack {
         },
         phases: {
           install: {
+            'runtime-versions': {
+              nodejs: 12
+            },
             commands: [
               'npm config set registry https://registry.npm.taobao.org',
               'npm run install-deps',
