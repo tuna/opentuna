@@ -64,6 +64,7 @@ export class PipelineStack extends cdk.Stack {
       }),
       environment: {
         buildImage: codebuild.LinuxBuildImage.fromDockerRegistry('node:12-buster'),
+        privileged: true,
       },
       cache: codebuild.Cache.bucket(pipelineBucket, {
         prefix: 'pipeline/build',
