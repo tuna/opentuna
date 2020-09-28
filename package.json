@@ -30,6 +30,7 @@
   },
   "dependencies": {
     "@aws-cdk/aws-apigatewayv2": "^1.62.0",
+    "@aws-cdk/aws-athena": "^1.62.0",
     "@aws-cdk/aws-autoscaling": "^1.62.0",
     "@aws-cdk/aws-certificatemanager": "^1.62.0",
     "@aws-cdk/aws-cloudwatch-actions": "^1.62.0",
