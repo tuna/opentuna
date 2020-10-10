@@ -76,13 +76,20 @@ def handler(event, context):
                 }
             else:
                 buildRT = message.get('result')
+                if buildRT == 'FAILED':
+                    emoji = ":thumbsdown:"
+                elif buildRT == 'TIMED_OUT' or buildRT == 'ABORTED':
+                    emoji = ":point_right:"
+                else:
+                    emoji = ":clap:"
+                pipelineInput = json.loads(message.get('input'))
                 slackMsg = {
                     "channel": channel,
                     "username": 'Pipeline',
                     "text": textwrap.dedent(f"""\
-                            OpenTUNA pipeline stage '{message.get('stage')}' on commit '{message.get('commit')}' is {buildRT}.,
+                            OpenTUNA pipeline execution '{message.get('execution')}' on commit '{pipelineInput['commit'] if 'commit' in pipelineInput else 'unknown'}' is {buildRT} in account {message.get('account')}.
                             """),
-                    "icon_emoji": ":thumbsup:" if buildRT == "succeeded" else ":thumbsdown:",
+                    "icon_emoji": emoji,
                 }
         else:
             print(f"Ignore non-alarm message.")
