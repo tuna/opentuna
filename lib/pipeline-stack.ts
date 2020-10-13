@@ -356,6 +356,27 @@ export class PipelineStack extends cdk.Stack {
     },
     );
 
+    new events.Rule(this, `PipelineFailureEvent`, {
+      enabled: true,
+      eventPattern: {
+        source: ['aws.states'],
+        detailType: ['Step Functions Execution Status Change'],
+        detail: {
+          stateMachineArn: [ pipeline.stateMachineArn ],
+          status: [ 'FAILED', 'ABORTED', 'SUCCEEDED', 'TIMED_OUT' ]
+        },
+      },
+      targets: [new targets.SnsTopic(props.topic, {
+        message: events.RuleTargetInput.fromObject({
+          type: 'pipeline',
+          execution: events.EventField.fromPath('$.detail.name'),
+          account: events.EventField.fromPath('$.account'),
+          input: events.EventField.fromPath('$.detail.input'),
+          result: events.EventField.fromPath('$.detail.status'),
+        }),
+      })],
+    });
+
     new cdk.CfnOutput(this, 'PipelineAPI', {
       value: pipelineRestApi.urlForPath(`/${startPath}`),
       exportName: 'startUrl',
@@ -440,26 +461,6 @@ export class PipelineStack extends cdk.Stack {
       actions: ['sts:AssumeRole'],
       resources: ['*'],
     }));
-    prj.onBuildFailed(`${stage.name}DeployFailed`, {
-      target: new targets.SnsTopic(topic, {
-        message: events.RuleTargetInput.fromObject({
-          type: 'pipeline',
-          stage: stage.name,
-          commit: sourceVersion,
-          result: 'failed',
-        }),
-      }),
-    });
-    prj.onBuildSucceeded(`${stage.name}DeploySucceeded`, {
-      target: new targets.SnsTopic(topic, {
-        message: events.RuleTargetInput.fromObject({
-          type: 'pipeline',
-          stage: stage.name,
-          commit: sourceVersion,
-          result: 'succeeded',
-        }),
-      }),
-    });
     return prj;
   }
 
