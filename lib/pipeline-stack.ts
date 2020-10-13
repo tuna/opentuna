@@ -109,6 +109,59 @@ export class PipelineStack extends cdk.Stack {
       })
     });
 
+    const updatePipeline = new codebuild.Project(this, 'OpenTUNAPipelineUpdate', {
+      source: codebuild.Source.gitHub({
+        owner: this.node.tryGetContext('sourceOwner') ?? 'tuna',
+        repo: this.node.tryGetContext('sourceRepo') ?? 'opentuna',
+        cloneDepth: 1,
+        branchOrRef: sourceBranch,
+      }),
+      environment: {
+        buildImage: codebuild.LinuxBuildImage.AMAZON_LINUX_2_3,
+        privileged: true,
+      },
+      cache: codebuild.Cache.bucket(pipelineBucket, {
+        prefix: 'pipeline/update-pipeline',
+      }),
+      buildSpec: codebuild.BuildSpec.fromObject({
+        version: '0.2',
+        env: {
+        },
+        phases: {
+          install: {
+            'runtime-versions': {
+              nodejs: 12
+            },
+            commands: [
+              'npm config set registry https://registry.npm.taobao.org',
+              'npm run install-deps',
+            ],
+          },
+          pre_build: {
+            commands: [
+            ],
+          },
+          build: {
+            commands: [
+              `npm run deploy-pipeline -- ${this.node.tryGetContext('slackHookUrl') ? `-c slackHookUrl=${this.node.tryGetContext('slackHookUrl')}`: ''} \
+              ${this.node.tryGetContext('slackChannel') ? `-c slackChannel=${this.node.tryGetContext('slackChannel')}`: ''} \
+              `,
+            ],
+          },
+        },
+        cache: {
+          paths: [
+            'node_modules/',
+          ]
+        },
+      }),
+    });
+    updatePipeline.addToRolePolicy(new iam.PolicyStatement({
+      actions: [ '*' ],
+      effect: iam.Effect.ALLOW,
+      resources: ['*'],
+    }));
+
     // TODO: pass the commit when trigger the pipeline stepfunctions
     const commitVersion = sourceBranch;
 
@@ -120,6 +173,15 @@ export class PipelineStack extends cdk.Stack {
     }).addCatch(failure, {
       errors: ['States.ALL']
     });
+
+    const pipelineUpdateTask = new tasks.CodeBuildStartBuild(stack, 'Pipeline update', {
+      project: updatePipeline,
+      integrationPattern: sfn.IntegrationPattern.RUN_JOB,
+    }).addCatch(failure, {
+      errors: ['CustomError']
+    }).addCatch(failure, {
+      errors: ['States.ALL']
+    }); 
 
     const uatDeployTask = new tasks.CodeBuildStartBuild(stack, `Deploy to ${props.uat.name} account ${props.uat.assumeRoleContexts.account}`, {
       project: this.deployToAccount(pipelineBucket, commitVersion, props.topic, props.uat),
@@ -186,7 +248,7 @@ export class PipelineStack extends cdk.Stack {
     getApproverChoice.when(sfn.Condition.stringEquals('$.Status', 'Approved'), prodDeployTask);
     getApproverChoice.when(sfn.Condition.stringEquals('$.Status', 'Rejected'), end);
 
-    const definition = codeBuildTestTask.next(uatDeployTask).next(approvalTask)
+    const definition = codeBuildTestTask.next(pipelineUpdateTask).next(uatDeployTask).next(approvalTask)
       .next(getApproverChoice);
 
     const pipeline = new sfn.StateMachine(this, 'Pipeline', {
