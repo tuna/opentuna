@@ -229,14 +229,24 @@ export function getMirrorConfig(stage: string) {
 export function getMirrorTestingConfig(stage: string, domainName: string) {
     if (stage === 'prod') {
         return [{
-            name: 'UbuntuDebian',
-            images: ['ubuntu:18.04', 'ubuntu:20.04', 'debian:stable', 'debian:testing'],
+            name: 'Ubuntu',
+            repo: 'ubuntu',
+            images: ['ubuntu:18.04', 'ubuntu:20.04'],
             commands: [
-                `sed -E -i "s/(deb.debian.org|security.debian.org|archive.ubuntu.com|security.ubuntu.com)/${domainName}/" /etc/apt/sources.list`,
+                `sed -E -i "s/(archive.ubuntu.com|security.ubuntu.com)/${domainName}/" /etc/apt/sources.list`,
+                'apt update',
+            ]
+        }, {
+            name: 'Debian',
+            repo: 'debian',
+            images: ['debian:stable', 'debian:testing'],
+            commands: [
+                `sed -E -i "s/(deb.debian.org|security.debian.org)/${domainName}/" /etc/apt/sources.list`,
                 'apt update',
             ]
         }, {
             name: 'CentOS',
+            repo: 'centos',
             images: ['centos:8', 'centos:7', 'centos:6'],
             commands: [
                 `sed -i 's/mirrorlist/#mirrorlist/;s/#baseurl=http:\\/\\/mirror.centos.org/baseurl=https:\\/\\/${domainName}/' /etc/yum.repos.d/CentOS-*.repo`,
@@ -244,6 +254,7 @@ export function getMirrorTestingConfig(stage: string, domainName: string) {
             ]
         }, {
             name: 'Fedora',
+            repo: 'fedora',
             images: ['fedora:31', 'fedora:32'],
             commands: [
                 `sed -i 's/metalink/#metalink/;s/#baseurl=http:\\/\\/download.example\\/pub\\/fedora\\/linux/baseurl=https:\\/\\/${domainName}\\/fedora/' /etc/yum.repos.d/fedora{,-updates,-modular,-updates-modular}.repo`,
@@ -251,13 +262,15 @@ export function getMirrorTestingConfig(stage: string, domainName: string) {
             ]
         }, {
             name: 'Alpine',
+            repo: 'alpine',
             images: ['alpine:3.9', 'alpine:3.11', 'alpine:3.12'],
             commands: [
                 `sed -i 's/dl-cdn.alpinelinux.org/${domainName}/g' /etc/apk/repositories`,
                 'apk update',
             ]
         }, {
-            name: 'elrepo',
+            name: 'ELRepo',
+            repo: 'elrepo',
             images: ['centos:7'],
             commands: [
                 `sed -i 's/mirrorlist/#mirrorlist/;s/#baseurl=http:\\/\\/mirror.centos.org/baseurl=https:\\/\\/${domainName}/' /etc/yum.repos.d/CentOS-*.repo`,
@@ -269,7 +282,8 @@ export function getMirrorTestingConfig(stage: string, domainName: string) {
         }];
     } else {
         return [{
-            name: 'elrepo',
+            name: 'ELRepo',
+            repo: 'elrepo',
             images: ['centos:7'],
             commands: [
                 'rpm --import https://www.elrepo.org/RPM-GPG-KEY-elrepo.org',

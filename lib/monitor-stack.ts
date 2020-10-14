@@ -2,11 +2,17 @@ import * as cdk from '@aws-cdk/core';
 import * as codebuild from '@aws-cdk/aws-codebuild';
 import * as events from '@aws-cdk/aws-events';
 import * as targets from '@aws-cdk/aws-events-targets';
-import { getMirrorTestingConfig } from './mirror-config';
+import * as lambda from '@aws-cdk/aws-lambda';
+import * as ec2 from '@aws-cdk/aws-ec2';
 import * as sns from '@aws-cdk/aws-sns';
+import * as path from 'path';
+import { getMirrorTestingConfig } from './mirror-config';
 
 export interface MonitorProps extends cdk.NestedStackProps {
+    readonly vpc: ec2.IVpc;
     readonly notifyTopic: sns.ITopic;
+    readonly tunaManagerUrl: string;
+    readonly tunaManagerALBSG: ec2.SecurityGroup;
     readonly domainName?: string;
 }
 
@@ -14,6 +20,22 @@ export class MonitorStack extends cdk.NestedStack {
     constructor(scope: cdk.Construct, id: string, props: MonitorProps) {
         super(scope, id, props);
 
+        const tunasyncActionSG = new ec2.SecurityGroup(this, "TunasyncActionSG", {
+            vpc: props.vpc,
+            description: "SG of Tunasync Action",
+            allowAllOutbound: true,
+        });
+        const tunasyncAction = new lambda.Function(this, 'TunasyncHandler', {
+            vpc: props.vpc,
+            securityGroups: [tunasyncActionSG],
+            handler: 'index.handler',
+            runtime: lambda.Runtime.PYTHON_3_8,
+            code: lambda.Code.fromAsset(path.join(__dirname, './lambda.d/tunasync-handler')),
+            environment: {
+                TUNASYNC_MANAGER_URL: props.tunaManagerUrl,
+            },
+        });
+        props.tunaManagerALBSG.addIngressRule(tunasyncActionSG, ec2.Port.tcp(80), 'Allow tunasync handler Lambda function to access tunasync manager');
 
         const stage = this.node.tryGetContext('stage') || 'prod';
         if (props.domainName) {
@@ -37,7 +59,9 @@ export class MonitorStack extends cdk.NestedStack {
                         })
                     });
                     event.addTarget(new targets.CodeBuildProject(project));
-                    project.onBuildFailed(`MonitorProjectFor${cfg.name}${image}Failed`, {
+
+                    // Notify SNS Topic
+                    project.onBuildFailed(`MonitorProjectFor${cfg.name}${image}FailedSNS`, {
                         target: new targets.SnsTopic(props.notifyTopic, {
                             message: events.RuleTargetInput.fromObject({
                                 type: 'repo-sanity',
@@ -47,6 +71,17 @@ export class MonitorStack extends cdk.NestedStack {
                                 sanityBuildStatus: events.EventField.fromPath('$.detail.build-status'),
                                 account: events.EventField.account,
                                 sanityBuildId: events.EventField.fromPath('$.detail.build-id'),
+                            }),
+                        })
+                    });
+
+                    // Trigger Lambda function to start syncing
+                    project.onBuildFailed(`MonitorProjectFor${cfg.name}${image}FailedLambda`, {
+                        target: new targets.LambdaFunction(tunasyncAction, {
+                            event: events.RuleTargetInput.fromObject({
+                                name: cfg.name,
+                                repo: cfg.repo,
+                                image: image,
                             }),
                         })
                     });

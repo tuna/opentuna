@@ -47,6 +47,7 @@ It consits of below independent [stacks][cfn-stack],
   - Monitor stack
     - create several CodeBuild projects to verify integrity of index files
     - run projects periodically and report upon failure
+    - trigger re-sync when failure is detected
 - [Pipeline stack](pipeline.md)
 
 ## Prerequisites
