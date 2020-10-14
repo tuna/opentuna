@@ -1,14 +1,15 @@
-import cdk = require('@aws-cdk/core');
-import cloudwatch = require('@aws-cdk/aws-cloudwatch');
-import cw_actions = require('@aws-cdk/aws-cloudwatch-actions');
-import events = require('@aws-cdk/aws-events');
-import event_source = require('@aws-cdk/aws-lambda-event-sources');
-import glue = require('@aws-cdk/aws-glue')
-import iam = require('@aws-cdk/aws-iam');
-import lambda = require('@aws-cdk/aws-lambda');
-import s3 = require('@aws-cdk/aws-s3');
-import sns = require('@aws-cdk/aws-sns');
-import targets = require('@aws-cdk/aws-events-targets');
+import * as athena from '@aws-cdk/aws-athena';
+import * as cdk from '@aws-cdk/core';
+import * as cloudwatch from '@aws-cdk/aws-cloudwatch';
+import * as cw_actions from '@aws-cdk/aws-cloudwatch-actions';
+import * as events from '@aws-cdk/aws-events';
+import * as event_source from '@aws-cdk/aws-lambda-event-sources';
+import * as glue from '@aws-cdk/aws-glue';
+import * as iam from '@aws-cdk/aws-iam';
+import * as lambda from '@aws-cdk/aws-lambda';
+import * as s3 from '@aws-cdk/aws-s3';
+import * as sns from '@aws-cdk/aws-sns';
+import * as targets from '@aws-cdk/aws-events-targets';
 import * as path from 'path';
 
 export interface AnalyticsProps extends cdk.NestedStackProps {
@@ -28,11 +29,9 @@ export class AnalyticsStack extends cdk.NestedStack {
         const athenaResultsPrefix = props.athenaResultsPrefix ? props.athenaResultsPrefix : "athena-query-results";
 
         const cloudFrontAccessLogsBucket = props.logBucket;
-        const analyticsDatabase = new glue.CfnDatabase(this, "analyticsDatabase", {
-            catalogId: cdk.Aws.ACCOUNT_ID,
-            databaseInput: {
-                name: `${props.resourcePrefix}_cf_access_logs_db`
-            }
+
+        const analyticsDatabase = new glue.Database(this, 'analyticsDatabase', {
+            databaseName: `${props.resourcePrefix}_cf_access_logs`,
         });
 
         const partitionKeys = [
@@ -78,8 +77,8 @@ export class AnalyticsStack extends cdk.NestedStack {
         ];
 
         const partitionedGzTable = new glue.CfnTable(this, "partitionedGzTable", {
-            catalogId: cdk.Aws.ACCOUNT_ID,
-            databaseName: analyticsDatabase.ref,
+            catalogId: analyticsDatabase.catalogId,
+            databaseName: analyticsDatabase.databaseName,
             tableInput: {
                 name: "partitioned_gz",
                 description: "Gzip logs delivered by Amazon CloudFront partitioned",
@@ -102,8 +101,8 @@ export class AnalyticsStack extends cdk.NestedStack {
             }
         });
         const partitionedParquetTable = new glue.CfnTable(this, "partitionedParquetTable", {
-            catalogId: cdk.Aws.ACCOUNT_ID,
-            databaseName: analyticsDatabase.ref,
+            catalogId: analyticsDatabase.catalogId,
+            databaseName: analyticsDatabase.databaseName,
             tableInput: {
                 name: "partitioned_parquet",
                 description: "Parquet format access logs as transformed from gzip version",
@@ -158,9 +157,10 @@ export class AnalyticsStack extends cdk.NestedStack {
             resources: [cloudFrontAccessLogsBucket.arnForObjects(athenaResultsPrefix.concat("/*"))]
         });
 
+        const athenaQueryRtLocation = cloudFrontAccessLogsBucket.s3UrlForObject(athenaResultsPrefix);
         const transformPartFn = new lambda.Function(this, 'transformPartFn', {
             runtime: lambda.Runtime.NODEJS_12_X,
-            code: lambda.Code.asset(path.join(__dirname, './lambda.d/cf-logs-analytics')),
+            code: lambda.Code.fromAsset(path.join(__dirname, './lambda.d/cf-logs-analytics')),
             handler: 'transformPartition.handler',
             timeout: cdk.Duration.seconds(900),
             initialPolicy: [
@@ -179,8 +179,8 @@ export class AnalyticsStack extends cdk.NestedStack {
             environment: {
                 SOURCE_TABLE: partitionedGzTable.ref,
                 TARGET_TABLE: partitionedParquetTable.ref,
-                DATABASE: analyticsDatabase.ref,
-                ATHENA_QUERY_RESULTS_LOCATION: cloudFrontAccessLogsBucket.s3UrlForObject(athenaResultsPrefix)
+                DATABASE: analyticsDatabase.databaseName,
+                ATHENA_QUERY_RESULTS_LOCATION: athenaQueryRtLocation,
             }
         });
         const transformPartFnAlarm = new cloudwatch.Alarm(this, 'transformPartFnAlarm', {
@@ -200,7 +200,7 @@ export class AnalyticsStack extends cdk.NestedStack {
 
         const createPartFn = new lambda.Function(this, 'createPartFn', {
             runtime: lambda.Runtime.NODEJS_12_X,
-            code: lambda.Code.asset(path.join(__dirname, './lambda.d/cf-logs-analytics')),
+            code: lambda.Code.fromAsset(path.join(__dirname, './lambda.d/cf-logs-analytics')),
             handler: 'createPartitions.handler',
             timeout: cdk.Duration.seconds(5),
             initialPolicy: [
@@ -216,8 +216,8 @@ export class AnalyticsStack extends cdk.NestedStack {
             ],
             environment: {
                 TABLE: partitionedGzTable.ref,
-                DATABASE: analyticsDatabase.ref,
-                ATHENA_QUERY_RESULTS_LOCATION: cloudFrontAccessLogsBucket.s3UrlForObject(athenaResultsPrefix)
+                DATABASE: analyticsDatabase.databaseName,
+                ATHENA_QUERY_RESULTS_LOCATION: athenaQueryRtLocation,
             }
         });
         const createPartFnAlarm = new cloudwatch.Alarm(this, 'createPartFnAlarm', {
@@ -237,7 +237,7 @@ export class AnalyticsStack extends cdk.NestedStack {
 
         const moveNewAccessLogsFn = new lambda.Function(this, 'moveNewAccessLogsFn', {
             runtime: lambda.Runtime.NODEJS_12_X,
-            code: lambda.Code.asset(path.join(__dirname, './lambda.d/cf-logs-analytics')),
+            code: lambda.Code.fromAsset(path.join(__dirname, './lambda.d/cf-logs-analytics')),
             handler: 'moveAccessLogs.handler',
             timeout: cdk.Duration.seconds(30),
             initialPolicy: [
@@ -263,5 +263,163 @@ export class AnalyticsStack extends cdk.NestedStack {
         });
         moveNewAccessLogsFnAlarm.addAlarmAction(new cw_actions.SnsAction(props.notifyTopic));
         moveNewAccessLogsFnAlarm.addOkAction(new cw_actions.SnsAction(props.notifyTopic));
+
+        // create combined glue table
+        const combinedTableName = 'combined_view';
+        new glue.CfnTable(this, 'Combined_CF_AccessLog', {
+            catalogId: analyticsDatabase.catalogId,
+            databaseName: analyticsDatabase.databaseName,
+            tableInput: {
+                description: 'combined view over gzip and parquet tables',
+                name: combinedTableName,
+                tableType: 'VIRTUAL_VIEW',
+                parameters: {
+                    'presto_view': 'true',
+                },
+                storageDescriptor: {
+                    columns: (((partitionedGzTable.tableInput as glue.CfnTable.TableInputProperty).storageDescriptor as 
+                        glue.CfnTable.StorageDescriptorProperty).columns as Array<glue.CfnTable.ColumnProperty>).concat(
+                            ((partitionedGzTable.tableInput as glue.CfnTable.TableInputProperty).partitionKeys as Array<glue.CfnTable.ColumnProperty>)
+                        ).concat([
+                            {
+                                name: 'file',
+                                type: 'string',
+                            }
+                        ]),
+                    serdeInfo: {
+                    }
+                },
+                viewOriginalText: cdk.Fn.join('', [
+                    '/* Presto View: ',
+                    cdk.Fn.base64(
+                        cdk.Fn.sub(JSON.stringify({
+                            "originalSql": `SELECT *, "$path" as file FROM \${database}.\${partitioned_gz_table} WHERE (concat(year, month, day, hour) >= date_format(date_trunc('hour', ((current_timestamp - INTERVAL  '15' MINUTE) - INTERVAL  '1' HOUR)), '%Y%m%d%H')) UNION ALL SELECT *, "$path" as file FROM \${database}.\${partitioned_parquet_table} WHERE (concat(year, month, day, hour) < date_format(date_trunc('hour', ((current_timestamp - INTERVAL  '15' MINUTE) - INTERVAL  '1' HOUR)), '%Y%m%d%H'))`,
+                            "catalog": "awsdatacatalog",
+                            "schema": "${database}",
+                            "columns": [
+                                {"name": "date", "type": "date"},
+                                {"name": "time", "type": "varchar"},
+                                {"name": "location", "type": "varchar"},
+                                {"name": "bytes", "type": "bigint"},
+                                {"name": "request_ip", "type": "varchar"},
+                                {"name": "method", "type": "varchar"},
+                                {"name": "host", "type": "varchar"},
+                                {"name": "uri", "type": "varchar"},
+                                {"name": "status", "type": "integer"},
+                                {"name": "referrer", "type": "varchar"},
+                                {"name": "user_agent", "type": "varchar"},
+                                {"name": "query_string", "type": "varchar"},
+                                {"name": "cookie", "type": "varchar"},
+                                {"name": "result_type", "type": "varchar"},
+                                {"name": "request_id", "type": "varchar"},
+                                {"name": "host_header", "type": "varchar"},
+                                {"name": "request_protocol", "type": "varchar"},
+                                {"name": "request_bytes", "type": "bigint"},
+                                {"name": "time_taken", "type": "real"},
+                                {"name": "xforwarded_for", "type": "varchar"},
+                                {"name": "ssl_protocol", "type": "varchar"},
+                                {"name": "ssl_cipher", "type": "varchar"},
+                                {"name": "response_result_type", "type": "varchar"},
+                                {"name": "http_version", "type": "varchar"},
+                                {"name": "fle_status", "type": "varchar"},
+                                {"name": "fle_encrypted_fields", "type": "integer"},
+                                {"name": "c_port", "type": "integer"},
+                                {"name": "time_to_first_byte", "type": "real"},
+                                {"name": "x_edge_detailed_result_type", "type": "varchar"},
+                                {"name": "sc_content_type", "type": "varchar"},
+                                {"name": "sc_content_len", "type": "bigint"},
+                                {"name": "sc_range_start", "type": "bigint"},
+                                {"name": "sc_range_end", "type": "bigint"},
+                                {"name": "year", "type": "varchar"},
+                                {"name": "month", "type": "varchar"},
+                                {"name": "day", "type": "varchar"},
+                                {"name": "hour", "type": "varchar"},
+                                {"name": "file", "type": "varchar"}
+                            ]
+                        }, null, 2), {
+                            database: analyticsDatabase.databaseName,
+                            partitioned_gz_table: partitionedGzTable.ref,
+                            partitioned_parquet_table: partitionedParquetTable.ref,
+                        })
+                    ),
+                    ' */',
+                ]),
+            }
+        });
+
+        new athena.CfnWorkGroup(this, 'OpenTUNAAthenaWorkgroup', {
+            name: `OpenTUNA`,
+            description: `OpenTUNA Workgroup.`,
+            workGroupConfiguration: {
+                enforceWorkGroupConfiguration: true,
+                publishCloudWatchMetricsEnabled: true,
+                resultConfiguration: {
+                    outputLocation: athenaQueryRtLocation,
+                }
+            }
+        });
+
+        new athena.CfnNamedQuery(this, `template_monthly_mirrors_requests_per_day`, {
+            database: analyticsDatabase.databaseName,
+            name: `template_monthly_mirrors_requests_per_day`,
+            queryString: `\
+                SELECT CONCAT(year, '-', month, '-', day) AS day, count(*) as total_requests, SUM(bytes) AS total_bytes \
+                FROM ${combinedTableName} \
+                WHERE year = '<year>' \
+                AND month = '<month>' \
+                AND status < 400 \
+                group by CONCAT(year, '-', month, '-', day) \
+                order by day`,
+            description: 'Template monthly total requests and bytes per day'
+        });
+
+        new athena.CfnNamedQuery(this, `template_monthly_mirrors_requests_stats_per_path`, {
+            database: analyticsDatabase.databaseName,
+            name: `template_monthly_mirrors_requests_stats_per_path`,
+            queryString: `\
+            SELECT substr(uri, 1, strpos(substr(uri, 2), '/') + 1) as uriwithprefix, count(*) as total_requests, SUM(bytes) AS total_bytes \
+            FROM ${combinedTableName} \
+            WHERE year = '<year>' \
+            AND month = '<month>' \
+            AND status < 400 \
+            group by substr(uri, 1, strpos(substr(uri, 2), '/') + 1) \
+            order by total_requests desc \
+            limit 100`,
+            description: 'Template monthly requests stats per path'
+        });
+
+        new athena.CfnNamedQuery(this, `template_monthly_pypi_stats_per_day`, {
+            database: analyticsDatabase.databaseName,
+            name: `template_monthly_pypi_stats_per_day`,
+            queryString: `\
+            SELECT CONCAT(year, '-', month, '-', day) AS day, count(*) as total_requests, SUM(bytes) AS total_bytes \
+            FROM ${combinedTableName} \
+            WHERE year = '<year>' \
+            AND month = '<month>' \
+            AND status < 400 \
+            AND position('/pypi/web' in uri) = 1 \
+            group by year, month, day \
+            order by day`,
+            description: 'Template monthly pypi stats per day'
+        });
+
+        new athena.CfnNamedQuery(this, `template_monthly_pypi_package_download_ranking`, {
+            database: analyticsDatabase.databaseName,
+            name: `template_monthly_pypi_package_download_ranking_per_month`,
+            queryString: `\
+            SELECT split(split(uri, '/')[8], '-')[1] as packageName, count(*) as download_count \
+            from ${combinedTableName} \
+            WHERE year = '<year>' \
+            AND month = '<month>' \
+            AND status < 400 \
+            AND position('/pypi/web/packages/' in uri) = 1 \
+            AND cardinality(split(uri, '/')) = 8 \
+            group by split(split(uri, '/')[8], '-')[1] \
+            order by download_count desc \
+            limit 50`,
+            description: 'Template monthly pypi packages download ranking'
+        });
+
+        cdk.Tags.of(this).add('component', 'analytics');
     }
 }

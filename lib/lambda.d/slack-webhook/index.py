@@ -53,6 +53,44 @@ def handler(event, context):
                         Check build {message.get('sanityBuildId')} for detail info."""),
                 "icon_emoji": icon_emoji,
             }
+        elif msgType == 'pipeline':
+            state = message.get("state")
+            if state == 'approval':
+                slackMsg = {
+                    "channel": channel,
+                    "username": 'Pipeline',
+                    
+                    "text": textwrap.dedent(f"""\
+                            OpenTUNA pipeline '{message.get('stateMachineName')}' is going to next stage '{message.get('nextStage')}' on commit '{message.get('commit')}'.
+
+                            Check stage '{message.get('stage')}' via https://{message.get('domain')},
+
+                            NOTE: below actions are one-time actions and the operation can NOT be revoked. 
+                            Also below actions will be expired in {message.get('timeout')} minutes.
+
+                            <{message.get('approveAction')}|Click to Approve>
+                            
+                            <{message.get('rejectAction')}|Click to Reject>
+                            """),
+                    "icon_emoji": ":question:",
+                }
+            else:
+                buildRT = message.get('result')
+                if buildRT == 'FAILED':
+                    emoji = ":thumbsdown:"
+                elif buildRT == 'TIMED_OUT' or buildRT == 'ABORTED':
+                    emoji = ":point_right:"
+                else:
+                    emoji = ":clap:"
+                pipelineInput = json.loads(message.get('input'))
+                slackMsg = {
+                    "channel": channel,
+                    "username": 'Pipeline',
+                    "text": textwrap.dedent(f"""\
+                            OpenTUNA pipeline execution '{message.get('execution')}' on commit '{pipelineInput['commit'] if 'commit' in pipelineInput else 'unknown'}' is {buildRT} in account {message.get('account')}.
+                            """),
+                    "icon_emoji": emoji,
+                }
         else:
             print(f"Ignore non-alarm message.")
         

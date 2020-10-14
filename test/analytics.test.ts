@@ -101,28 +101,22 @@ describe('Tuna log analysis stack', () => {
       gzKeyPrefix: "partitioned-gz/",
       parquetKeyPrefix: "partitioned-parquet/",
       logBucket: bucket,
-      notifyTopic: topic
+      notifyTopic: topic,
     });
   });
 
   test('Glue database created', () => {
     expect(stack).toHaveResourceLike('AWS::Glue::Database', {
-      "CatalogId": {
-        "Ref": "AWS::AccountId"
-      },
       "DatabaseInput": {
-        "Name": "opentuna_cf_access_logs_db"
+        "Name": "opentuna_cf_access_logs"
       }
     });
   });
 
   test('Partitioned gz table created', () => {
     expect(stack).toHaveResourceLike('AWS::Glue::Table', {
-      "CatalogId": {
-        "Ref": "AWS::AccountId"
-      },
       "DatabaseName": {
-        "Ref": "analyticsDatabase"
+        "Ref": "analyticsDatabase742BB8C4"
       },
       "TableInput": {
         "Description": "Gzip logs delivered by Amazon CloudFront partitioned",
@@ -312,11 +306,8 @@ describe('Tuna log analysis stack', () => {
 
   test('Parquet table created', () => {
     expect(stack).toHaveResourceLike('AWS::Glue::Table', {
-      "CatalogId": {
-        "Ref": "AWS::AccountId"
-      },
       "DatabaseName": {
-        "Ref": "analyticsDatabase"
+        "Ref": "analyticsDatabase742BB8C4"
       },
       "TableInput": {
         "Description": "Parquet format access logs as transformed from gzip version",
@@ -683,7 +674,7 @@ describe('Tuna log analysis stack', () => {
             "Ref": "partitionedParquetTable"
           },
           "DATABASE": {
-            "Ref": "analyticsDatabase"
+            "Ref": "analyticsDatabase742BB8C4"
           },
           "ATHENA_QUERY_RESULTS_LOCATION": {
             "Fn::Join": [
@@ -913,7 +904,7 @@ describe('Tuna log analysis stack', () => {
             "Ref": "partitionedGzTable"
           },
           "DATABASE": {
-            "Ref": "analyticsDatabase"
+            "Ref": "analyticsDatabase742BB8C4"
           },
           "ATHENA_QUERY_RESULTS_LOCATION": {
             "Fn::Join": [
@@ -1151,6 +1142,42 @@ describe('Tuna log analysis stack', () => {
       "Statistic": "Sum",
       "Threshold": 1,
       "TreatMissingData": "ignore"
+    });
+  });
+
+  test('combied view is created', () => {
+    expect(stack).toHaveResourceLike('AWS::Glue::Table', {
+      CatalogId: '1234567890xx',
+      TableInput: {
+        Parameters: {
+          "presto_view": "true"
+        },
+        TableType: "VIRTUAL_VIEW",
+      },
+    });
+  });
+
+  test('athena workgroup is created', () => {
+    expect(stack).toHaveResourceLike('AWS::Athena::WorkGroup', {
+      "Name": "OpenTUNA",
+      "WorkGroupConfiguration": {
+        "EnforceWorkGroupConfiguration": true,
+        "PublishCloudWatchMetricsEnabled": true,
+        "ResultConfiguration": {
+          "OutputLocation": {
+            "Fn::Join": [
+              "",
+              [
+                "s3://",
+                {
+                  "Ref": "referencetoParentStackLogBucket8290A4D1Ref"
+                },
+                "/athena-query-results"
+              ]
+            ]
+          }
+        }
+      }
     });
   });
 });
