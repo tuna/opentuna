@@ -101,6 +101,7 @@ export class TunaManagerStack extends cdk.NestedStack {
             region: stack.region,
             port: this.managerPort,
             cloudwatchAgentConf: props.assetBucket.s3UrlForObject(`${confPrefix}${cloudwatchAgentConfFile}`),
+            redisHost: redisCluster.attrRedisEndpointAddress
         }
         props.assetBucket.grantRead(ec2Role, `${confPrefix}*`);
 

@@ -52,8 +52,8 @@ ssl_cert = ""
 ssl_key = ""
 
 [files]
-db_type = "bolt"
-db_file = "/mnt/efs/opentuna/tunasync/manager.db"
+db_type = "redis"
+db_file = "redis://{{&redisHost}}/"
 ca_cert = ""
 
 EOF
