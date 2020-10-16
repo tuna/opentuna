@@ -41,6 +41,7 @@
     "@aws-cdk/aws-ecs": "^1.62.0",
     "@aws-cdk/aws-ecs-patterns": "^1.62.0",
     "@aws-cdk/aws-efs": "^1.62.0",
+    "@aws-cdk/aws-elasticache": "^1.62.0",
     "@aws-cdk/aws-glue": "^1.62.0",
     "@aws-cdk/aws-lambda": "^1.62.0",
     "@aws-cdk/aws-lambda-event-sources": "^1.62.0",

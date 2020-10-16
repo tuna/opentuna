@@ -6,6 +6,7 @@ import * as iam from '@aws-cdk/aws-iam';
 import * as region_info from '@aws-cdk/region-info';
 import * as s3 from '@aws-cdk/aws-s3';
 import * as s3deploy from '@aws-cdk/aws-s3-deployment';
+import * as elasticache from '@aws-cdk/aws-elasticache';
 import { ITopic } from '@aws-cdk/aws-sns';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -70,6 +71,27 @@ export class TunaManagerStack extends cdk.NestedStack {
             destinationKeyPrefix: confPrefix, // optional prefix in destination bucket
             prune: false,
             retainOnDelete: false,
+        });
+
+        // create redis instance
+        const redisPort = 6379;
+        const redisSG = new ec2.SecurityGroup(this, 'ManagerRedisSG', {
+            description: 'SG for redis cluster',
+            vpc: props.vpc,
+            allowAllOutbound: false,
+        });
+        // allow manager to access redis
+        redisSG.addIngressRule(props.tunaManagerSG, ec2.Port.tcp(redisPort), 'allow tunasync manager to access redis');
+        const redisSubnetGroup = new elasticache.CfnSubnetGroup(this, 'ManagerRedisSubnetGroup', {
+            description: 'Subnet Group of redis cluster',
+            subnetIds: props.vpc.privateSubnets.map((subnet) => subnet.subnetId)
+        });
+        const redisCluster = new elasticache.CfnCacheCluster(this, 'ManagerRedis', {
+            cacheNodeType: "cache.t3.micro",
+            engine: "redis",
+            numCacheNodes: 1,
+            cacheSubnetGroupName: redisSubnetGroup.ref,
+            vpcSecurityGroupIds: [redisSG.securityGroupId]
         });
 
         const userdata = fs.readFileSync(path.join(__dirname, './tuna-manager-user-data.txt'), 'utf-8');
