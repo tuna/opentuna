@@ -23,7 +23,7 @@ runcmd:
  - test -f "/sbin/mount.efs" && echo "${file_system_id_1}:/ ${efs_mount_point_1} efs tls,_netdev" >> /etc/fstab || echo "${file_system_id_1}.{{&regionEndpoint}}:/ ${efs_mount_point_1} nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport,_netdev 0 0" >> /etc/fstab
  - test -f "/sbin/mount.efs" && echo -e "\n[client-info]\nsource=liw" >> /etc/amazon/efs/efs-utils.conf
  - mount -a -t efs,nfs4 defaults
- - tunaversion=v0.6.7
+ - tunaversion=v0.7.0
  - tunafile="${efs_mount_point_1}/tunasync/install/tunasync-linux-amd64-bin-${tunaversion}.tar.gz"
  - (test -f ${tunafile} && tar -xf ${tunafile} -C /usr/local/bin/) || (wget -c https://github.com/tuna/tunasync/releases/download/${tunaversion}/tunasync-linux-amd64-bin.tar.gz -O - | tar xzf - -C /usr/local/bin/)
 
@@ -52,8 +52,8 @@ ssl_cert = ""
 ssl_key = ""
 
 [files]
-db_type = "bolt"
-db_file = "/mnt/efs/opentuna/tunasync/manager.db"
+db_type = "redis"
+db_file = "redis://{{&redisHost}}/"
 ca_cert = ""
 
 EOF

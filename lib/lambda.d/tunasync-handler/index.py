@@ -13,7 +13,7 @@ def handler(event, context):
     requestUrl = tunasync_manager_url + '/cmd'
 
     requestBody = {}
-    requestBody['cmd'] = 0 # The first command is CmdStart, see CmdStart in tunasync/internal/msg.go
+    requestBody['cmd'] = 'restart'
     requestBody['worker_id'] = 'tunasync-worker'
     requestBody['mirror_id'] = event['repo']
 

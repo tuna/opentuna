@@ -167,7 +167,14 @@ describe('Tuna Manager stack', () => {
           "Fn::Join": [
             "",
             [
-              "Content-Type: multipart/mixed; boundary=\"//\"\nMIME-Version: 1.0\n\n--//\nContent-Type: text/cloud-config; charset=\"us-ascii\"\nMIME-Version: 1.0\nContent-Transfer-Encoding: 7bit\nContent-Disposition: attachment; filename=\"cloud-config.txt\"\n\n#cloud-config\nrepo_update: true\nrepo_upgrade: all\npackages:\n - nfs-utils\n - amazon-efs-utils\n - amazon-cloudwatch-agent\n\n# run commands\nruncmd:\n - file_system_id_1=fs-012345\n - efs_mount_point_1=/mnt/efs/opentuna\n - mkdir -p \"${efs_mount_point_1}\"\n - test -f \"/sbin/mount.efs\" && echo \"${file_system_id_1}:/ ${efs_mount_point_1} efs tls,_netdev\" >> /etc/fstab || echo \"${file_system_id_1}.efs.cn-north-1.amazonaws.com.cn:/ ${efs_mount_point_1} nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport,_netdev 0 0\" >> /etc/fstab\n - test -f \"/sbin/mount.efs\" && echo -e \"\\n[client-info]\\nsource=liw\" >> /etc/amazon/efs/efs-utils.conf\n - mount -a -t efs,nfs4 defaults\n - tunaversion=v0.6.7\n - tunafile=\"${efs_mount_point_1}/tunasync/install/tunasync-linux-amd64-bin-${tunaversion}.tar.gz\"\n - (test -f ${tunafile} && tar -xf ${tunafile} -C /usr/local/bin/) || (wget -c https://github.com/tuna/tunasync/releases/download/${tunaversion}/tunasync-linux-amd64-bin.tar.gz -O - | tar xzf - -C /usr/local/bin/)\n\ncloud_final_modules:\n- [scripts-user, always]\n--//\nContent-Type: text/x-shellscript; charset=\"us-ascii\"\nMIME-Version: 1.0\nContent-Transfer-Encoding: 7bit\nContent-Disposition: attachment; filename=\"userdata.txt\"\n\n#!/bin/bash -xe\nmkdir -p /etc/tunasync/\nmkdir -p /mnt/efs/opentuna/tunasync/\n\nexport AWS_DEFAULT_REGION=cn-north-1\n\n# setup tunasync manager config\ncat > /etc/tunasync/manager.conf << EOF\ndebug = false\n\n[server]\naddr = \"0.0.0.0\"\nport = 80\nssl_cert = \"\"\nssl_key = \"\"\n\n[files]\ndb_type = \"bolt\"\ndb_file = \"/mnt/efs/opentuna/tunasync/manager.db\"\nca_cert = \"\"\n\nEOF\n\n# create tunasync service\ncat > /usr/lib/systemd/system/tunasync.service << EOF\n[Unit]\nDescription=Tunasync Manager daemon\n\n[Service]\nExecStart=/usr/local/bin/tunasync manager -config /etc/tunasync/manager.conf\nExecReload=/bin/kill -HUP \\$MAINPID\nType=simple\nKillMode=control-group\nRestart=on-failure\nRestartSec=20s\nStandardOutput=syslog\nStandardError=syslog\nSyslogIdentifier=tunasync\n\n[Install]\nWantedBy=multi-user.target\nEOF\n\ncat > /etc/rsyslog.d/tunasync.conf << EOF\nif \\$programname == 'tunasync' then /var/log/tunasync.log\n& stop\nEOF\n\n# start tunasync service\nsystemctl daemon-reload\nsystemctl restart rsyslog\nsystemctl enable tunasync.service\nsystemctl start tunasync.service\n\n# configure conf json of CloudWatch agent\nmkdir -p /opt/aws/amazon-cloudwatch-agent/etc/\naws s3 cp s3://",
+              "Content-Type: multipart/mixed; boundary=\"//\"\nMIME-Version: 1.0\n\n--//\nContent-Type: text/cloud-config; charset=\"us-ascii\"\nMIME-Version: 1.0\nContent-Transfer-Encoding: 7bit\nContent-Disposition: attachment; filename=\"cloud-config.txt\"\n\n#cloud-config\nrepo_update: true\nrepo_upgrade: all\npackages:\n - nfs-utils\n - amazon-efs-utils\n - amazon-cloudwatch-agent\n\n# run commands\nruncmd:\n - file_system_id_1=fs-012345\n - efs_mount_point_1=/mnt/efs/opentuna\n - mkdir -p \"${efs_mount_point_1}\"\n - test -f \"/sbin/mount.efs\" && echo \"${file_system_id_1}:/ ${efs_mount_point_1} efs tls,_netdev\" >> /etc/fstab || echo \"${file_system_id_1}.efs.cn-north-1.amazonaws.com.cn:/ ${efs_mount_point_1} nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport,_netdev 0 0\" >> /etc/fstab\n - test -f \"/sbin/mount.efs\" && echo -e \"\\n[client-info]\\nsource=liw\" >> /etc/amazon/efs/efs-utils.conf\n - mount -a -t efs,nfs4 defaults\n - tunaversion=v0.7.0\n - tunafile=\"${efs_mount_point_1}/tunasync/install/tunasync-linux-amd64-bin-${tunaversion}.tar.gz\"\n - (test -f ${tunafile} && tar -xf ${tunafile} -C /usr/local/bin/) || (wget -c https://github.com/tuna/tunasync/releases/download/${tunaversion}/tunasync-linux-amd64-bin.tar.gz -O - | tar xzf - -C /usr/local/bin/)\n\ncloud_final_modules:\n- [scripts-user, always]\n--//\nContent-Type: text/x-shellscript; charset=\"us-ascii\"\nMIME-Version: 1.0\nContent-Transfer-Encoding: 7bit\nContent-Disposition: attachment; filename=\"userdata.txt\"\n\n#!/bin/bash -xe\nmkdir -p /etc/tunasync/\nmkdir -p /mnt/efs/opentuna/tunasync/\n\nexport AWS_DEFAULT_REGION=cn-north-1\n\n# setup tunasync manager config\ncat > /etc/tunasync/manager.conf << EOF\ndebug = false\n\n[server]\naddr = \"0.0.0.0\"\nport = 80\nssl_cert = \"\"\nssl_key = \"\"\n\n[files]\ndb_type = \"redis\"\ndb_file = \"redis://",
+              {
+                "Fn::GetAtt": [
+                  "ManagerRedis",
+                  "RedisEndpoint.Address"
+                ]
+              },
+              "/\"\nca_cert = \"\"\n\nEOF\n\n# create tunasync service\ncat > /usr/lib/systemd/system/tunasync.service << EOF\n[Unit]\nDescription=Tunasync Manager daemon\n\n[Service]\nExecStart=/usr/local/bin/tunasync manager -config /etc/tunasync/manager.conf\nExecReload=/bin/kill -HUP \\$MAINPID\nType=simple\nKillMode=control-group\nRestart=on-failure\nRestartSec=20s\nStandardOutput=syslog\nStandardError=syslog\nSyslogIdentifier=tunasync\n\n[Install]\nWantedBy=multi-user.target\nEOF\n\ncat > /etc/rsyslog.d/tunasync.conf << EOF\nif \\$programname == 'tunasync' then /var/log/tunasync.log\n& stop\nEOF\n\n# start tunasync service\nsystemctl daemon-reload\nsystemctl restart rsyslog\nsystemctl enable tunasync.service\nsystemctl start tunasync.service\n\n# configure conf json of CloudWatch agent\nmkdir -p /opt/aws/amazon-cloudwatch-agent/etc/\naws s3 cp s3://",
               {
                 "Ref": "referencetoParentStackAssetBucket9670BCE7Ref"
               },
@@ -311,4 +318,54 @@ describe('Tuna Manager stack', () => {
     });
 
   });
+
+  test('Redis cluster for tunasync manager', () => {
+    expect(stack).toHaveResourceLike('AWS::EC2::SecurityGroup', {
+      "GroupDescription": "SG for redis cluster",
+      "VpcId": "vpc-123456"
+    });
+
+    expect(stack).toHaveResourceLike('AWS::EC2::SecurityGroupIngress', {
+      "IpProtocol": "tcp",
+      "Description": "allow tunasync manager to access redis",
+      "FromPort": 6379,
+      "GroupId": {
+        "Fn::GetAtt": [
+          "ManagerRedisSGE7ACDB7A",
+          "GroupId"
+        ]
+      },
+      "SourceSecurityGroupId": {
+        "Ref": "referencetoParentStackTunaManagerSG1CFDBA88GroupId"
+      },
+      "ToPort": 6379
+    });
+
+    expect(stack).toHaveResourceLike('AWS::ElastiCache::SubnetGroup', {
+      "Description": "Subnet Group of redis cluster",
+      "SubnetIds": [
+        "subnet-0a6dab6bc063ea432",
+        "subnet-08dd359da55a6160b",
+        "subnet-0d300d086b989eefc"
+      ]
+    });
+
+    expect(stack).toHaveResourceLike('AWS::ElastiCache::CacheCluster', {
+      "CacheNodeType": "cache.t3.micro",
+      "Engine": "redis",
+      "NumCacheNodes": 1,
+      "CacheSubnetGroupName": {
+        "Ref": "ManagerRedisSubnetGroup"
+      },
+      "VpcSecurityGroupIds": [
+        {
+          "Fn::GetAtt": [
+            "ManagerRedisSGE7ACDB7A",
+            "GroupId"
+          ]
+        }
+      ]
+    });
+  });
+
 });
