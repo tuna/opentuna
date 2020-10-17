@@ -28,6 +28,7 @@ It consits of below independent [stacks][cfn-stack],
   - Tunasync Manager stack
     - auto scaling group for [tunasync][tunasync] manager
     - intranet application load balancer for manager's API
+    - elasticache redis cluster for database storage
   - Tunasync Worker stack
     - auto scaling group for [tunasync][tunasync] worker
     - install necessary third party tools for mirroring tasks
