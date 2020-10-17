@@ -29,7 +29,7 @@ runcmd:
  - mount -a -t efs,nfs4 defaults
  - tunaversion=v0.7.0
  - tunafile="${efs_mount_point_1}/tunasync/install/tunasync-linux-amd64-bin-${tunaversion}.tar.gz"
- - (test -f ${tunafile} && tar -xf ${tunafile} -C /usr/local/bin/) || (wget -c https://github.com/tuna/tunasync/releases/download/${tunaversion}/tunasync-linux-amd64-bin.tar.gz -O - | tar xzf -  -C /usr/local/bin/)
+ - (test -f ${tunafile} && tar -xf ${tunafile} -C /usr/local/bin/) || (wget -t 20 --retry-connrefused -w 5 -T 10 -c https://github.com/tuna/tunasync/releases/download/${tunaversion}/tunasync-linux-amd64-bin.tar.gz -O - | tar xzf -  -C /usr/local/bin/)
  - export PIP_DEFAULT_TIMEOUT=20; pip3 install -i https://pypi.tuna.tsinghua.edu.cn/simple 'bandersnatch<4.0' || pip3 install -i https://pypi.douban.com/simple 'bandersnatch<4.0'
  - tunascript_bin="${efs_mount_point_1}/tunasync/install/tunasync-scripts.tar.gz"
  - tunascriptpath={{&tunaScriptPath}}
