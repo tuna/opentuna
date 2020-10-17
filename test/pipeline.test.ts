@@ -60,11 +60,11 @@ describe('Pipeline stack', () => {
                         "Fn::Join": [
                             "",
                             [
-                              "{\n              \"input\": \"{ \\\"commit\\\": \\\"$input.params('commit')\\\" }\",\n              \"stateMachineArn\": \"",
-                              {
-                                "Ref": "PipelineC660917D"
-                              },
-                              "\"\n            }"
+                                "{\n              \"input\": \"{ \\\"commit\\\": \\\"$input.params('commit')\\\" }\",\n              \"stateMachineArn\": \"",
+                                {
+                                    "Ref": "PipelineC660917D"
+                                },
+                                "\"\n            }"
                             ]
                         ]
                     }
@@ -72,16 +72,16 @@ describe('Pipeline stack', () => {
                 Type: "AWS",
                 "Uri": {
                     "Fn::Join": [
-                      "",
-                      [
-                        "arn:",
-                        {
-                          "Ref": "AWS::Partition"
-                        },
-                        ":apigateway:cn-northwest-1:states:action/StartExecution"
-                      ]
+                        "",
+                        [
+                            "arn:",
+                            {
+                                "Ref": "AWS::Partition"
+                            },
+                            ":apigateway:cn-northwest-1:states:action/StartExecution"
+                        ]
                     ]
-                  }
+                }
             },
         });
     });
@@ -89,6 +89,24 @@ describe('Pipeline stack', () => {
     test('pipeline trigger url output', () => {
         expect(stack).toHaveOutput({
             exportName: `startUrl`,
+        });
+    });
+
+    test('pipeline self update build', () => {
+        expect(stack).toHaveResourceLike('AWS::CodeBuild::Project', {
+            Environment: {
+                ComputeType: "BUILD_GENERAL1_SMALL",
+                Image: "aws/codebuild/amazonlinux2-x86_64-standard:3.0",
+                PrivilegedMode: true,
+                Type: "LINUX_CONTAINER"
+            },
+            Source: {
+                BuildSpec: "{\n  \"version\": \"0.2\",\n  \"env\": {},\n  \"phases\": {\n    \"install\": {\n      \"runtime-versions\": {\n        \"nodejs\": 12\n      },\n      \"commands\": [\n        \"npm config set registry https://registry.npm.taobao.org\",\n        \"npm run install-deps\"\n      ]\n    },\n    \"pre_build\": {\n      \"commands\": []\n    },\n    \"build\": {\n      \"commands\": [\n        \"npm run deploy-pipeline -- --require-approval never                                             \"\n      ]\n    }\n  },\n  \"cache\": {\n    \"paths\": [\n      \"node_modules/\"\n    ]\n  }\n}",
+                GitCloneDepth: 1,
+                Location: "https://github.com/tuna/opentuna.git",
+                ReportBuildStatus: true,
+                Type: "GITHUB"
+            },
         });
     });
 });

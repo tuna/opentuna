@@ -143,7 +143,8 @@ export class PipelineStack extends cdk.Stack {
           },
           build: {
             commands: [
-              `npm run deploy-pipeline -- ${this.node.tryGetContext('slackHookUrl') ? `-c slackHookUrl=${this.node.tryGetContext('slackHookUrl')}`: ''} \
+              `npm run deploy-pipeline -- --require-approval never \
+              ${this.node.tryGetContext('slackHookUrl') ? `-c slackHookUrl=${this.node.tryGetContext('slackHookUrl')}`: ''} \
               ${this.node.tryGetContext('slackChannel') ? `-c slackChannel=${this.node.tryGetContext('slackChannel')}`: ''} \
               `,
             ],
