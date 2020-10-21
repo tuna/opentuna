@@ -50,6 +50,9 @@ export class PipelineStack extends cdk.Stack {
 
     // create states of step functions for pipeline
     const failure = new sfn.Fail(this, 'Fail', {});
+    const approvalTimeout = new sfn.Succeed(this, `The approval of deploying to stage '${props.prod.name}' timeout`, {
+      comment: 'mark the execution as succeed due to the approval is timeout.',
+    });
     const end = new sfn.Succeed(this, 'Stop deploying to next stage', {
       comment: 'next stage deployment is stopped.',
     });
@@ -170,36 +173,28 @@ export class PipelineStack extends cdk.Stack {
       project: buildAndTestProject,
       integrationPattern: sfn.IntegrationPattern.RUN_JOB,
     }).addCatch(failure, {
-      errors: ['CustomError']
-    }).addCatch(failure, {
-      errors: ['States.ALL']
+      errors: [sfn.Errors.TASKS_FAILED, sfn.Errors.PARAMETER_PATH_FAILURE, sfn.Errors.PERMISSIONS]
     });
 
     const pipelineUpdateTask = new tasks.CodeBuildStartBuild(stack, 'Pipeline update', {
       project: updatePipeline,
       integrationPattern: sfn.IntegrationPattern.RUN_JOB,
     }).addCatch(failure, {
-      errors: ['CustomError']
-    }).addCatch(failure, {
-      errors: ['States.ALL']
-    }); 
+      errors: [sfn.Errors.ALL]
+    });
 
     const uatDeployTask = new tasks.CodeBuildStartBuild(stack, `Deploy to ${props.uat.name} account ${props.uat.assumeRoleContexts.account}`, {
       project: this.deployToAccount(pipelineBucket, commitVersion, props.topic, props.uat),
       integrationPattern: sfn.IntegrationPattern.RUN_JOB,
     }).addCatch(failure, {
-      errors: ['CustomError']
-    }).addCatch(failure, {
-      errors: ['States.ALL']
+      errors: [sfn.Errors.ALL]
     });
 
     const prodDeployTask = new tasks.CodeBuildStartBuild(stack, `Deploy to ${props.prod.name} account ${props.prod.assumeRoleContexts.account}`, {
       project: this.deployToAccount(pipelineBucket, commitVersion, props.topic, props.prod),
       integrationPattern: sfn.IntegrationPattern.RUN_JOB,
     }).addCatch(failure, {
-      errors: ['CustomError']
-    }).addCatch(failure, {
-      errors: ['States.ALL']
+      errors: [sfn.Errors.ALL]
     });
 
     const approvalActionsFn = new lambda_nodejs.NodejsFunction(this, 'PipelineApprovalActions', {
@@ -239,17 +234,17 @@ export class PipelineStack extends cdk.Stack {
         Stage: props.uat.name,
         Domain: props.uat.deployContexts.domainName,
       }),
+    }).addCatch(approvalTimeout, {
+      errors: [ sfn.Errors.TIMEOUT ]
     }).addCatch(failure, {
-      errors: ['CustomError']
-    }).addCatch(failure, {
-      errors: ['States.ALL']
+      errors: [ sfn.Errors.ALL ]
     });
 
     const getApproverChoice = new sfn.Choice(this, `Can the pipeline continue deploying to next stage "${nextStage}"?`);
     getApproverChoice.when(sfn.Condition.stringEquals('$.Status', 'Approved'), prodDeployTask);
     getApproverChoice.when(sfn.Condition.stringEquals('$.Status', 'Rejected'), end);
 
-    const definition = codeBuildTestTask.next(pipelineUpdateTask).next(uatDeployTask).next(approvalTask)
+    const definition = codeBuildTestTask.next(pipelineUpdateTask) .next(uatDeployTask).next(approvalTask)
       .next(getApproverChoice);
 
     const pipeline = new sfn.StateMachine(this, 'Pipeline', {
@@ -373,6 +368,7 @@ export class PipelineStack extends cdk.Stack {
           execution: events.EventField.fromPath('$.detail.name'),
           account: events.EventField.fromPath('$.account'),
           input: events.EventField.fromPath('$.detail.input'),
+          output: events.EventField.fromPath('$.detail.output'),
           result: events.EventField.fromPath('$.detail.status'),
         }),
       })],
