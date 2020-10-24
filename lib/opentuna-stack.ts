@@ -19,6 +19,7 @@ import { CloudFrontInvalidate } from './cloudfront-invalidate';
 import { AnalyticsStack } from './analytics-stack';
 import { MonitorStack } from './monitor-stack';
 import { assert } from 'console';
+import { CertificateStack } from './certificate-stack';
 
 export interface OpenTunaStackProps extends cdk.StackProps {
   readonly vpcId: string;
@@ -403,6 +404,13 @@ export class OpentunaStack extends cdk.Stack {
         recordName: domainName,
         target: route53.RecordTarget.fromAlias(new route53targets.CloudFrontTarget(distribution)),
         ttl: cdk.Duration.minutes(5),
+      });
+      const contactEmail = this.node.tryGetContext('contactEmail');
+      new CertificateStack(this, 'CertificateStack', {
+        vpc,
+        notifyTopic: props.notifyTopic,
+        hostedZone: domainZone!,
+        contactEmail,
       });
     }
 
