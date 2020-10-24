@@ -251,6 +251,44 @@ describe('Tuna certificate stack', () => {
       ]
     });
 
+    expect(stack).toHaveResourceLike('AWS::Events::Rule', {
+      "EventPattern": {
+        "source": [
+          "aws.codebuild"
+        ],
+        "detail": {
+          "project-name": [
+            {
+              "Ref": "CertificateProject407BDDAD"
+            }
+          ],
+          "build-status": [
+            "FAILED"
+          ]
+        },
+        "detail-type": [
+          "CodeBuild Build State Change"
+        ]
+      },
+      "State": "ENABLED",
+      "Targets": [
+        {
+          "Arn": {
+            "Ref": "referencetoParentStackTestTopicCEBA4F88Ref"
+          },
+          "Id": "Target0",
+          "InputTransformer": {
+            "InputPathsMap": {
+              "detail-project-name": "$.detail.project-name",
+              "detail-build-status": "$.detail.build-status",
+              "detail-build-id": "$.detail.build-id",
+              "account": "$.account"
+            },
+            "InputTemplate": "{\"type\":\"certificate\",\"certificateDomain\":\"example.com\",\"certificateProjectName\":<detail-project-name>,\"certificateBuildStatus\":<detail-build-status>,\"certificateBuildId\":<detail-build-id>,\"account\":<account>}"
+          }
+        }
+      ]
+    });
   });
 
 });

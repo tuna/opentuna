@@ -3,6 +3,8 @@ import * as ec2 from '@aws-cdk/aws-ec2';
 import * as sns from '@aws-cdk/aws-sns';
 import * as codebuild from '@aws-cdk/aws-codebuild';
 import * as iam from '@aws-cdk/aws-iam';
+import * as events from '@aws-cdk/aws-events';
+import * as targets from '@aws-cdk/aws-events-targets';
 import * as route53 from '@aws-cdk/aws-route53';
 
 export interface CertificateProps extends cdk.NestedStackProps {
@@ -45,6 +47,20 @@ export class CertificateStack extends cdk.NestedStack {
                         "EMAIL": props.contactEmail,
                     }
                 }
+            })
+        });
+
+        // Notify SNS Topic
+        project.onBuildFailed(`CertificateProjectFailedSNS`, {
+            target: new targets.SnsTopic(props.notifyTopic, {
+                message: events.RuleTargetInput.fromObject({
+                    type: 'certificate',
+                    certificateDomain: domainName,
+                    certificateProjectName: events.EventField.fromPath('$.detail.project-name'),
+                    certificateBuildStatus: events.EventField.fromPath('$.detail.build-status'),
+                    certificateBuildId: events.EventField.fromPath('$.detail.build-id'),
+                    account: events.EventField.account,
+                }),
             })
         });
 
