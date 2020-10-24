@@ -29,7 +29,7 @@ export class CertificateStack extends cdk.NestedStack {
                             "sed -E -i \"s/(deb.debian.org|security.debian.org)/opentuna.cn/\" /etc/apt/sources.list",
                             "apt-get update",
                             "apt-get install -y python3-pip curl unzip",
-                            "curl https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip -o awscliv2.zip",
+                            "curl --retry 3 --retry-delay 5 https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip -o awscliv2.zip",
                             "unzip awscliv2.zip",
                             "./aws/install",
                             "pip3 install -i https://opentuna.cn/pypi/web/simple certbot==1.9.0 certbot-dns-route53==1.9.0 cryptography==3.1.1",
