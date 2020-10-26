@@ -90,19 +90,17 @@ describe('Tuna certificate stack', () => {
         account: '1234567890xx',
       },
     });
-    const vpc = ec2.Vpc.fromLookup(parentStack, `VPC`, {
-      vpcId,
-    });
     const notifyTopic = new sns.Topic(parentStack, 'Test Topic');
     const hostedZone = r53.HostedZone.fromLookup(parentStack, 'HostedZone', {
       domainName: 'example.com',
     });
 
     stack = new CertificateStack(parentStack, 'AnalyticsStack', {
-      vpc,
       notifyTopic,
+      domainName: 'mirrors.example.com',
       hostedZone,
       contactEmail: "test@example.com",
+      distributionId: 'distribution-id',
     });
   });
 
@@ -239,6 +237,25 @@ describe('Tuna certificate stack', () => {
             "Action": "iam:UploadServerCertificate",
             "Effect": "Allow",
             "Resource": "*"
+          },
+          {
+            "Action": [
+              "cloudfront:GetDistributionConfig",
+              "cloudfront:UpdateDistribution"
+            ],
+            "Effect": "Allow",
+            "Resource": {
+              "Fn::Join": [
+                "",
+                [
+                  "arn:",
+                  {
+                    "Ref": "AWS::Partition"
+                  },
+                  ":cloudfront:*:1234567890xx:distribution/distribution-id"
+                ]
+              ]
+            }
           }
         ],
         "Version": "2012-10-17"
@@ -284,7 +301,48 @@ describe('Tuna certificate stack', () => {
               "detail-build-id": "$.detail.build-id",
               "account": "$.account"
             },
-            "InputTemplate": "{\"type\":\"certificate\",\"certificateDomain\":\"example.com\",\"certificateProjectName\":<detail-project-name>,\"certificateBuildStatus\":<detail-build-status>,\"certificateBuildId\":<detail-build-id>,\"account\":<account>}"
+            "InputTemplate": "{\"type\":\"certificate\",\"certificateDomain\":\"mirrors.example.com\",\"certificateProjectName\":<detail-project-name>,\"certificateBuildStatus\":<detail-build-status>,\"certificateBuildId\":<detail-build-id>,\"account\":<account>}"
+          }
+        }
+      ]
+    });
+
+    expect(stack).toHaveResourceLike('AWS::Events::Rule', {
+      "EventPattern": {
+        "source": [
+          "aws.codebuild"
+        ],
+        "detail": {
+          "project-name": [
+            {
+              "Ref": "CertificateProject407BDDAD"
+            }
+          ],
+          "build-status": [
+            "SUCCEEDED"
+          ]
+        },
+        "detail-type": [
+          "CodeBuild Build State Change"
+        ]
+      },
+      "State": "ENABLED",
+      "Targets": [
+        {
+          "Arn": {
+            "Ref": "referencetoParentStackTestTopicCEBA4F88Ref"
+          },
+          "Id": "Target0",
+          "InputTransformer": {
+            "InputPathsMap": {
+              "detail-additional-information-exported-environment-variables-0--value": "$.detail.additional-information.exported-environment-variables[0].value",
+              "detail-additional-information-exported-environment-variables-1--value": "$.detail.additional-information.exported-environment-variables[1].value",
+              "detail-project-name": "$.detail.project-name",
+              "detail-build-status": "$.detail.build-status",
+              "detail-build-id": "$.detail.build-id",
+              "account": "$.account"
+            },
+            "InputTemplate": "{\"type\":\"certificate\",\"certificateDomain\":\"mirrors.example.com\",\"iamCertId\":<detail-additional-information-exported-environment-variables-0--value>,\"iamCertName\":<detail-additional-information-exported-environment-variables-1--value>,\"certificateProjectName\":<detail-project-name>,\"certificateBuildStatus\":<detail-build-status>,\"certificateBuildId\":<detail-build-id>,\"account\":<account>}"
           }
         }
       ]

@@ -411,10 +411,11 @@ export class OpentunaStack extends cdk.Stack {
         if (!contactEmail)
           throw new Error(`Context 'contactEmail' is required for renewing certificate.`);
         new CertificateStack(this, 'CertificateStack', {
-          vpc,
           notifyTopic: props.notifyTopic,
+          domainName: domainName,
           hostedZone: domainZone!,
           contactEmail,
+          distributionId: distribution.distributionId,
         });
       }
     }

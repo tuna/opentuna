@@ -1,5 +1,4 @@
 import * as cdk from '@aws-cdk/core';
-import * as ec2 from '@aws-cdk/aws-ec2';
 import * as sns from '@aws-cdk/aws-sns';
 import * as codebuild from '@aws-cdk/aws-codebuild';
 import * as iam from '@aws-cdk/aws-iam';
@@ -8,17 +7,20 @@ import * as targets from '@aws-cdk/aws-events-targets';
 import * as route53 from '@aws-cdk/aws-route53';
 
 export interface CertificateProps extends cdk.NestedStackProps {
-    readonly vpc: ec2.IVpc;
     readonly notifyTopic: sns.ITopic;
+    readonly domainName: string;
     readonly hostedZone: route53.IHostedZone;
     readonly contactEmail: string;
+    readonly distributionId: string;
 }
 
 export class CertificateStack extends cdk.NestedStack {
     constructor(scope: cdk.Construct, id: string, props: CertificateProps) {
         super(scope, id, props);
 
-        const domainName = props.hostedZone.zoneName;
+        const stack = cdk.Stack.of(this);
+
+        const domainName = props.domainName;
         const project = new codebuild.Project(this, `CertificateProject`, {
             environment: {
                 buildImage: codebuild.LinuxBuildImage.fromDockerRegistry('debian:buster'),
@@ -28,15 +30,20 @@ export class CertificateStack extends cdk.NestedStack {
                 phases: {
                     build: {
                         commands: [
+                            "set -ex",
                             "sed -E -i \"s/(deb.debian.org|security.debian.org)/opentuna.cn/\" /etc/apt/sources.list",
                             "apt-get update",
-                            "apt-get install -y python3-pip curl unzip",
+                            "apt-get install -y python3-pip curl unzip jq",
                             "curl --retry 3 --retry-delay 5 https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip -o awscliv2.zip",
                             "unzip awscliv2.zip",
                             "./aws/install",
                             "pip3 install -i https://opentuna.cn/pypi/web/simple certbot==1.9.0 certbot-dns-route53==1.9.0 cryptography==3.1.1",
-                            "certbot certonly --dns-route53 -d $DOMAIN_NAME --email $EMAIL --agree-tos",
-                            "aws iam upload-server-certificate --server-certificate-name $DOMAIN_NAME-$(date +%s) --certificate-body file:///etc/letsencrypt/live/$DOMAIN_NAME/cert.pem --private-key file:///etc/letsencrypt/live/$DOMAIN_NAME/privkey.pem --certificate-chain file:///etc/letsencrypt/live/$DOMAIN_NAME/chain.pem --path /cloudfront/"
+                            "for i in $(seq 1 5); do [ $i -gt 1 ] && sleep 15; certbot certonly --dns-route53 -d $DOMAIN_NAME --email $EMAIL --agree-tos --non-interactive && s=0 && break || s=$?; done; (exit $s)",
+                            "export CERT_NAME=$DOMAIN_NAME-$(date +%s)",
+                            "export CERT_ID=$(aws iam upload-server-certificate --server-certificate-name $CERT_NAME --certificate-body file:///etc/letsencrypt/live/$DOMAIN_NAME/cert.pem --private-key file:///etc/letsencrypt/live/$DOMAIN_NAME/privkey.pem --certificate-chain file:///etc/letsencrypt/live/$DOMAIN_NAME/chain.pem --path /cloudfront/opentuna/ | jq '.ServerCertificateMetadata.ServerCertificateId' --raw-output)",
+                            "export ORIGINAL_ETAG=$(aws cloudfront get-distribution-config --id $DISTRIBUTIONID --query 'ETag' --output text)",
+                            "aws cloudfront get-distribution-config --id $DISTRIBUTIONID --query 'DistributionConfig' --output json | jq \".ViewerCertificate.IAMCertificateId=\\\"$CERT_ID\\\"\" | jq \".ViewerCertificate.Certificate=\\\"$CERT_ID\\\"\" >/tmp/$DISTRIBUTIONID-config.json",
+                            "aws cloudfront update-distribution --id $DISTRIBUTIONID --if-match $ORIGINAL_ETAG --distribution-config file:///tmp/$DISTRIBUTIONID-config.json",
                         ]
                     }
                 },
@@ -45,7 +52,12 @@ export class CertificateStack extends cdk.NestedStack {
                         "DEBIAN_FRONTEND": "noninteractive",
                         "DOMAIN_NAME": domainName,
                         "EMAIL": props.contactEmail,
-                    }
+                        "DISTRIBUTIONID": props.distributionId,
+                    },
+                    'exported-variables': [
+                       'CERT_NAME',
+                       'CERT_ID',
+                    ]
                 }
             })
         });
@@ -56,6 +68,21 @@ export class CertificateStack extends cdk.NestedStack {
                 message: events.RuleTargetInput.fromObject({
                     type: 'certificate',
                     certificateDomain: domainName,
+                    certificateProjectName: events.EventField.fromPath('$.detail.project-name'),
+                    certificateBuildStatus: events.EventField.fromPath('$.detail.build-status'),
+                    certificateBuildId: events.EventField.fromPath('$.detail.build-id'),
+                    account: events.EventField.account,
+                }),
+            })
+        });
+
+        project.onBuildSucceeded(`CertificateProjectSuccessSNS`, {
+            target: new targets.SnsTopic(props.notifyTopic, {
+                message: events.RuleTargetInput.fromObject({
+                    type: 'certificate',
+                    certificateDomain: domainName,
+                    iamCertId: events.EventField.fromPath('$.detail.additional-information.exported-environment-variables[0].value'),
+                    iamCertName: events.EventField.fromPath('$.detail.additional-information.exported-environment-variables[1].value'),
                     certificateProjectName: events.EventField.fromPath('$.detail.project-name'),
                     certificateBuildStatus: events.EventField.fromPath('$.detail.build-status'),
                     certificateBuildId: events.EventField.fromPath('$.detail.build-id'),
@@ -82,5 +109,18 @@ export class CertificateStack extends cdk.NestedStack {
             actions: ["iam:UploadServerCertificate"],
             resources: ["*"]
         }))
+
+        // permissions for updating existing cloudfront configuration
+        project.addToRolePolicy(new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: ["cloudfront:GetDistributionConfig", "cloudfront:UpdateDistribution"],
+            resources: [ cdk.Arn.format({
+                partition: stack.partition,
+                region: '*',
+                service: 'cloudfront',
+                resource: 'distribution',
+                resourceName: props.distributionId,
+            }, stack) ]
+        }));
     }
 }
