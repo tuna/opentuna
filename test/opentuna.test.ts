@@ -385,7 +385,7 @@ describe('Tuna Manager stack', () => {
   });
 
   test('alb listeners created with custom domain and domain zone', () => {
-    ({ app, stack } = overrideTunaStackWithContextDomainName(app, stack, vpcId, undefined, 'ap-northeast-1'));
+    ({ app, stack } = overrideTunaStackWithContextDomainName(app, stack, vpcId, undefined, undefined, 'ap-northeast-1'));
 
     expect(stack).toHaveResourceLike('AWS::ElasticLoadBalancingV2::Listener', {
       "DefaultActions": [
@@ -457,7 +457,7 @@ describe('Tuna Manager stack', () => {
 
   test('public access alb is expected', () => {
     const iamCertId = 'iam-cert-id';
-    ({ app, stack } = overrideTunaStackWithContextDomainName(app, stack, vpcId, iamCertId));
+    ({ app, stack } = overrideTunaStackWithContextDomainName(app, stack, vpcId, iamCertId, 'contact@mydomain.com'));
 
     expect(stack).toHaveResourceLike('AWS::ElasticLoadBalancingV2::LoadBalancer', {
       "LoadBalancerAttributes": [
@@ -487,7 +487,7 @@ describe('Tuna Manager stack', () => {
 
   test('certificate and r53 record of alb', () => {
     const iamCertId = 'iam-cert-id';
-    ({ app, stack } = overrideTunaStackWithContextDomainName(app, stack, vpcId, iamCertId));
+    ({ app, stack } = overrideTunaStackWithContextDomainName(app, stack, vpcId, iamCertId, 'contact@mydomain.com'));
 
     expect(stack).toHaveResourceLike('AWS::CertificateManager::Certificate', {
       "DomainName": "tuna.example.com",
@@ -538,7 +538,7 @@ describe('Tuna Manager stack', () => {
 
   test('cloudfront distribution with iam cert in China', () => {
     const iamCertId = 'iam-cert-id';
-    ({ app, stack } = overrideTunaStackWithContextDomainName(app, stack, vpcId, iamCertId));
+    ({ app, stack } = overrideTunaStackWithContextDomainName(app, stack, vpcId, iamCertId, 'contact@mydomain.com'));
 
     expect(stack).toHaveResourceLike('AWS::CloudFront::Distribution', {
       "DistributionConfig": {
@@ -563,7 +563,7 @@ describe('Tuna Manager stack', () => {
   });
 
   test('cloudfront distribution in global', () => {
-    ({ app, stack } = overrideTunaStackWithContextDomainName(app, stack, vpcId, undefined, 'ap-northeast-1'));
+    ({ app, stack } = overrideTunaStackWithContextDomainName(app, stack, vpcId, undefined, undefined, 'ap-northeast-1'));
 
     expect(stack).toHaveResourceLike('AWS::CloudFront::Distribution', {
       "DistributionConfig": {
@@ -834,7 +834,7 @@ describe('Tuna Manager stack', () => {
   });
 
   test('custom resource to invalidate cloudfront distribution', () => {
-    ({ app, stack } = overrideTunaStackWithContextDomainName(app, stack, vpcId, undefined, 'ap-northeast-1'));
+    ({ app, stack } = overrideTunaStackWithContextDomainName(app, stack, vpcId, undefined, undefined, 'ap-northeast-1'));
 
     expect(stack).toHaveResourceLike('Custom::CloudFrontInvalidate', {
       "ServiceToken": {
@@ -892,7 +892,7 @@ describe('Tuna Manager stack', () => {
   });
 
   test('cloudwatch dashboard', () => {
-    ({ app, stack } = overrideTunaStackWithContextDomainName(app, stack, vpcId, undefined, 'ap-northeast-1'));
+    ({ app, stack } = overrideTunaStackWithContextDomainName(app, stack, vpcId, undefined, undefined, 'ap-northeast-1'));
 
     expect(stack).toHaveResourceLike('AWS::CloudWatch::Dashboard', {
       "DashboardName": "OpenTUNA-Dashboard"
@@ -901,12 +901,13 @@ describe('Tuna Manager stack', () => {
 });
 
 function overrideTunaStackWithContextDomainName(app: cdk.App, stack: cdk.Stack, vpcId: string,
-  iamCertId?: string, region?: string) {
+  iamCertId?: string, contactEmail?: string, region?: string) {
   app = new cdk.App({
     context: {
       domainName: 'tuna.example.com',
       domainZone: 'example.com',
       iamCertId,
+      contactEmail,
     }
   });
 
