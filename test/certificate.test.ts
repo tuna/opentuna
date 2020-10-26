@@ -82,6 +82,7 @@ describe('Tuna certificate stack', () => {
     app = new cdk.App({
       context: {
         stage: 'prod',
+        certTopicArn: 'arn:aws-cn:sns:::topic/ssss',
       }
     });
     const parentStack = new cdk.Stack(app, 'ParentStack', {
@@ -95,7 +96,7 @@ describe('Tuna certificate stack', () => {
       domainName: 'example.com',
     });
 
-    stack = new CertificateStack(parentStack, 'AnalyticsStack', {
+    stack = new CertificateStack(parentStack, 'CertificateStack', {
       notifyTopic,
       domainName: 'mirrors.example.com',
       hostedZone,
@@ -330,7 +331,10 @@ describe('Tuna certificate stack', () => {
       "Targets": [
         {
           "Arn": {
-            "Ref": "referencetoParentStackTestTopicCEBA4F88Ref"
+            "Fn::GetAtt": [
+              "IAMCertEventSender432115AB",
+              "Arn"
+            ]
           },
           "Id": "Target0",
           "InputTransformer": {
@@ -342,7 +346,7 @@ describe('Tuna certificate stack', () => {
               "detail-build-id": "$.detail.build-id",
               "account": "$.account"
             },
-            "InputTemplate": "{\"type\":\"certificate\",\"certificateDomain\":\"mirrors.example.com\",\"iamCertId\":<detail-additional-information-exported-environment-variables-0--value>,\"iamCertName\":<detail-additional-information-exported-environment-variables-1--value>,\"certificateProjectName\":<detail-project-name>,\"certificateBuildStatus\":<detail-build-status>,\"certificateBuildId\":<detail-build-id>,\"account\":<account>}"
+            "InputTemplate": "{\"type\":\"certificate\",\"certificateDomain\":\"mirrors.example.com\",\"stage\":\"prod\",\"iamCertId\":<detail-additional-information-exported-environment-variables-0--value>,\"iamCertName\":<detail-additional-information-exported-environment-variables-1--value>,\"certificateProjectName\":<detail-project-name>,\"certificateBuildStatus\":<detail-build-status>,\"certificateBuildId\":<detail-build-id>,\"account\":<account>}"
           }
         }
       ]

@@ -35,3 +35,6 @@ By default the parameter name is `/opentuna/pipeline/stage/uat` and `/opentuna/p
 npm run install-deps
 npm run deploy-pipeline
 ```
+
+## Post deployment
+There is a CDK output named `IAMCertChangedTopicOutput` that is a ARN of SNS topic, the cross accounts can send the notification when the new SSL cert is issued.

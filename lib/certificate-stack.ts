@@ -1,9 +1,14 @@
 import * as cdk from '@aws-cdk/core';
 import * as sns from '@aws-cdk/aws-sns';
+import * as cloudwatch from '@aws-cdk/aws-cloudwatch';
+import * as cw_actions from '@aws-cdk/aws-cloudwatch-actions';
 import * as codebuild from '@aws-cdk/aws-codebuild';
 import * as iam from '@aws-cdk/aws-iam';
 import * as events from '@aws-cdk/aws-events';
 import * as targets from '@aws-cdk/aws-events-targets';
+import * as lambda from '@aws-cdk/aws-lambda';
+import * as lambda_nodejs from '@aws-cdk/aws-lambda-nodejs';
+import * as path from 'path';
 import * as route53 from '@aws-cdk/aws-route53';
 
 export interface CertificateProps extends cdk.NestedStackProps {
@@ -55,8 +60,8 @@ export class CertificateStack extends cdk.NestedStack {
                         "DISTRIBUTIONID": props.distributionId,
                     },
                     'exported-variables': [
-                       'CERT_NAME',
-                       'CERT_ID',
+                        'CERT_NAME',
+                        'CERT_ID',
                     ]
                 }
             })
@@ -76,20 +81,47 @@ export class CertificateStack extends cdk.NestedStack {
             })
         });
 
-        project.onBuildSucceeded(`CertificateProjectSuccessSNS`, {
-            target: new targets.SnsTopic(props.notifyTopic, {
-                message: events.RuleTargetInput.fromObject({
-                    type: 'certificate',
-                    certificateDomain: domainName,
-                    iamCertId: events.EventField.fromPath('$.detail.additional-information.exported-environment-variables[0].value'),
-                    iamCertName: events.EventField.fromPath('$.detail.additional-information.exported-environment-variables[1].value'),
-                    certificateProjectName: events.EventField.fromPath('$.detail.project-name'),
-                    certificateBuildStatus: events.EventField.fromPath('$.detail.build-status'),
-                    certificateBuildId: events.EventField.fromPath('$.detail.build-id'),
-                    account: events.EventField.account,
+        const certIssuedTopic = this.node.tryGetContext('certTopicArn');
+        if (certIssuedTopic) {
+            const eventSenderFn = new lambda_nodejs.NodejsFunction(this, 'IAMCertEventSender', {
+                entry: path.join(__dirname, './lambda.d/iam-cert-event-sender/index.ts'),
+                handler: 'iamCertEventSender',
+                timeout: cdk.Duration.minutes(1),
+                runtime: lambda.Runtime.NODEJS_12_X,
+                environment: {
+                    TOPIC_ARN: certIssuedTopic,
+                }
+            });
+            eventSenderFn.addToRolePolicy(new iam.PolicyStatement({
+                actions: ['sns:Publish',],
+                effect: iam.Effect.ALLOW,
+                resources: [certIssuedTopic],
+            }));
+            const eventNotifyAlarm = new cloudwatch.Alarm(this, 'IAMEventNotifyAlarm', {
+                metric: eventSenderFn.metricErrors({ period: cdk.Duration.minutes(5) }),
+                alarmDescription: `IAM cert event notify alarm`,
+                threshold: 1,
+                evaluationPeriods: 1,
+                treatMissingData: cloudwatch.TreatMissingData.IGNORE,
+                actionsEnabled: true,
+            });
+            eventNotifyAlarm.addAlarmAction(new cw_actions.SnsAction(props.notifyTopic));
+            project.onBuildSucceeded(`CertificateProjectSuccessSNS`, {
+                target: new targets.LambdaFunction(eventSenderFn, {
+                    event: events.RuleTargetInput.fromObject({
+                        type: 'certificate',
+                        certificateDomain: domainName,
+                        stage: this.node.tryGetContext('stage') || 'prod',
+                        iamCertId: events.EventField.fromPath('$.detail.additional-information.exported-environment-variables[0].value'),
+                        iamCertName: events.EventField.fromPath('$.detail.additional-information.exported-environment-variables[1].value'),
+                        certificateProjectName: events.EventField.fromPath('$.detail.project-name'),
+                        certificateBuildStatus: events.EventField.fromPath('$.detail.build-status'),
+                        certificateBuildId: events.EventField.fromPath('$.detail.build-id'),
+                        account: events.EventField.account,
+                    }),
                 }),
-            })
-        });
+            });
+        }
 
         // permissions required by certbot-dns-route53 plugin
         project.addToRolePolicy(new iam.PolicyStatement({
@@ -114,13 +146,13 @@ export class CertificateStack extends cdk.NestedStack {
         project.addToRolePolicy(new iam.PolicyStatement({
             effect: iam.Effect.ALLOW,
             actions: ["cloudfront:GetDistributionConfig", "cloudfront:UpdateDistribution"],
-            resources: [ cdk.Arn.format({
+            resources: [cdk.Arn.format({
                 partition: stack.partition,
                 region: '*',
                 service: 'cloudfront',
                 resource: 'distribution',
                 resourceName: props.distributionId,
-            }, stack) ]
+            }, stack)]
         }));
     }
 }
