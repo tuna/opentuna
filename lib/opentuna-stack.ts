@@ -405,13 +405,19 @@ export class OpentunaStack extends cdk.Stack {
         target: route53.RecordTarget.fromAlias(new route53targets.CloudFrontTarget(distribution)),
         ttl: cdk.Duration.minutes(5),
       });
-      const contactEmail = this.node.tryGetContext('contactEmail');
-      new CertificateStack(this, 'CertificateStack', {
-        vpc,
-        notifyTopic: props.notifyTopic,
-        hostedZone: domainZone!,
-        contactEmail,
-      });
+      // only create certificate stack while using IAM cloudfront cert
+      if (typeof cloudfrontCert === "string") {
+        const contactEmail = this.node.tryGetContext('contactEmail');
+        if (!contactEmail)
+          throw new Error(`Context 'contactEmail' is required for renewing certificate.`);
+        new CertificateStack(this, 'CertificateStack', {
+          notifyTopic: props.notifyTopic,
+          domainName: domainName,
+          hostedZone: domainZone!,
+          contactEmail,
+          distributionId: distribution.distributionId,
+        });
+      }
     }
 
     // invalidate cloudfront when web-portal changes

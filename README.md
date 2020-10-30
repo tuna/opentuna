@@ -112,6 +112,10 @@ aws iam upload-server-certificate --server-certificate-name my-domain --certific
 # get cert id from above output
 npx cdk deploy OpenTunaStack -c vpcId=<existing vpc Id> -c domainName=<domain name of site> -c domainZone=<public hosted zone of your domain in Route53> -c iamCertId=<cert id>
 ```
+There is `CertificateStack` will be created when using IAM cert as CloudFront SSL. The stack will create a CodeBuild project to issue new SSL cert from Let's encrypt. And the build event can be fired to the pipeline account when deploying stack via below context option,
+```
+-c certTopicArn=<arn of sns topic created by pipeline stack>
+```
 
 Docker image for content server is automatically built and published. You can build and publish to ecr manually:
 

@@ -4,11 +4,13 @@ import * as cdk from '@aws-cdk/core';
 import * as codebuild from '@aws-cdk/aws-codebuild';
 import * as events from '@aws-cdk/aws-events';
 import * as iam from '@aws-cdk/aws-iam';
+import * as lambda from '@aws-cdk/aws-lambda';
 import * as lambda_nodejs from '@aws-cdk/aws-lambda-nodejs';
 import * as path from 'path';
 import * as s3 from '@aws-cdk/aws-s3';
 import * as sfn from '@aws-cdk/aws-stepfunctions';
 import * as sns from '@aws-cdk/aws-sns';
+import * as sns_sub from '@aws-cdk/aws-sns-subscriptions';
 import * as tasks from '@aws-cdk/aws-stepfunctions-tasks';
 import * as targets from '@aws-cdk/aws-events-targets';
 
@@ -374,13 +376,56 @@ export class PipelineStack extends cdk.Stack {
       })],
     });
 
+    const parameterPrefix = '/opentuna/pipeline/stage/';
+    const confUpdatorFn = new lambda_nodejs.NodejsFunction(this, 'StageConfigUpdator', {
+      entry: path.join(__dirname, './lambda.pipelines.d/stage-conf-updator/index.ts'),
+      handler: 'certChangedEvent',
+      timeout: cdk.Duration.minutes(3),
+      runtime: lambda.Runtime.NODEJS_12_X,
+    });
+    confUpdatorFn.addToRolePolicy(new iam.PolicyStatement({
+      actions: [ 'ssm:GetParameter', 'ssm:PutParameter' ],
+      effect: iam.Effect.ALLOW,
+      resources: [ cdk.Arn.format({
+        service: 'ssm',
+        resource: 'parameter',
+        resourceName: `${parameterPrefix.substring(1)}*`,
+      }, stack) ]
+    }));
+
+    const iamCertChangedTopic = new sns.Topic(this, 'IAMCertChangedTopic', {
+      displayName: `The IAM cert changed topic of OpenTuna stages.`
+    });
+    iamCertChangedTopic.addToResourcePolicy(
+      this.createAccessPolicy(iamCertChangedTopic, props.prod.assumeRoleContexts.account));
+    iamCertChangedTopic.addToResourcePolicy(
+      this.createAccessPolicy(iamCertChangedTopic, props.uat.assumeRoleContexts.account));
+    iamCertChangedTopic.addSubscription(new sns_sub.LambdaSubscription(confUpdatorFn));
+
     new cdk.CfnOutput(this, 'PipelineAPI', {
       value: pipelineRestApi.urlForPath(`/${startPath}`),
       exportName: 'startUrl',
       description: 'endpoint of starting OpenTUNA pipeline',
     });
+    new cdk.CfnOutput(this, 'IAMCertChangedTopicOutput', {
+      value: iamCertChangedTopic.topicArn,
+      exportName: 'topicArn',
+      description: 'topic arn of IAM Certs changed topic',
+    });
 
     cdk.Tags.of(this).add('component', 'pipeline');
+  }
+
+  private createAccessPolicy(iamCertChangedTopic: sns.Topic, account: string) : iam.PolicyStatement {
+    const publishingPolicy = new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      principals: [ new iam.AccountPrincipal(account) ],
+      resources: [iamCertChangedTopic.topicArn],
+      actions: [
+        'sns:Publish',
+      ]
+    });
+    return publishingPolicy;
   }
 
   deployToAccount(
