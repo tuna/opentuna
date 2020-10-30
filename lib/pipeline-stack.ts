@@ -460,7 +460,7 @@ export class PipelineStack extends cdk.Stack {
             },
             commands: [
               'npm config set registry https://registry.npm.taobao.org',
-              'npm ci',
+              'npm run install-deps',
             ],
           },
           pre_build: {
