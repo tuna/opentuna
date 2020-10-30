@@ -332,11 +332,42 @@ describe('Tuna certificate stack', () => {
         {
           "Arn": {
             "Fn::GetAtt": [
-              "IAMCertEventSender432115AB",
+              "CertRenewSchedulerA1D1D56E",
               "Arn"
             ]
           },
           "Id": "Target0",
+          "Input": {
+            "Fn::Join": [
+              "",
+              [
+                "{\"ruleName\":\"opentuna-cert-renew-scheduler-rule\",\"certificateProjectARN\":\"",
+                {
+                  "Fn::GetAtt": [
+                    "CertificateProject407BDDAD",
+                    "Arn"
+                  ]
+                },
+                "\",\"interval\":69,\"ruleRole\":\"",
+                {
+                  "Fn::GetAtt": [
+                    "IamCertBuildRuleRole7255FF72",
+                    "Arn"
+                  ]
+                },
+                "\"}"
+              ]
+            ]
+          }
+        },
+        {
+          "Arn": {
+            "Fn::GetAtt": [
+              "IAMCertEventSender432115AB",
+              "Arn"
+            ]
+          },
+          "Id": "Target1",
           "InputTransformer": {
             "InputPathsMap": {
               "detail-additional-information-exported-environment-variables-0--value": "$.detail.additional-information.exported-environment-variables[0].value",

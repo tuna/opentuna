@@ -81,6 +81,64 @@ export class CertificateStack extends cdk.NestedStack {
             })
         });
 
+        const ruleName = 'opentuna-cert-renew-scheduler-rule';
+        const certRenewSchedulerFn = new lambda_nodejs.NodejsFunction(this, 'CertRenewScheduler', {
+            entry: path.join(__dirname, './lambda.d/cert-renew-scheduler/index.ts'),
+            handler: 'certRenewScheduler',
+            timeout: cdk.Duration.minutes(1),
+            runtime: lambda.Runtime.NODEJS_12_X,
+        });
+        certRenewSchedulerFn.addToRolePolicy(new iam.PolicyStatement({
+            actions: [
+                'events:PutRule',
+                'events:PutTargets',
+            ],
+            effect: iam.Effect.ALLOW,
+            resources: [
+                cdk.Arn.format({
+                    service: 'events',
+                    resource: 'rule',
+                    resourceName: ruleName,
+                }, stack),
+            ],
+        }));
+        certRenewSchedulerFn.addToRolePolicy(new iam.PolicyStatement({
+            actions: ['iam:PassRole'],
+            resources: ['*'],
+            effect: iam.Effect.ALLOW,
+        }));
+        const certRenewSchedulerAlarm = new cloudwatch.Alarm(this, 'CertRenewSchedulerAlarm', {
+            metric: certRenewSchedulerFn.metricErrors({ period: cdk.Duration.minutes(5) }),
+            alarmDescription: `Cert renew scheduler alarm`,
+            threshold: 1,
+            evaluationPeriods: 1,
+            treatMissingData: cloudwatch.TreatMissingData.IGNORE,
+            actionsEnabled: true,
+        });
+        certRenewSchedulerAlarm.addAlarmAction(new cw_actions.SnsAction(props.notifyTopic));
+        const iamCertBuildRuleRole = new iam.Role(this, 'IamCertBuildRuleRole', {
+            assumedBy: new iam.ServicePrincipal('events.amazonaws.com'),
+            inlinePolicies: {
+                codebuild: new iam.PolicyDocument({
+                    statements: [new iam.PolicyStatement({
+                        actions: ['codebuild:StartBuild'],
+                        resources: [project.projectArn],
+                        effect: iam.Effect.ALLOW,
+                    })]
+                }),
+            }
+        });
+        const iamCertBuildRule = project.onBuildSucceeded(`CertificateProjectSuccessSNS`, {
+            target: new targets.LambdaFunction(certRenewSchedulerFn, {
+                event: events.RuleTargetInput.fromObject({
+                    ruleName,
+                    certificateProjectARN: project.projectArn,
+                    interval: this.node.tryGetContext('certRenewInterval') ?? (90 - 21),
+                    ruleRole: iamCertBuildRuleRole.roleArn,
+                }),
+            }),
+        });
+
         const certIssuedTopic = this.node.tryGetContext('certTopicArn');
         if (certIssuedTopic) {
             const eventSenderFn = new lambda_nodejs.NodejsFunction(this, 'IAMCertEventSender', {
@@ -106,21 +164,19 @@ export class CertificateStack extends cdk.NestedStack {
                 actionsEnabled: true,
             });
             eventNotifyAlarm.addAlarmAction(new cw_actions.SnsAction(props.notifyTopic));
-            project.onBuildSucceeded(`CertificateProjectSuccessSNS`, {
-                target: new targets.LambdaFunction(eventSenderFn, {
-                    event: events.RuleTargetInput.fromObject({
-                        type: 'certificate',
-                        certificateDomain: domainName,
-                        stage: this.node.tryGetContext('stage') || 'prod',
-                        iamCertId: events.EventField.fromPath('$.detail.additional-information.exported-environment-variables[0].value'),
-                        iamCertName: events.EventField.fromPath('$.detail.additional-information.exported-environment-variables[1].value'),
-                        certificateProjectName: events.EventField.fromPath('$.detail.project-name'),
-                        certificateBuildStatus: events.EventField.fromPath('$.detail.build-status'),
-                        certificateBuildId: events.EventField.fromPath('$.detail.build-id'),
-                        account: events.EventField.account,
-                    }),
+            iamCertBuildRule.addTarget(new targets.LambdaFunction(eventSenderFn, {
+                event: events.RuleTargetInput.fromObject({
+                    type: 'certificate',
+                    certificateDomain: domainName,
+                    stage: this.node.tryGetContext('stage') || 'prod',
+                    iamCertId: events.EventField.fromPath('$.detail.additional-information.exported-environment-variables[0].value'),
+                    iamCertName: events.EventField.fromPath('$.detail.additional-information.exported-environment-variables[1].value'),
+                    certificateProjectName: events.EventField.fromPath('$.detail.project-name'),
+                    certificateBuildStatus: events.EventField.fromPath('$.detail.build-status'),
+                    certificateBuildId: events.EventField.fromPath('$.detail.build-id'),
+                    account: events.EventField.account,
                 }),
-            });
+            }));
         }
 
         // permissions required by certbot-dns-route53 plugin
