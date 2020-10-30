@@ -168,7 +168,7 @@ export class CertificateStack extends cdk.NestedStack {
                 event: events.RuleTargetInput.fromObject({
                     type: 'certificate',
                     certificateDomain: domainName,
-                    stage: this.node.tryGetContext('stage') || 'prod',
+                    stage: this.node.tryGetContext('confStage') || 'prod',
                     iamCertId: events.EventField.fromPath('$.detail.additional-information.exported-environment-variables[0].value'),
                     iamCertName: events.EventField.fromPath('$.detail.additional-information.exported-environment-variables[1].value'),
                     certificateProjectName: events.EventField.fromPath('$.detail.project-name'),
