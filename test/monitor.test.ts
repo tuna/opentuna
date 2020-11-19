@@ -125,7 +125,18 @@ describe('Tuna monitor stack', () => {
           },
           "Environment": {
             "ComputeType": "BUILD_GENERAL1_SMALL",
-            "Image": image,
+            "Image": {
+              "Fn::Join": [
+                "",
+                [
+                  "048912060910.dkr.ecr.cn-northwest-1.",
+                  {
+                    "Ref": "AWS::URLSuffix"
+                  },
+                  `/dockerhub/${image}`
+                ]
+              ]
+            },
             "ImagePullCredentialsType": "SERVICE_ROLE",
             "PrivilegedMode": false,
             "Type": "LINUX_CONTAINER"

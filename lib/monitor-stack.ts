@@ -4,6 +4,7 @@ import * as events from '@aws-cdk/aws-events';
 import * as targets from '@aws-cdk/aws-events-targets';
 import * as lambda from '@aws-cdk/aws-lambda';
 import * as ec2 from '@aws-cdk/aws-ec2';
+import * as ecr from '@aws-cdk/aws-ecr';
 import * as sns from '@aws-cdk/aws-sns';
 import * as path from 'path';
 import { getMirrorTestingConfig } from './mirror-config';
@@ -45,9 +46,17 @@ export class MonitorStack extends cdk.NestedStack {
                     schedule: events.Schedule.expression('rate(30 minutes)'),
                 });
                 for (let image of cfg.images) {
+                    let dockerImage: codebuild.IBuildImage = codebuild.LinuxBuildImage.fromDockerRegistry(image);
+                    if (this.region.startsWith('cn-')) {
+                        let [repo, tag] = image.split(':');
+                        let nwcdRepo = ecr.Repository.fromRepositoryArn(this, `NWCDRepo${cfg.name}${image}`, `arn:aws-cn:ecr:cn-northwest-1:048912060910:repository/dockerhub/${repo}`);
+                        // use nwcd mirror from https://github.com/nwcdlabs/container-mirror
+                        dockerImage = codebuild.LinuxBuildImage.fromEcrRepository(nwcdRepo, tag);
+                    }
+
                     const project = new codebuild.Project(this, `MonitorProjectFor${cfg.name}${image}`, {
                         environment: {
-                            buildImage: codebuild.LinuxBuildImage.fromDockerRegistry(image),
+                            buildImage: dockerImage,
                         },
                         buildSpec: codebuild.BuildSpec.fromObject({
                             version: 0.2,
