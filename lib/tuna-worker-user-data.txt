@@ -18,6 +18,8 @@ packages:
  - awscli
  - docker
  - amazon-cloudwatch-agent
+ - gcc
+ - python3-devel
 
 # run commands
 runcmd:
