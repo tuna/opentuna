@@ -247,7 +247,7 @@ export function getMirrorTestingConfig(stage: string, domainName: string) {
         }, {
             name: 'CentOS',
             repo: 'centos',
-            images: ['centos:8', 'centos:7', 'centos:6'],
+            images: ['centos:8', 'centos:7'],
             commands: [
                 `sed -i 's/mirrorlist/#mirrorlist/;s/#baseurl=http:\\/\\/mirror.centos.org/baseurl=https:\\/\\/${domainName}/' /etc/yum.repos.d/CentOS-*.repo`,
                 'yum makecache',
