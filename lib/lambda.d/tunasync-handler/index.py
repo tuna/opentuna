@@ -13,7 +13,7 @@ def handler(event, context):
     requestUrl = tunasync_manager_url + '/cmd'
 
     requestBody = {}
-    requestBody['cmd'] = 'restart'
+    requestBody['cmd'] = 'start'
     requestBody['worker_id'] = 'tunasync-worker'
     requestBody['mirror_id'] = event['repo']
 
