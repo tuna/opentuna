@@ -9,7 +9,7 @@ COPY _config.yml /data
 COPY opentuna-site/options.yml _data/options.yml
 RUN rm -rf news/_posts/*
 COPY opentuna-site/news/* news/_posts/
-RUN find help/_posts -type f -regextype posix-egrep -not -regex ".*(archlinux|archlinuxcn|alpine|apache|centos|debian|docker|elrepo|epel|fedora|gitlab|grafana|jenkins|kubernetes|linuxmint|mariadb|mongodb|mysql|node|opensuse|pypi|rubygems|ubuntu).*" -delete
+RUN find help/_posts -type f -regextype posix-egrep -not -regex ".*(archlinux|archlinuxcn|alpine|apache|centos|debian|docker|elrepo|epel|fedora|gitlab|grafana|jenkins|kubernetes|linuxmint|mariadb|mongodb|mysql|node|opensuse|pypi|rubygems|ubuntu|bioconductor|CPAN|CRAN|CTAN|ceph|chef|clickhouse|clojars|crates.io-index.git|dart-pub|elasticstack|erlang-solutions|flutter|flutter-sdk.git|hackage|influxdata|julia|julia-releases|libreoffice|openresty|rustup|sagemath|saltstack|zabbix).*" -delete
 RUN jekyll build
 
 FROM nginx:1.18-alpine

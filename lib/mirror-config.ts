@@ -203,6 +203,150 @@ export function getMirrorConfig(stage: string) {
                 provider: 'rsync',
                 upstream: 'rsync://mirrors.bfsu.edu.cn/ubuntu-releases/'
             },
+            {
+                name: 'bioconductor',
+                interval: 1440,
+                provider: 'rsync',
+                upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/bioconductor/'
+            },
+            {
+                name: 'CPAN',
+                interval: 720,
+                provider: 'rsync',
+                upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/CPAN/'
+            },
+            {
+                name: 'CRAN',
+                interval: 1440,
+                provider: 'rsync',
+                upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/CRAN/'
+            },
+            {
+                name: 'CTAN',
+                interval: 1440,
+                provider: 'rsync',
+                upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/CTAN/'
+            },
+            {
+                name: 'ceph',
+                interval: 1440,
+                provider: 'rsync',
+                upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/ceph/'
+            },
+            {
+                name: 'chef',
+                interval: 1440,
+                provider: 'rsync',
+                upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/chef/'
+            },
+            {
+                name: 'clickhouse',
+                interval: 1440,
+                provider: 'rsync',
+                upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/clickhouse/'
+            },
+            {
+                name: 'clojars',
+                interval: 1440,
+                provider: 'rsync',
+                upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/clojars/'
+            },
+            {
+                name: 'crates.io-index.git',
+                interval: 1440,
+                provider: 'rsync',
+                upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/crates.io-index.git/'
+            },
+            {
+                name: 'dart-hpub',
+                interval: 1440,
+                provider: 'rsync',
+                upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/dart-pub/'
+            },
+            {
+                name: 'elasticstack',
+                interval: 1440,
+                provider: 'rsync',
+                upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/elasticstack/'
+            },
+            {
+                name: 'erlang-solutions',
+                interval: 1440,
+                provider: 'rsync',
+                upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/erlang-solutions/'
+            },
+            {
+                name: 'flutter',
+                interval: 1440,
+                provider: 'rsync',
+                upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/flutter/'
+            },
+            {
+                name: 'flutter-sdk.git',
+                interval: 1440,
+                provider: 'rsync',
+                upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/flutter-sdk.git/'
+            },
+            {
+                name: 'hackage',
+                interval: 120,
+                provider: 'rsync',
+                upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/hackage/'
+            },
+            {
+                name: 'influxdata',
+                interval: 1440,
+                provider: 'rsync',
+                upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/influxdata/'
+            },
+            {
+                name: 'julia',
+                interval: 60,
+                provider: 'rsync',
+                upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/julia/'
+            },
+            {
+                name: 'julia-releases',
+                interval: 1440,
+                provider: 'rsync',
+                upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/julia-releases/'
+            },
+            {
+                name: 'libreoffice',
+                interval: 1440,
+                provider: 'rsync',
+                upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/libreoffice/'
+            },
+            {
+                name: 'openresty',
+                interval: 1440,
+                provider: 'rsync',
+                upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/openresty/'
+            },
+            {
+                name: 'rustup',
+                interval: 1440,
+                provider: 'rsync',
+                upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/rustup/'
+            },
+            {
+                name: 'sagemath',
+                interval: 1440,
+                provider: 'rsync',
+                upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/sagemath/'
+            },
+            {
+                name: 'saltstack',
+                interval: 1440,
+                provider: 'rsync',
+                upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/saltstack/'
+            },
+            {
+                name: 'zabbix',
+                interval: 1440,
+                provider: 'rsync',
+                upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/zabbix/'
+            },
         ];
     } else {
         return [
