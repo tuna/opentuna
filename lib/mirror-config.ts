@@ -252,12 +252,6 @@ export function getMirrorConfig(stage: string) {
                 upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/clojars/'
             },
             {
-                name: 'crates.io-index.git',
-                interval: 1440,
-                provider: 'rsync',
-                upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/crates.io-index.git/'
-            },
-            {
                 name: 'dart-hpub',
                 interval: 1440,
                 provider: 'rsync',
@@ -282,16 +276,16 @@ export function getMirrorConfig(stage: string) {
                 upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/flutter/'
             },
             {
-                name: 'flutter-sdk.git',
-                interval: 1440,
-                provider: 'rsync',
-                upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/flutter-sdk.git/'
-            },
-            {
                 name: 'hackage',
                 interval: 120,
                 provider: 'rsync',
                 upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/hackage/'
+            },
+            {
+                name: 'hugging-face-models',
+                interval: 1440,
+                provider: 'rsync',
+                upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/hugging-face-models/'
             },
             {
                 name: 'influxdata',
