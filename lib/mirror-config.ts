@@ -252,7 +252,7 @@ export function getMirrorConfig(stage: string) {
                 upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/clojars/'
             },
             {
-                name: 'dart-hpub',
+                name: 'dart-pub',
                 interval: 1440,
                 provider: 'rsync',
                 upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/dart-pub/'
