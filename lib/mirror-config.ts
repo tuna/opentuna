@@ -172,6 +172,18 @@ export function getMirrorConfig(stage: string) {
                 ]
             },
             {
+                name: 'raspbian',
+                interval: 1440,
+                provider: 'rsync',
+                upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/raspbian/'
+            },
+            {
+                name: 'raspberrypi',
+                interval: 1440,
+                provider: 'rsync',
+                upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/raspberrypi/'
+            },
+            {
                 name: 'rubygems',
                 interval: 60,
                 provider: 'command',
