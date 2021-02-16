@@ -156,7 +156,8 @@ export class WebPortalStack extends cdk.NestedStack {
             runtime: lambda.Runtime.PYTHON_3_8,
             handler: 'wrapper.lambda_handler',
             vpc: props.vpc,
-            filesystem: lambda.FileSystem.fromEfsAccessPoint(accessPoint, '/mnt/data')
+            filesystem: lambda.FileSystem.fromEfsAccessPoint(accessPoint, '/mnt/data'),
+            timeout: cdk.Duration.seconds(60)
         });
         // trigger lambda every day
         const rule = new events.Rule(this, `${usage}GenIsoPeriodic`, {
