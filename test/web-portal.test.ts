@@ -215,6 +215,7 @@ describe('Content Server stack', () => {
           }
         }
       ],
+      "Timeout": 60,
       "Tags": [
         {
           "Key": "component",
