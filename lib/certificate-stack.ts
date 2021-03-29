@@ -88,6 +88,7 @@ export class CertificateStack extends cdk.NestedStack {
             handler: 'certRenewScheduler',
             timeout: cdk.Duration.minutes(1),
             runtime: lambda.Runtime.NODEJS_12_X,
+            nodeModules: ['@aws-sdk/client-eventbridge'],
         });
         certRenewSchedulerFn.addToRolePolicy(new iam.PolicyStatement({
             actions: [
@@ -149,7 +150,8 @@ export class CertificateStack extends cdk.NestedStack {
                 runtime: lambda.Runtime.NODEJS_12_X,
                 environment: {
                     TOPIC_ARN: certIssuedTopic,
-                }
+                },
+                nodeModules: ['@aws-sdk/client-sns'],
             });
             eventSenderFn.addToRolePolicy(new iam.PolicyStatement({
                 actions: ['sns:Publish',],
