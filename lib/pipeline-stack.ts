@@ -382,6 +382,7 @@ export class PipelineStack extends cdk.Stack {
       handler: 'certChangedEvent',
       timeout: cdk.Duration.minutes(3),
       runtime: lambda.Runtime.NODEJS_12_X,
+      nodeModules: ['@aws-sdk/client-ssm'],
     });
     confUpdatorFn.addToRolePolicy(new iam.PolicyStatement({
       actions: [ 'ssm:GetParameter', 'ssm:PutParameter' ],

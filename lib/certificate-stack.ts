@@ -42,7 +42,7 @@ export class CertificateStack extends cdk.NestedStack {
                             "curl --retry 3 --retry-delay 5 https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip -o awscliv2.zip",
                             "unzip awscliv2.zip",
                             "./aws/install",
-                            "pip3 install -i https://opentuna.cn/pypi/web/simple pyopenssl",
+                            "pip3 install -i https://opentuna.cn/pypi/web/simple pyopenssl cryptography==3.3.2",
                             "pip3 install -i https://opentuna.cn/pypi/web/simple certbot==1.11.0 certbot-dns-route53==1.11.0",
                             "for i in $(seq 1 5); do [ $i -gt 1 ] && sleep 15; certbot certonly --dns-route53 -d $DOMAIN_NAME --email $EMAIL --agree-tos --non-interactive && s=0 && break || s=$?; done; (exit $s)",
                             "export CERT_NAME=$DOMAIN_NAME-$(date +%s)",
@@ -88,6 +88,7 @@ export class CertificateStack extends cdk.NestedStack {
             handler: 'certRenewScheduler',
             timeout: cdk.Duration.minutes(1),
             runtime: lambda.Runtime.NODEJS_12_X,
+            nodeModules: ['@aws-sdk/client-eventbridge'],
         });
         certRenewSchedulerFn.addToRolePolicy(new iam.PolicyStatement({
             actions: [
@@ -149,7 +150,8 @@ export class CertificateStack extends cdk.NestedStack {
                 runtime: lambda.Runtime.NODEJS_12_X,
                 environment: {
                     TOPIC_ARN: certIssuedTopic,
-                }
+                },
+                nodeModules: ['@aws-sdk/client-sns'],
             });
             eventSenderFn.addToRolePolicy(new iam.PolicyStatement({
                 actions: ['sns:Publish',],
