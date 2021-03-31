@@ -2,6 +2,7 @@ import * as api from '@aws-cdk/aws-apigateway';
 import * as apiv2 from '@aws-cdk/aws-apigatewayv2';
 import * as cdk from '@aws-cdk/core';
 import * as codebuild from '@aws-cdk/aws-codebuild';
+import * as ec2 from '@aws-cdk/aws-ec2';
 import * as events from '@aws-cdk/aws-events';
 import * as iam from '@aws-cdk/aws-iam';
 import * as lambda from '@aws-cdk/aws-lambda';
@@ -47,6 +48,16 @@ export class PipelineStack extends cdk.Stack {
     super(scope, id, props);
 
     const stack = cdk.Stack.of(this);
+    
+    const vpc = new ec2.Vpc(this, 'PipelineVpc', {
+      maxAzs: 2,
+      natGateways: 1,
+      gatewayEndpoints: {
+        s3: {
+          service: ec2.GatewayVpcEndpointAwsService.S3,
+        },
+      },
+    });
 
     const pipelineBucket = new s3.Bucket(this, 'PipelineBucket');
 
@@ -61,6 +72,11 @@ export class PipelineStack extends cdk.Stack {
 
     const sourceBranch = this.node.tryGetContext('sourceBranch') ?? 'master';
     const buildAndTestProject = new codebuild.Project(this, 'OpenTUNABuild', {
+      vpc,
+      subnetSelection: {
+        subnetType: ec2.SubnetType.PRIVATE,
+      },
+      allowAllOutbound: true,
       source: codebuild.Source.gitHub({
         owner: this.node.tryGetContext('sourceOwner') ?? 'tuna',
         repo: this.node.tryGetContext('sourceRepo') ?? 'opentuna',
@@ -115,6 +131,11 @@ export class PipelineStack extends cdk.Stack {
     });
 
     const updatePipeline = new codebuild.Project(this, 'OpenTUNAPipelineUpdate', {
+      vpc,
+      subnetSelection: {
+        subnetType: ec2.SubnetType.PRIVATE,
+      },
+      allowAllOutbound: true,
       source: codebuild.Source.gitHub({
         owner: this.node.tryGetContext('sourceOwner') ?? 'tuna',
         repo: this.node.tryGetContext('sourceRepo') ?? 'opentuna',
@@ -186,14 +207,14 @@ export class PipelineStack extends cdk.Stack {
     });
 
     const uatDeployTask = new tasks.CodeBuildStartBuild(stack, `Deploy to ${props.uat.name} account ${props.uat.assumeRoleContexts.account}`, {
-      project: this.deployToAccount(pipelineBucket, commitVersion, props.topic, props.uat),
+      project: this.deployToAccount(vpc, pipelineBucket, commitVersion, props.topic, props.uat),
       integrationPattern: sfn.IntegrationPattern.RUN_JOB,
     }).addCatch(failure, {
       errors: [sfn.Errors.ALL]
     });
 
     const prodDeployTask = new tasks.CodeBuildStartBuild(stack, `Deploy to ${props.prod.name} account ${props.prod.assumeRoleContexts.account}`, {
-      project: this.deployToAccount(pipelineBucket, commitVersion, props.topic, props.prod),
+      project: this.deployToAccount(vpc, pipelineBucket, commitVersion, props.topic, props.prod),
       integrationPattern: sfn.IntegrationPattern.RUN_JOB,
     }).addCatch(failure, {
       errors: [sfn.Errors.ALL]
@@ -430,6 +451,7 @@ export class PipelineStack extends cdk.Stack {
   }
 
   deployToAccount(
+    vpc: ec2.IVpc,
     pipelineBucket: s3.IBucket,
     sourceVersion: string,
     topic: sns.ITopic,
@@ -438,6 +460,11 @@ export class PipelineStack extends cdk.Stack {
     const stack = cdk.Stack.of(this);
 
     const prj = new codebuild.Project(this, `OpenTuna${stage.name}Deployment`, {
+      vpc,
+      subnetSelection: {
+        subnetType: ec2.SubnetType.PRIVATE,
+      },
+      allowAllOutbound: true,
       source: codebuild.Source.gitHub({
         owner: this.node.tryGetContext('sourceOwner') ?? 'tuna',
         repo: this.node.tryGetContext('sourceRepo') ?? 'opentuna',
