@@ -152,6 +152,7 @@ describe('Tunasync worker stack', () => {
         ],
       },
       "DependsOn": [
+        "WorkerConfFileDeploymentsAwsCliLayer019B0252",
         "WorkerConfFileDeploymentsCustomResource426C58D0"
       ],
     }, ResourcePart.CompleteDefinition);

@@ -1,5 +1,6 @@
 import * as api from '@aws-cdk/aws-apigateway';
 import * as apiv2 from '@aws-cdk/aws-apigatewayv2';
+import * as apiv2_integrations from '@aws-cdk/aws-apigatewayv2-integrations';
 import * as cdk from '@aws-cdk/core';
 import * as codebuild from '@aws-cdk/aws-codebuild';
 import * as ec2 from '@aws-cdk/aws-ec2';
@@ -224,7 +225,7 @@ export class PipelineStack extends cdk.Stack {
       entry: path.join(__dirname, './lambda.pipelines.d/approver-actions/index.ts'),
       handler: 'pipelineApprovalAction'
     });
-    const approvalActionsIntegration = new apiv2.LambdaProxyIntegration({
+    const approvalActionsIntegration = new apiv2_integrations.LambdaProxyIntegration({
       handler: approvalActionsFn,
     });
 
@@ -403,7 +404,6 @@ export class PipelineStack extends cdk.Stack {
       handler: 'certChangedEvent',
       timeout: cdk.Duration.minutes(3),
       runtime: lambda.Runtime.NODEJS_12_X,
-      nodeModules: ['@aws-sdk/client-ssm'],
     });
     confUpdatorFn.addToRolePolicy(new iam.PolicyStatement({
       actions: [ 'ssm:GetParameter', 'ssm:PutParameter' ],
