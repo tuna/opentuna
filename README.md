@@ -54,6 +54,7 @@ It consits of below independent [stacks][cfn-stack],
 - [Pipeline stack](pipeline.md)
 
 ## Prerequisites
+
 - VPC with both public and private subnets crossing two AZs at least and NAT gateway. You can [deploy the network stack](#deploy-network-stackoptional) if you don't have a VPC sastfied the requirements.
 - EFS file system associated with above VPC. You can deploy stack with provisioning a EFS file system without specifying the existing filesystem id of EFS.
 
@@ -64,9 +65,11 @@ It consits of below independent [stacks][cfn-stack],
 - An AWS account
 - Configure [credential of aws cli][configure-aws-cli]
 - Install node.js LTS version, such as 12.x
+- Install npm 7.x
 - Install Docker Engine
 
 ### Checkout submodules
+
 ```shell
 git submodule init
 git submodule update
@@ -112,7 +115,9 @@ aws iam upload-server-certificate --server-certificate-name my-domain --certific
 # get cert id from above output
 npx cdk deploy OpenTunaStack -c vpcId=<existing vpc Id> -c domainName=<domain name of site> -c domainZone=<public hosted zone of your domain in Route53> -c iamCertId=<cert id>
 ```
+
 There is `CertificateStack` will be created when using IAM cert as CloudFront SSL. The stack will create a CodeBuild project to issue new SSL cert from Let's encrypt. And the build event can be fired to the pipeline account when deploying stack via below context option,
+
 ```
 -c certTopicArn=<arn of sns topic created by pipeline stack>
 ```
@@ -126,6 +131,7 @@ $ sudo docker push ${uid}.dkr.ecr.${region}.amazonaws.com/content-server:1.18-al
 ```
 
 ## How to test
+
 ```shell
 npm run test
 ```
