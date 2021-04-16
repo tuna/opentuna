@@ -105,6 +105,7 @@ export class PipelineStack extends cdk.Stack {
             },
             commands: [
               'npm config set registry https://registry.npm.taobao.org',
+              'npm install -g npm@7.10.0',
               'npm run install-deps',
             ],
           },
@@ -161,6 +162,7 @@ export class PipelineStack extends cdk.Stack {
             },
             commands: [
               'npm config set registry https://registry.npm.taobao.org',
+              'npm install -g npm@7.10.0',
               'npm run install-deps',
             ],
           },
@@ -488,6 +490,7 @@ export class PipelineStack extends cdk.Stack {
             },
             commands: [
               'npm config set registry https://registry.npm.taobao.org',
+              'npm install -g npm@7.10.0',
               'npm run install-deps',
             ],
           },
