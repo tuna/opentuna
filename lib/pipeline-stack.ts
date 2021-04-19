@@ -59,6 +59,13 @@ export class PipelineStack extends cdk.Stack {
         },
       },
     });
+    
+    const npmMirror = this.node.tryGetContext('npmMirror');
+    const npmConfigs = [];
+    if (npmMirror) {
+      npmConfigs.push(`npm config set registry ${npmMirror}`);
+    }
+    npmConfigs.push('npm install -g npm@7.10.0');
 
     const pipelineBucket = new s3.Bucket(this, 'PipelineBucket');
 
@@ -104,8 +111,7 @@ export class PipelineStack extends cdk.Stack {
               nodejs: 12
             },
             commands: [
-              'npm config set registry https://registry.npm.taobao.org',
-              'npm install -g npm@7.10.0',
+              ...npmConfigs,
               'npm run install-deps',
             ],
           },
@@ -161,8 +167,7 @@ export class PipelineStack extends cdk.Stack {
               nodejs: 12
             },
             commands: [
-              'npm config set registry https://registry.npm.taobao.org',
-              'npm install -g npm@7.10.0',
+              ...npmConfigs,
               'npm run install-deps',
             ],
           },
@@ -210,14 +215,14 @@ export class PipelineStack extends cdk.Stack {
     });
 
     const uatDeployTask = new tasks.CodeBuildStartBuild(stack, `Deploy to ${props.uat.name} account ${props.uat.assumeRoleContexts.account}`, {
-      project: this.deployToAccount(vpc, pipelineBucket, commitVersion, props.topic, props.uat),
+      project: this.deployToAccount(vpc, pipelineBucket, commitVersion, props.topic, props.uat, npmConfigs),
       integrationPattern: sfn.IntegrationPattern.RUN_JOB,
     }).addCatch(failure, {
       errors: [sfn.Errors.ALL]
     });
 
     const prodDeployTask = new tasks.CodeBuildStartBuild(stack, `Deploy to ${props.prod.name} account ${props.prod.assumeRoleContexts.account}`, {
-      project: this.deployToAccount(vpc, pipelineBucket, commitVersion, props.topic, props.prod),
+      project: this.deployToAccount(vpc, pipelineBucket, commitVersion, props.topic, props.prod, npmConfigs),
       integrationPattern: sfn.IntegrationPattern.RUN_JOB,
     }).addCatch(failure, {
       errors: [sfn.Errors.ALL]
@@ -458,6 +463,7 @@ export class PipelineStack extends cdk.Stack {
     sourceVersion: string,
     topic: sns.ITopic,
     stage: Stage,
+    npmConfigs: string[],
   ): codebuild.IProject {
     const stack = cdk.Stack.of(this);
 
@@ -489,8 +495,7 @@ export class PipelineStack extends cdk.Stack {
               nodejs: 12
             },
             commands: [
-              'npm config set registry https://registry.npm.taobao.org',
-              'npm install -g npm@7.10.0',
+              ...npmConfigs,
               'npm run install-deps',
             ],
           },
