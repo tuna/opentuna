@@ -303,7 +303,7 @@ export class PipelineStack extends cdk.Stack {
       deployOptions: {
         stageName: 'pipeline',
         loggingLevel: api.MethodLoggingLevel.INFO,
-        dataTraceEnabled: true,
+        dataTraceEnabled: false,
         metricsEnabled: true,
       },
       endpointConfiguration: {
