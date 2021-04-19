@@ -101,7 +101,7 @@ describe('Pipeline stack', () => {
                 Type: "LINUX_CONTAINER"
             },
             Source: {
-                BuildSpec: "{\n  \"version\": \"0.2\",\n  \"env\": {},\n  \"phases\": {\n    \"install\": {\n      \"runtime-versions\": {\n        \"nodejs\": 12\n      },\n      \"commands\": [\n        \"npm config set registry https://registry.npm.taobao.org\",\n        \"npm install -g npm@7.10.0\",\n        \"npm run install-deps\"\n      ]\n    },\n    \"pre_build\": {\n      \"commands\": []\n    },\n    \"build\": {\n      \"commands\": [\n        \"npm run deploy-pipeline -- --require-approval never                                             \"\n      ]\n    }\n  },\n  \"cache\": {\n    \"paths\": [\n      \"node_modules/\"\n    ]\n  }\n}",
+                BuildSpec: "{\n  \"version\": \"0.2\",\n  \"env\": {},\n  \"phases\": {\n    \"install\": {\n      \"runtime-versions\": {\n        \"nodejs\": 12\n      },\n      \"commands\": [\n        \"npm install -g npm@7.10.0\",\n        \"npm run install-deps\"\n      ]\n    },\n    \"pre_build\": {\n      \"commands\": []\n    },\n    \"build\": {\n      \"commands\": [\n        \"npm run deploy-pipeline -- --require-approval never                                             \"\n      ]\n    }\n  },\n  \"cache\": {\n    \"paths\": [\n      \"node_modules/\"\n    ]\n  }\n}",
                 GitCloneDepth: 1,
                 Location: "https://github.com/tuna/opentuna.git",
                 ReportBuildStatus: true,
