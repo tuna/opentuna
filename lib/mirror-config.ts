@@ -144,12 +144,6 @@ export function getMirrorConfig(stage: string) {
                 upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/nodejs-release/'
             },
             {
-                name: 'nodesource',
-                interval: 1440,
-                provider: 'rsync',
-                upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/nodesource/'
-            },
-            {
                 name: 'opensuse',
                 interval: 1440,
                 provider: 'rsync',
@@ -292,12 +286,6 @@ export function getMirrorConfig(stage: string) {
                 interval: 120,
                 provider: 'rsync',
                 upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/hackage/'
-            },
-            {
-                name: 'hugging-face-models',
-                interval: 1440,
-                provider: 'rsync',
-                upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/hugging-face-models/'
             },
             {
                 name: 'influxdata',
