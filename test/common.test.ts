@@ -60,7 +60,9 @@ describe('Tuna Common stack', () => {
               }
             },
             "Effect": "Allow",
-            "Principal": "*",
+            "Principal": {
+              "AWS": "*"
+            },
             "Resource": {
               "Ref": "NotificationTopicEB7A0DF1"
             },

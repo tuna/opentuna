@@ -110,7 +110,7 @@ describe('Pipeline stack', () => {
         });
     });
     
-     test('the detail trace log of pipeline api is disabled', () => {
+    test('the detail trace log of pipeline api is disabled', () => {
         expect(stack).toHaveResourceLike('AWS::ApiGateway::Stage', {
             "MethodSettings": [
               {
