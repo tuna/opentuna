@@ -265,12 +265,15 @@ export class OpentunaStack extends cdk.Stack {
         }, {
           ...commonBehaviorConfig,
           pathPattern: '/debian/*',
+          viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.ALLOW_ALL,
         }, {
           ...commonBehaviorConfig,
           pathPattern: '/debian-security/*',
+          viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.ALLOW_ALL,
         }, {
           ...commonBehaviorConfig,
           pathPattern: '/ubuntu/*',
+          viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.ALLOW_ALL,
         }, {
           ...commonBehaviorConfig,
           // 5min cache for tunasync status
@@ -377,23 +380,9 @@ export class OpentunaStack extends cdk.Stack {
     });
     const distribution = new cloudfront.CloudFrontWebDistribution(this, 'CloudFrontDist', cloudfrontProps);
 
-    // HACK: override /debian/* viewer protocol policy to allow-all
-    // see https://github.com/aws/aws-cdk/issues/7086
-    let dist = distribution.node.defaultChild as cloudfront.CfnDistribution;
-    let conf = dist.distributionConfig as cloudfront.CfnDistribution.DistributionConfigProperty;
-    let cacheBehaviors = conf.cacheBehaviors as cloudfront.CfnDistribution.CacheBehaviorProperty[];
-    let behavior = cacheBehaviors[0];
-    assert(behavior.pathPattern == '/debian/*');
-    for (let i = 0; i < cacheBehaviors.length; i++) {
-      if (['/debian/*', '/debian-security/*', '/ubuntu/*'].indexOf(cacheBehaviors[i].pathPattern) != -1) {
-        cacheBehaviors[i] = {
-          ...cacheBehaviors[i],
-          viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.ALLOW_ALL,
-        } as cloudfront.CfnDistribution.CacheBehaviorProperty;
-      }
-    }
-    // FIXME: Another HACK:
+    // FIXME: HACK:
     // see https://github.com/aws/aws-cdk/issues/10923
+    let dist = distribution.node.defaultChild as cloudfront.CfnDistribution;
     if (stack.region.startsWith('cn-')) {
       dist.addPropertyOverride('DistributionConfig.Logging.Bucket', logsBucket.bucketRegionalDomainName);
     }
