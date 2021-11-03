@@ -38,7 +38,7 @@ export class CertificateStack extends cdk.NestedStack {
                             "set -ex",
                             "sed -E -i \"s/(deb.debian.org|security.debian.org)/opentuna.cn/\" /etc/apt/sources.list",
                             "apt-get update",
-                            "apt-get install -y python3-pip curl unzip jq",
+                            "apt-get install -y python3-pip curl unzip jq libffi-dev",
                             "curl --retry 3 --retry-delay 5 https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip -o awscliv2.zip",
                             "unzip awscliv2.zip",
                             "./aws/install",
