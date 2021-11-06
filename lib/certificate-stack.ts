@@ -43,7 +43,7 @@ export class CertificateStack extends cdk.NestedStack {
                             "unzip awscliv2.zip",
                             "./aws/install",
                             "pip3 install -i https://opentuna.cn/pypi/web/simple pyopenssl cryptography==3.3.2",
-                            "pip3 install -i https://opentuna.cn/pypi/web/simple certbot==1.11.0 certbot-dns-route53==1.11.0",
+                            "pip3 install -i https://opentuna.cn/pypi/web/simple certbot==1.11.0 acme==1.11.0 certbot-dns-route53==1.11.0",
                             "for i in $(seq 1 5); do [ $i -gt 1 ] && sleep 15; certbot certonly --dns-route53 -d $DOMAIN_NAME --email $EMAIL --agree-tos --non-interactive && s=0 && break || s=$?; done; (exit $s)",
                             "export CERT_NAME=$DOMAIN_NAME-$(date +%s)",
                             "export CERT_ID=$(aws iam upload-server-certificate --server-certificate-name $CERT_NAME --certificate-body file:///etc/letsencrypt/live/$DOMAIN_NAME/cert.pem --private-key file:///etc/letsencrypt/live/$DOMAIN_NAME/privkey.pem --certificate-chain file:///etc/letsencrypt/live/$DOMAIN_NAME/chain.pem --path /cloudfront/opentuna/ | jq '.ServerCertificateMetadata.ServerCertificateId' --raw-output)",
