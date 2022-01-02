@@ -380,13 +380,6 @@ export class OpentunaStack extends cdk.Stack {
     });
     const distribution = new cloudfront.CloudFrontWebDistribution(this, 'CloudFrontDist', cloudfrontProps);
 
-    // FIXME: HACK:
-    // see https://github.com/aws/aws-cdk/issues/10923
-    let dist = distribution.node.defaultChild as cloudfront.CfnDistribution;
-    if (stack.region.startsWith('cn-')) {
-      dist.addPropertyOverride('DistributionConfig.Logging.Bucket', logsBucket.bucketRegionalDomainName);
-    }
-
     if (domainZone) {
       new route53.ARecord(this, 'ARecord', {
         zone: domainZone!,
