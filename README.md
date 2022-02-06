@@ -1,11 +1,11 @@
 # Open TUNA project!
 
-This is the infrasture project of Open TUNA on AWS orchestrated by [AWS CDK][aws-cdk].
+This is the infrastructure project of Open TUNA on AWS, orchestrated by [AWS CDK][aws-cdk].
 
-See overall architecture below,
+See below for the overall architecture,
 ![overall-arch](arch-digram.png)
 
-It consits of below independent [stacks][cfn-stack],
+It consists of the following independent [stacks][cfn-stack],
 
 - Network stack(optional)
   - Create a dedicated VPC with public and private subnets across three AZs with NAT gateways
@@ -38,7 +38,7 @@ It consits of below independent [stacks][cfn-stack],
   - Content Server stack
     - build custom nginx container
     - use Fargate service to serve mirror contents
-    - internet facing appplication load balancer
+    - internet facing application load balancer
     - collect network metrics by CloudWatch agent
     - setup auto scaling rules based on metrics
   - Web Portal stack
@@ -55,7 +55,7 @@ It consits of below independent [stacks][cfn-stack],
 
 ## Prerequisites
 
-- VPC with both public and private subnets crossing two AZs at least and NAT gateway. You can [deploy the network stack](#deploy-network-stackoptional) if you don't have a VPC sastfied the requirements.
+- VPC with both public and private subnets crossing two AZs at least and NAT gateway. You can [deploy the network stack](#deploy-network-stackoptional) if you don't have a VPC which satisfies the requirements.
 - EFS file system associated with above VPC. You can deploy stack with provisioning a EFS file system without specifying the existing filesystem id of EFS.
 
 ## How to deploy it
@@ -116,7 +116,7 @@ aws iam upload-server-certificate --server-certificate-name my-domain --certific
 npx cdk deploy OpenTunaStack -c vpcId=<existing vpc Id> -c domainName=<domain name of site> -c domainZone=<public hosted zone of your domain in Route53> -c iamCertId=<cert id>
 ```
 
-There is `CertificateStack` will be created when using IAM cert as CloudFront SSL. The stack will create a CodeBuild project to issue new SSL cert from Let's encrypt. And the build event can be fired to the pipeline account when deploying stack via below context option,
+The `CertificateStack` will be created when using IAM cert for the CloudFront SSL. The stack will create a CodeBuild project to issue new SSL certificates from Let's encrypt. And the build event can be pushed to the pipeline account when deploying the stack via the below context option,
 
 ```
 -c certTopicArn=<arn of sns topic created by pipeline stack>
@@ -137,7 +137,7 @@ npm run test
 ```
 
 ## Post deployment
-- Add email addresses or other subscriptions to notification topic created in common stack. The alarm notifications related to Open TUNA will be sent to those subscriptions.
+- Add email addresses or other subscribers to the notification topic created in the common stack. The alarm notifications related to Open TUNA will be sent to those subscribers.
 
 [aws-cdk]: https://aws.amazon.com/cdk/
 [cfn-stack]: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/stacks.html
