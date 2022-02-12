@@ -3,7 +3,7 @@ FROM tunathu/mirror-web:latest
 # Setup timezone and website
 ENV TZ=Asia/Shanghai
 COPY mirror-web ./
-
+RUN sed -i '/清华大学 TUNA 协会/ s/$/ <li><a href=\"https:\/\/www.caws-ug.cn\/\">亚马逊云科技 User Group<\/a><\/li>/' _layouts/index.html
 # Build with our config
 COPY _config.yml /data
 COPY opentuna-site/options.yml _data/options.yml
