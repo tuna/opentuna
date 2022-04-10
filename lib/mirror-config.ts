@@ -56,6 +56,12 @@ export function getMirrorConfig(stage: string) {
                 upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/centos-altarch/'
             },
             {
+                name: 'centos-stream',
+                interval: 1440,
+                provider: 'rsync',
+                upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/centos-stream/'
+            },
+            {
                 name: 'debian',
                 interval: 720,
                 retry: 100,
