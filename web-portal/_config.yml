@@ -34,6 +34,9 @@ sass:
 gems:
     - jekyll-babel
     - jekyll-sitemap
+    - jekyll/fontawesome/svg
+    - jekyll-minifier
+
 
 babel_js_extensions: 'es6'
 
