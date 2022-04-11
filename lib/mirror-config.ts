@@ -62,6 +62,12 @@ export function getMirrorConfig(stage: string) {
                 upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/centos-stream/'
             },
             {
+                name: 'centos-vault',
+                interval: 1440,
+                provider: 'rsync',
+                upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/centos-vault/'
+            },
+            {
                 name: 'debian',
                 interval: 720,
                 retry: 100,
