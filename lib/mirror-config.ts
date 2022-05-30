@@ -411,7 +411,7 @@ export function getMirrorTestingConfig(stage: string, domainName: string) {
         }, {
             name: 'Fedora',
             repo: 'fedora',
-            images: ['fedora:32', 'fedora:33'],
+            images: ['fedora:34', 'fedora:35', 'fedora:36'],
             commands: [
                 `sed -i 's/metalink/#metalink/;s/#baseurl=http:\\/\\/download.example\\/pub\\/fedora\\/linux/baseurl=https:\\/\\/${domainName}\\/fedora/' /etc/yum.repos.d/fedora{,-updates,-modular,-updates-modular}.repo`,
                 'yum makecache',
