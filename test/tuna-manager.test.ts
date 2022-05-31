@@ -6,6 +6,7 @@ import * as sns from '@aws-cdk/aws-sns';
 import * as Tuna from '../lib/tuna-manager';
 import * as mock from './context-provider-mock';
 import '@aws-cdk/assert/jest';
+import { ResourcePart } from '@aws-cdk/assert/lib/assertions/have-resource';
 
 describe('Tuna Manager stack', () => {
   let app: cdk.App;
@@ -351,21 +352,26 @@ describe('Tuna Manager stack', () => {
     });
 
     expect(stack).toHaveResourceLike('AWS::ElastiCache::CacheCluster', {
-      "CacheNodeType": "cache.t3.micro",
-      "Engine": "redis",
-      "NumCacheNodes": 1,
-      "CacheSubnetGroupName": {
-        "Ref": "ManagerRedisSubnetGroup"
+      "Properties": {
+        "CacheNodeType": "cache.t3.micro",
+        "Engine": "redis",
+        "NumCacheNodes": 1,
+        "CacheSubnetGroupName": {
+          "Ref": "ManagerRedisSubnetGroup"
+        },
+        "VpcSecurityGroupIds": [
+          {
+            "Fn::GetAtt": [
+              "ManagerRedisSGE7ACDB7A",
+              "GroupId"
+            ]
+          }
+        ]
       },
-      "VpcSecurityGroupIds": [
-        {
-          "Fn::GetAtt": [
-            "ManagerRedisSGE7ACDB7A",
-            "GroupId"
-          ]
-        }
-      ]
-    });
+      "UpdateReplacePolicy": "Snapshot",
+      "DeletionPolicy": "Snapshot",
+    }, ResourcePart.CompleteDefinition);
+    
   });
 
 });
