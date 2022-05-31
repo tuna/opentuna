@@ -92,7 +92,8 @@ export class TunaManagerStack extends cdk.NestedStack {
             numCacheNodes: 1,
             cacheSubnetGroupName: redisSubnetGroup.ref,
             vpcSecurityGroupIds: [redisSG.securityGroupId]
-        });
+        })
+        redisCluster.applyRemovalPolicy(cdk.RemovalPolicy.SNAPSHOT);
 
         const userdata = fs.readFileSync(path.join(__dirname, './tuna-manager-user-data.txt'), 'utf-8');
         const newProps = {
