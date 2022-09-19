@@ -159,7 +159,7 @@ export class AnalyticsStack extends cdk.NestedStack {
 
         const athenaQueryRtLocation = cloudFrontAccessLogsBucket.s3UrlForObject(athenaResultsPrefix);
         const transformPartFn = new lambda.Function(this, 'transformPartFn', {
-            runtime: lambda.Runtime.NODEJS_12_X,
+            runtime: lambda.Runtime.NODEJS_14_X,
             code: lambda.Code.fromAsset(path.join(__dirname, './lambda.d/cf-logs-analytics')),
             handler: 'transformPartition.handler',
             timeout: cdk.Duration.seconds(900),
@@ -199,7 +199,7 @@ export class AnalyticsStack extends cdk.NestedStack {
         });
 
         const createPartFn = new lambda.Function(this, 'createPartFn', {
-            runtime: lambda.Runtime.NODEJS_12_X,
+            runtime: lambda.Runtime.NODEJS_14_X,
             code: lambda.Code.fromAsset(path.join(__dirname, './lambda.d/cf-logs-analytics')),
             handler: 'createPartitions.handler',
             timeout: cdk.Duration.seconds(5),
@@ -236,7 +236,7 @@ export class AnalyticsStack extends cdk.NestedStack {
         });
 
         const moveNewAccessLogsFn = new lambda.Function(this, 'moveNewAccessLogsFn', {
-            runtime: lambda.Runtime.NODEJS_12_X,
+            runtime: lambda.Runtime.NODEJS_14_X,
             code: lambda.Code.fromAsset(path.join(__dirname, './lambda.d/cf-logs-analytics')),
             handler: 'moveAccessLogs.handler',
             timeout: cdk.Duration.seconds(30),
