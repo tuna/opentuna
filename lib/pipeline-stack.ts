@@ -108,7 +108,7 @@ export class PipelineStack extends cdk.Stack {
         phases: {
           install: {
             'runtime-versions': {
-              nodejs: 12
+              nodejs: 14
             },
             commands: [
               ...npmConfigs,
@@ -164,7 +164,7 @@ export class PipelineStack extends cdk.Stack {
         phases: {
           install: {
             'runtime-versions': {
-              nodejs: 12
+              nodejs: 14
             },
             commands: [
               ...npmConfigs,
@@ -410,7 +410,7 @@ export class PipelineStack extends cdk.Stack {
       entry: path.join(__dirname, './lambda.pipelines.d/stage-conf-updator/index.ts'),
       handler: 'certChangedEvent',
       timeout: cdk.Duration.minutes(3),
-      runtime: lambda.Runtime.NODEJS_12_X,
+      runtime: lambda.Runtime.NODEJS_14_X,
     });
     confUpdatorFn.addToRolePolicy(new iam.PolicyStatement({
       actions: [ 'ssm:GetParameter', 'ssm:PutParameter' ],
@@ -492,7 +492,7 @@ export class PipelineStack extends cdk.Stack {
         phases: {
           install: {
             'runtime-versions': {
-              nodejs: 12
+              nodejs: 14
             },
             commands: [
               ...npmConfigs,

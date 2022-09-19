@@ -664,7 +664,7 @@ describe('Tuna log analysis stack', () => {
           "Arn"
         ]
       },
-      "Runtime": "nodejs12.x",
+      "Runtime": "nodejs14.x",
       "Environment": {
         "Variables": {
           "SOURCE_TABLE": {
@@ -897,7 +897,7 @@ describe('Tuna log analysis stack', () => {
           "Arn"
         ]
       },
-      "Runtime": "nodejs12.x",
+      "Runtime": "nodejs14.x",
       "Environment": {
         "Variables": {
           "TABLE": {
@@ -1102,7 +1102,7 @@ describe('Tuna log analysis stack', () => {
           "Arn"
         ]
       },
-      "Runtime": "nodejs12.x",
+      "Runtime": "nodejs14.x",
       "Environment": {
         "Variables": {
           "TARGET_KEY_PREFIX": "partitioned-gz/"

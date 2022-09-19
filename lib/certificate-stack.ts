@@ -87,7 +87,7 @@ export class CertificateStack extends cdk.NestedStack {
             entry: path.join(__dirname, './lambda.d/cert-renew-scheduler/index.ts'),
             handler: 'certRenewScheduler',
             timeout: cdk.Duration.minutes(1),
-            runtime: lambda.Runtime.NODEJS_12_X,
+            runtime: lambda.Runtime.NODEJS_14_X,
         });
         certRenewSchedulerFn.addToRolePolicy(new iam.PolicyStatement({
             actions: [
@@ -146,7 +146,7 @@ export class CertificateStack extends cdk.NestedStack {
                 entry: path.join(__dirname, './lambda.d/iam-cert-event-sender/index.ts'),
                 handler: 'iamCertEventSender',
                 timeout: cdk.Duration.minutes(1),
-                runtime: lambda.Runtime.NODEJS_12_X,
+                runtime: lambda.Runtime.NODEJS_14_X,
                 environment: {
                     TOPIC_ARN: certIssuedTopic,
                 },
