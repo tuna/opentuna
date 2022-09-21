@@ -140,11 +140,11 @@ export class ContentServerStack extends cdk.NestedStack {
                 port: httpPort,
                 protocol: elbv2.ApplicationProtocol.HTTP,
                 targets: [service],
-                pathPatterns: [
+                conditions: [elbv2.ListenerCondition.pathPatterns([
                     '/debian/*',
                     '/debian-security/*',
                     '/ubuntu/*',
-                ],
+                ])],
                 priority: 20,
                 healthCheck: {
                     enabled: true,
@@ -161,7 +161,7 @@ export class ContentServerStack extends cdk.NestedStack {
         const bytesSentEth1 = new cloudwatch.Metric({
             namespace: 'OpenTuna',
             metricName: 'net_bytes_sent',
-            dimensions: {
+            dimensionsMap: {
                 interface: "eth1"
             },
             statistic: cloudwatch.Statistic.AVERAGE,
@@ -178,7 +178,7 @@ export class ContentServerStack extends cdk.NestedStack {
         });
         const cpuUsage = {
             namespace: 'OpenTuna',
-            dimensions: {
+            dimensionsMap: {
                 cpu: "cpu-total"
             },
             statistic: cloudwatch.Statistic.AVERAGE,
@@ -199,7 +199,7 @@ export class ContentServerStack extends cdk.NestedStack {
         // Add widget for content server
         const bytesEth1 = {
             namespace: 'OpenTuna',
-            dimensions: {
+            dimensionsMap: {
                 interface: "eth1"
             },
             statistic: cloudwatch.Statistic.SUM,

@@ -114,11 +114,13 @@ export class TunaManagerStack extends cdk.NestedStack {
             vpc: props.vpc,
             userData: ec2.UserData.custom(Mustache.render(userdata, newProps)),
             role: ec2Role,
-            notificationsTopic: props.notifyTopic,
+            notifications: [{
+                topic: props.notifyTopic,
+            }],
             minCapacity: 1,
             maxCapacity: 1,
             healthCheck: autoscaling.HealthCheck.elb({ grace: cdk.Duration.seconds(180) }),
-            updateType: autoscaling.UpdateType.ROLLING_UPDATE,
+            updatePolicy: autoscaling.UpdatePolicy.rollingUpdate(),
             cooldown: cdk.Duration.seconds(30),
         });
         this.managerASG = tunaManagerASG;

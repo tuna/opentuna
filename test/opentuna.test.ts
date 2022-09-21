@@ -266,6 +266,10 @@ describe('Tuna Manager stack', () => {
         {
           "Key": "slow_start.duration_seconds",
           "Value": "60"
+        },
+        {
+          "Key": "stickiness.enabled",
+          "Value": "false"
         }
       ],
       "TargetType": "ip",
@@ -441,11 +445,13 @@ describe('Tuna Manager stack', () => {
       "Conditions": [
         {
           "Field": "path-pattern",
-          "Values": [
-            "/debian/*",
-            "/debian-security/*",
-            "/ubuntu/*",
-          ]
+          "PathPatternConfig": {
+            "Values": [
+              "/debian/*",
+              "/debian-security/*",
+              "/ubuntu/*",
+            ]
+          }
         }
       ],
       "ListenerArn": {
