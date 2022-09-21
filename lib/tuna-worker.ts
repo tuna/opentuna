@@ -130,11 +130,13 @@ export class TunaWorkerStack extends cdk.NestedStack {
             associatePublicIpAddress: true,
             userData: ec2.UserData.custom(rawUserData),
             role: ec2Role,
-            notificationsTopic: props.notifyTopic,
+            notifications: [{
+                topic: props.notifyTopic
+            }],
             minCapacity: 1,
             maxCapacity: 1,
             healthCheck: autoscaling.HealthCheck.ec2({ grace: cdk.Duration.seconds(180) }),
-            updateType: autoscaling.UpdateType.ROLLING_UPDATE,
+            updatePolicy: autoscaling.UpdatePolicy.rollingUpdate(),
             cooldown: cdk.Duration.seconds(30),
         });
         tunaWorkerASG.node.addDependency(confFileDeployment);
@@ -147,7 +149,7 @@ export class TunaWorkerStack extends cdk.NestedStack {
             metricName: metricName,
             statistic: 'sum',
             period: cdk.Duration.minutes(1),
-            dimensions: {
+            dimensionsMap: {
                 [dimensionName]: tunaWorkerASG.autoScalingGroupName
             },
         });
