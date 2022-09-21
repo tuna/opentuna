@@ -232,9 +232,10 @@ export class PipelineStack extends cdk.Stack {
       entry: path.join(__dirname, './lambda.pipelines.d/approver-actions/index.ts'),
       handler: 'pipelineApprovalAction'
     });
-    const approvalActionsIntegration = new apiv2_integrations.LambdaProxyIntegration({
-      handler: approvalActionsFn,
-    });
+    const approvalActionsIntegration = new apiv2_integrations.HttpLambdaIntegration(
+      "PipelineApprovalActionsIntegration",
+      approvalActionsFn,
+    );
 
     const pipelineApi = new apiv2.HttpApi(this, 'OpenTUNAPipelineHttpApi');
     pipelineApi.addRoutes({
