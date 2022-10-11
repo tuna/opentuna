@@ -105,7 +105,7 @@ describe('Tuna certificate stack', () => {
     });
   });
 
-  test('Codebuild projec created', () => {
+  test('Codebuild project created', () => {
     expect(stack).toHaveResourceLike('AWS::CodeBuild::Project', {
       "Artifacts": {
         "Type": "NO_ARTIFACTS"
