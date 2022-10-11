@@ -267,6 +267,10 @@ describe('Tuna Manager stack', () => {
         {
           "Key": "slow_start.duration_seconds",
           "Value": "60"
+        },
+        {
+          "Key": "stickiness.enabled",
+          "Value": "false"
         }
       ],
       "TargetType": "instance",
