@@ -249,8 +249,8 @@ describe('Content Server stack', () => {
       "Volumes": [
         {
           "Name": "efs-volume",
-          "EfsVolumeConfiguration": {
-            "FileSystemId": "fs-012345",
+          "EFSVolumeConfiguration": {
+            "FilesystemId": "fs-012345",
             "RootDirectory": "/data"
           }
         }
