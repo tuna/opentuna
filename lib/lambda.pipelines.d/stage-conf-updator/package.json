@@ -9,7 +9,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "@aws-sdk/client-ssm": "^1.0.0-rc.2",
+    "@aws-sdk/client-ssm": "^1.0.0-rc.10",
     "source-map-support": "^0.5.19"
   },
   "devDependencies": {
