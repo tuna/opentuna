@@ -55,6 +55,9 @@ export class MonitorStack extends cdk.NestedStack {
                     }
 
                     const project = new codebuild.Project(this, `MonitorProjectFor${cfg.name}${image}`, {
+                        timeout: cdk.Duration.minutes(30),
+                        queuedTimeout: cdk.Duration.minutes(10),
+                        concurrentBuildLimit: 1,
                         environment: {
                             buildImage: dockerImage,
                         },
