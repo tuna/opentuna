@@ -141,6 +141,8 @@ describe('Tuna monitor stack', () => {
             "PrivilegedMode": false,
             "Type": "LINUX_CONTAINER"
           },
+          "ConcurrentBuildLimit": 1,
+          "TimeoutInMinutes": 30,
         });
 
         // sns notify event
