@@ -96,7 +96,7 @@ describe('Pipeline stack', () => {
         expect(stack).toHaveResourceLike('AWS::CodeBuild::Project', {
             Environment: {
                 ComputeType: "BUILD_GENERAL1_SMALL",
-                Image: "aws/codebuild/amazonlinux2-x86_64-standard:3.0",
+                Image: "aws/codebuild/standard:5.0",
                 PrivilegedMode: true,
                 Type: "LINUX_CONTAINER"
             },

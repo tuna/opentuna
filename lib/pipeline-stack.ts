@@ -92,7 +92,7 @@ export class PipelineStack extends cdk.Stack {
         branchOrRef: sourceBranch,
       }),
       environment: {
-        buildImage: codebuild.LinuxBuildImage.AMAZON_LINUX_2_3,
+        buildImage: codebuild.LinuxBuildImage.STANDARD_5_0,
         privileged: true,
       },
       cache: codebuild.Cache.bucket(pipelineBucket, {
@@ -151,7 +151,7 @@ export class PipelineStack extends cdk.Stack {
         branchOrRef: sourceBranch,
       }),
       environment: {
-        buildImage: codebuild.LinuxBuildImage.AMAZON_LINUX_2_3,
+        buildImage: codebuild.LinuxBuildImage.STANDARD_5_0,
         privileged: true,
       },
       cache: codebuild.Cache.bucket(pipelineBucket, {
@@ -481,7 +481,7 @@ export class PipelineStack extends cdk.Stack {
         branchOrRef: sourceVersion,
       }),
       environment: {
-        buildImage: codebuild.LinuxBuildImage.AMAZON_LINUX_2_3,
+        buildImage: codebuild.LinuxBuildImage.STANDARD_5_0,
         privileged: true,
         computeType: codebuild.ComputeType.SMALL,
       },
