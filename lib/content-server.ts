@@ -278,5 +278,9 @@ export class ContentServerStack extends cdk.NestedStack {
         });
 
         cdk.Tags.of(this).add('component', usage);
+        
+        // TODO: workaround the 'Tags' prop of LogGroup is not supported in zhy yet
+        (logGroup.node.defaultChild as logs.CfnLogGroup).addPropertyDeletionOverride('Tags');
+        (cloudWatchAgentlogGroup.node.defaultChild as logs.CfnLogGroup).addPropertyDeletionOverride('Tags');
     }
 }

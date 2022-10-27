@@ -166,5 +166,8 @@ export class WebPortalStack extends cdk.NestedStack {
         rule.addTarget(new events_targets.LambdaFunction(func));
 
         cdk.Tags.of(this).add('component', usage);
+        
+        // TODO: workaround the 'Tags' prop of LogGroup is not supported in zhy yet
+        (logGroup.node.defaultChild as logs.CfnLogGroup).addPropertyDeletionOverride('Tags');
     }
 }
