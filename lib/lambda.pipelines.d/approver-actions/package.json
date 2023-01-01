@@ -14,7 +14,7 @@
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.62",
-    "ts-loader": "^5.3.3",
+    "ts-loader": "^9.4.2",
     "typescript": "^3.9.7"
   },
   "license": "MIT-0"
