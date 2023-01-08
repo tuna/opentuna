@@ -258,12 +258,6 @@ export function getMirrorConfig(stage: string) {
                 upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/chef/'
             },
             {
-                name: 'clickhouse',
-                interval: 1440,
-                provider: 'rsync',
-                upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/clickhouse/'
-            },
-            {
                 name: 'clojars',
                 interval: 1440,
                 provider: 'rsync',
@@ -372,7 +366,7 @@ export function getMirrorConfig(stage: string) {
                 logStartPattern: '^\\\\\\\\d{4}-\\\\\\\\d{2}-\\\\\\\\d{2}\\\\\\\\s\\\\\\\\d{2}:\\\\\\\\d{2}:\\\\\\\\d{2},\\\\\\\\d{3}',
                 timeFormat: '%Y-%m-%d %H:%M:%S',
                 provider: 'command',
-                upstream: 'https://pypi.python.org/',
+                upstream: 'https://mirrors.tuna.tsinghua.edu.cn/pypi/web',
                 command: '$TUNASCRIPT_PATH/pypi.sh',
                 interval: 5,
                 envs: [
