@@ -138,6 +138,7 @@ export class TunaWorkerStack extends cdk.NestedStack {
             healthCheck: autoscaling.HealthCheck.ec2({ grace: cdk.Duration.seconds(180) }),
             updatePolicy: autoscaling.UpdatePolicy.rollingUpdate(),
             cooldown: cdk.Duration.seconds(30),
+            requireImdsv2: true,
         });
         tunaWorkerASG.node.addDependency(confFileDeployment);
         tunaWorkerASG.addSecurityGroup(props.tunaWorkerSG);

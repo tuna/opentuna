@@ -152,6 +152,9 @@ describe('Tuna Manager stack', () => {
   test('Tuna manager launch configuration', () => {
     expect(stack).toHaveResourceLike('AWS::AutoScaling::LaunchConfiguration', {
       "InstanceType": "c5.large",
+      "MetadataOptions": {
+        "HttpTokens": "required"
+      },
       "SecurityGroups": [
         {
           "Fn::GetAtt": [
