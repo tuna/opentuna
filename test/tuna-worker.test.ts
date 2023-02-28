@@ -206,6 +206,9 @@ describe('Tunasync worker stack', () => {
 
     expect(stack).toHaveResourceLike('AWS::AutoScaling::LaunchConfiguration', {
       "InstanceType": "c5.xlarge",
+      "MetadataOptions": {
+        "HttpTokens": "required"
+      },      
       "AssociatePublicIpAddress": true,
       "SecurityGroups": [
         {
