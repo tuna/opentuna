@@ -377,7 +377,7 @@ describe('Tuna certificate stack', () => {
               "detail-build-id": "$.detail.build-id",
               "account": "$.account"
             },
-            "InputTemplate": "{\"type\":\"certificate\",\"certificateDomain\":\"mirrors.example.com\",\"stage\":\"prod\",\"iamCertId\":<detail-additional-information-exported-environment-variables-0--value>,\"iamCertName\":<detail-additional-information-exported-environment-variables-1--value>,\"certificateProjectName\":<detail-project-name>,\"certificateBuildStatus\":<detail-build-status>,\"certificateBuildId\":<detail-build-id>,\"account\":<account>}"
+            "InputTemplate": "{\"type\":\"certificate\",\"certificateDomain\":\"mirrors.example.com\",\"stage\":\"prod\",\"iamCertId\":<detail-additional-information-exported-environment-variables-1--value>,\"iamCertName\":<detail-additional-information-exported-environment-variables-0--value>,\"certificateProjectName\":<detail-project-name>,\"certificateBuildStatus\":<detail-build-status>,\"certificateBuildId\":<detail-build-id>,\"account\":<account>}"
           }
         }
       ]
