@@ -122,6 +122,7 @@ export class TunaManagerStack extends cdk.NestedStack {
             healthCheck: autoscaling.HealthCheck.elb({ grace: cdk.Duration.seconds(180) }),
             updatePolicy: autoscaling.UpdatePolicy.rollingUpdate(),
             cooldown: cdk.Duration.seconds(30),
+            requireImdsv2: true,
         });
         this.managerASG = tunaManagerASG;
         tunaManagerASG.addSecurityGroup(props.tunaManagerSG);
