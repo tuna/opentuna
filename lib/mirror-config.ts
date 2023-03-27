@@ -303,7 +303,7 @@ export function getMirrorConfig(stage: string) {
                 name: 'julia',
                 interval: 60,
                 provider: 'rsync',
-                upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/julia/'
+                upstream: 'rsync://mirrors.nju.edu.cn/julia/'
             },
             {
                 name: 'julia-releases',
@@ -333,7 +333,7 @@ export function getMirrorConfig(stage: string) {
                 name: 'sagemath',
                 interval: 1440,
                 provider: 'rsync',
-                upstream: 'rsync://mirrors.tuna.tsinghua.edu.cn/sagemath/'
+                upstream: 'rsync://mirrors.ustc.edu.cn/sagemath/'
             },
             {
                 name: 'saltstack',
