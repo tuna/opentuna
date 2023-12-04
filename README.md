@@ -1,3 +1,9 @@
+# NOTICE
+
+**OpenTUNA will be sunsetted from 20th Dec 2023**. This repository will then be archived and no longer maintained.
+
+If you are interested in future maintenance work, feel free to reach us at <https://github.com/tuna/issues/issue>.
+
 # Open TUNA project!
 
 This is the infrastructure project of Open TUNA on AWS, orchestrated by [AWS CDK][aws-cdk].
